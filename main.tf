@@ -139,11 +139,11 @@ data "aws_iam_policy_document" "queue_policy" {
 
 
 resource "aws_sqs_queue_policy" "queue_policy" {
-  for_each = toset([
-    aws_sqs_queue.terraform_engine_terminate_queue.id,
-    aws_sqs_queue.terraform_engine_provision_operation_queue.id,
-    aws_sqs_queue.terraform_engine_update_queue.id
-  ])
+  for_each = {
+    1: aws_sqs_queue.terraform_engine_terminate_queue.id,
+    2: aws_sqs_queue.terraform_engine_provision_operation_queue.id,
+    3: aws_sqs_queue.terraform_engine_update_queue.id
+  }
 
   queue_url = each.value
   policy    = data.aws_iam_policy_document.queue_policy.json
