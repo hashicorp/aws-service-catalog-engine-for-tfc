@@ -6,7 +6,7 @@ terraform {
     }
 
     random = {
-      source = "hashicorp/random"
+      source  = "hashicorp/random"
       version = "3.5.1"
     }
   }
@@ -25,10 +25,10 @@ provider "aws" {
 }
 
 resource "random_string" "random" {
-  length           = 16
-  special          = false
-  lower = true
-  upper = false
+  length  = 16
+  special = false
+  lower   = true
+  upper   = false
 }
 
 # # # #
@@ -42,7 +42,7 @@ resource "aws_s3_bucket_object" "object" {
   bucket = aws_s3_bucket.my_bucket.bucket
   key    = "product.tar.gz"
   source = "${path.module}/product.tar.gz"
-  etag = filemd5("${path.module}/product.tar.gz")
+  etag   = filemd5("${path.module}/product.tar.gz")
 }
 
 # # # #
@@ -62,8 +62,8 @@ resource "aws_servicecatalog_product" "example" {
   provisioning_artifact_parameters {
     # TODO: renable this to test
     disable_template_validation = true
-    template_url = "https://s3.amazonaws.com/${aws_s3_bucket.my_bucket.bucket}/${aws_s3_bucket_object.object.key}"
-    type = "TERRAFORM_OPEN_SOURCE"
+    template_url                = "https://s3.amazonaws.com/${aws_s3_bucket.my_bucket.bucket}/${aws_s3_bucket_object.object.key}"
+    type                        = "TERRAFORM_OPEN_SOURCE"
   }
 }
 

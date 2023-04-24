@@ -48,17 +48,16 @@ data "aws_iam_policy_document" "policy_for_provision_handler" {
 
   }
 
+    statement {
+      sid = "AllowStepFunction"
 
-  #   statement {
-  #     sid = "AllowStepFunction"
+      effect = "Allow"
 
-  #     effect = "Allow"
+      actions = ["states:StartExecution"]
 
-  #     actions = ["states:StartExecution"]
+      resources = [aws_sfn_state_machine.manage_provisioned_product.arn]
 
-  #     resources = [aws_sqs_queue.queue_key.arn]
-
-  #   }
+    }
 }
 
 resource "aws_iam_role_policy_attachment" "provision_handler_lambda_execution" {
@@ -83,13 +82,9 @@ resource "aws_lambda_function" "provision_handler" {
 
   runtime = "python3.9"
 
-# To do: add statemachine to this environment block:
-#     Environment:
-#         Variables:
-#           STATE_MACHINE_ARN: !Ref ManageProvisionedProductStateMachine
   environment {
     variables = {
-      foo = "bar"
+      STATE_MACHINE_ARN = aws_sfn_state_machine.manage_provisioned_product.arn
     }
   }
 }

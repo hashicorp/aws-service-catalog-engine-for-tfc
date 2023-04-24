@@ -7,6 +7,11 @@ terraform {
   }
 }
 
+variable "tfe_token" {
+  type = string
+  description = "TFE token"
+  sensitive = true
+}
 
 provider "aws" {
   # Configuration options
@@ -21,8 +26,6 @@ provider "aws" {
 
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
-
-
 
 data "aws_iam_policy_document" "queue_key_policy" {
   version = "2012-10-17"
@@ -117,7 +120,7 @@ data "aws_iam_policy_document" "queue_policy" {
       type        = "Service"
       identifiers = ["servicecatalog.amazonaws.com"]
     }
-    actions   = ["sqs:SendMessage", "sqs:GetQueueUrl"]
+    actions = ["sqs:SendMessage", "sqs:GetQueueUrl"]
     resources = [
       aws_sqs_queue.terraform_engine_terminate_queue.arn,
       aws_sqs_queue.terraform_engine_provision_operation_queue.arn,
@@ -126,13 +129,13 @@ data "aws_iam_policy_document" "queue_policy" {
   }
 
   statement {
-    sid = "Enable AWS Service Catalog encryption/decryption permissions when sending message to queue"
+    sid    = "Enable AWS Service Catalog encryption/decryption permissions when sending message to queue"
     effect = "Allow"
     principals {
       type        = "Service"
       identifiers = ["servicecatalog.amazonaws.com"]
     }
-    actions = ["kms:DescribeKey", "kms:Decrypt", "kms:ReEncrypt", "kms:GenerateDataKey"]
+    actions   = ["kms:DescribeKey", "kms:Decrypt", "kms:ReEncrypt", "kms:GenerateDataKey"]
     resources = [aws_kms_key.queue_key.arn]
   }
 }
@@ -140,9 +143,9 @@ data "aws_iam_policy_document" "queue_policy" {
 
 resource "aws_sqs_queue_policy" "queue_policy" {
   for_each = {
-    1: aws_sqs_queue.terraform_engine_terminate_queue.id,
-    2: aws_sqs_queue.terraform_engine_provision_operation_queue.id,
-    3: aws_sqs_queue.terraform_engine_update_queue.id
+    1 : aws_sqs_queue.terraform_engine_terminate_queue.id,
+    2 : aws_sqs_queue.terraform_engine_provision_operation_queue.id,
+    3 : aws_sqs_queue.terraform_engine_update_queue.id
   }
 
   queue_url = each.value
