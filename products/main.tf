@@ -60,7 +60,7 @@ resource "aws_servicecatalog_product" "example" {
   type  = "TERRAFORM_OPEN_SOURCE"
 
   provisioning_artifact_parameters {
-    # TODO: renable this to test
+    # TODO: re-enable this to test
     disable_template_validation = true
     template_url                = "https://s3.amazonaws.com/${aws_s3_bucket.my_bucket.bucket}/${aws_s3_bucket_object.object.key}"
     type                        = "TERRAFORM_OPEN_SOURCE"
@@ -79,7 +79,11 @@ resource "aws_servicecatalog_constraint" "example" {
   type         = "LAUNCH"
 
   parameters = jsonencode({
-    "RoleArn" : aws_iam_role.example_product_launch_role.arn
+    "RoleArn" : aws_iam_role.example_product_launch_role.arn,
+#    "Environment" : {
+#      "Name": "coconut"
+#    }
+    "TerraformOrganization" : "tf-rocket-tfcb-test"
   })
 }
 

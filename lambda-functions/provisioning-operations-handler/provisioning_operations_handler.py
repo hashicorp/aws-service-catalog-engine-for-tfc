@@ -22,6 +22,7 @@ MESSAGE_ID_KEY: str = 'messageId'
 TOKEN_KEY: str = 'token'
 PROVISIONED_PRODUCT_ID_KEY: str = 'provisionedProductId'
 RECORD_ID_KEY: str = 'recordId'
+TERRAFORM_ORGANIZATION: str = 'terraformOrganization'
 # Step Functions constants
 EXECUTION_ARN_KEY: str = 'executionArn'
 REQUEST_ID_KEY: str = 'RequestId'
@@ -44,6 +45,7 @@ def __start_state_machine(record: dict, state_machine_arn: str):
     provisioned_product_id: str = state_machine_payload[PROVISIONED_PRODUCT_ID_KEY]
     record_id: str = state_machine_payload[RECORD_ID_KEY]
     execution_name = f'{provisioned_product_id}-{record_id}'
+    state_machine_payload[TERRAFORM_ORGANIZATION] = 'tf-rocket-tfcb-test'
 
     log.info(f'Starting state machine {state_machine_arn} with token {token} & name: {execution_name} & payload: {state_machine_payload}')
 

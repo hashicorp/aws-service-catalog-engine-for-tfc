@@ -22,6 +22,28 @@ resource "aws_iam_role_policy_attachment" "send_apply_lambda_execution" {
   policy_arn = each.value
 }
 
+resource "aws_iam_role_policy" "terraform_engine_send_apply_role" {
+  name   = "terraform_engine_send_apply_role_policy"
+  role   = aws_iam_role.send_apply_lambda_execution.id
+  policy = data.aws_iam_policy_document.policy_for_send_apply_lambda.json
+}
+
+
+data "aws_iam_policy_document" "policy_for_send_apply_lambda" {
+  version = "2012-10-17"
+
+  statement {
+    sid = "s3Access"
+
+    effect = "Allow"
+
+    actions = ["s3:GetObject"]
+
+    resources = ["*"]
+
+  }
+}
+
 data "archive_file" "send_apply" {
   type        = "zip"
   output_path = "send_apply.zip"
