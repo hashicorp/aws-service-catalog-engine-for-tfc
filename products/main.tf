@@ -105,3 +105,58 @@ resource "aws_iam_role" "example_product_launch_role" {
     ]
   })
 }
+
+resource "aws_iam_role_policy" "example_product_launch_constraint_policy" {
+  name   = "example_product_launch_constraint_policy"
+  role   = aws_iam_role.example_product_launch_role.id
+  policy = data.aws_iam_policy_document.example_product_launch_constraint_policy.json
+}
+
+
+data "aws_iam_policy_document" "example_product_launch_constraint_policy" {
+  version = "2012-10-17"
+
+  statement {
+    sid = "S3Access"
+
+    effect = "Allow"
+
+    actions = [
+      "s3:*",
+    ]
+
+    resources = ["*"]
+
+  }
+
+  statement {
+    sid = "ResourceGroups"
+
+    effect = "Allow"
+
+    actions = [
+      "resource-groups:CreateGroup",
+      "resource-groups:ListGroupResources",
+      "resource-groups:DeleteGroup",
+      "resource-groups:Tag"
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "Tagging"
+
+    effect = "Allow"
+
+    actions = [
+      "tag:GetResources",
+      "tag:GetTagKeys",
+      "tag:GetTagValues",
+      "tag:TagResources",
+      "tag:UntagResources"
+    ]
+
+    resources = ["*"]
+  }
+}

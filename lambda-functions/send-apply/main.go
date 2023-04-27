@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -18,7 +17,7 @@ import (
 
 type SendApplyRequest struct {
 	TerraformOrganization string   `json:"terraformOrganization"`
-	ProductId             string   `json:"productId"`
+	ProvisionedProductId  string   `json:"provisionedProductId"`
 	Artifact              Artifact `json:"artifact"`
 }
 
@@ -27,45 +26,59 @@ type Artifact struct {
 	Type string `json:"type"`
 }
 
-func HandleRequest(ctx context.Context, request SendApplyRequest) (string, error) {
+type SendApplyResponse struct {
+	TerraformRunId string `json:"terraformRunId"`
+}
+
+func HandleRequest(ctx context.Context, request SendApplyRequest) (SendApplyResponse, error) {
 	client, err := tfe.NewClient(tfe.DefaultConfig())
 	if err != nil {
 		log.Fatal(err)
+		return SendApplyResponse{}, err
 	}
 
 	sdkConfig, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		fmt.Println("Couldn't load default configuration. Have you set up your AWS account?")
-		fmt.Println(err)
-		return "", err
+		log.Fatal(err)
+		return SendApplyResponse{}, err
 	}
 
 	s3Client := s3.NewFromConfig(sdkConfig)
 
 	w, err := client.Workspaces.Create(ctx, request.TerraformOrganization, tfe.WorkspaceCreateOptions{
-		Name: &request.ProductId,
+		Name: &request.ProvisionedProductId,
 	})
-
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	cv, err := client.ConfigurationVersions.Create(ctx,
 		w.ID,
-		tfe.ConfigurationVersionCreateOptions{},
+		tfe.ConfigurationVersionCreateOptions{
+			// disable auto queue runs, so we can create the run ourselves to get the runId
+			AutoQueueRuns: tfe.Bool(false),
+		},
 	)
 
 	bucket, key := resolveArtifactPath(request.Artifact.Path)
 
 	body, err := DownloadS3File(ctx, key, bucket, s3Client)
-
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	err = client.ConfigurationVersions.UploadTarGzip(ctx, cv.UploadURL, body)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	return "", err
+	run, err := client.Runs.Create(ctx, tfe.RunCreateOptions{
+		Workspace:            w,
+		ConfigurationVersion: cv,
+		AutoApply:            tfe.Bool(true),
+	})
+
+	return SendApplyResponse{TerraformRunId: run.ID}, err
 }
 
 func main() {
