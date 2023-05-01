@@ -44,6 +44,38 @@ data "aws_iam_policy_document" "policy_for_send_apply_lambda" {
     resources = ["*"]
 
   }
+
+  statement {
+    sid = "tfeCredentialsAccess"
+
+    effect = "Allow"
+
+    actions = ["secretsmanager:GetSecretValue"]
+
+    resources = ["*"]
+  }
+}
+
+data "tfe_team" "provisioning_team" {
+  name         = var.tfe_team
+  organization = var.tfe_organization
+}
+
+resource "tfe_team_token" "test_team_token" {
+  team_id = data.tfe_team.provisioning_team.id
+}
+
+resource "aws_secretsmanager_secret" "team_token_values" {
+  name = "terraform-cloud-service-catalog-engine-credentials"
+}
+
+resource "aws_secretsmanager_secret_version" "tfe_credentials" {
+  secret_id     = aws_secretsmanager_secret.team_token_values.id
+  secret_string = jsonencode({
+    hostname = var.tfe_hostname
+    id = data.tfe_team.provisioning_team.id
+    token = tfe_team_token.test_team_token.token
+  })
 }
 
 data "archive_file" "send_apply" {
@@ -61,7 +93,8 @@ resource "aws_lambda_function" "send_apply_command_function" {
 
   environment {
     variables = {
-      TFE_TOKEN = var.tfe_token
+      TFE_CREDENTIALS_SECRET_ID = aws_secretsmanager_secret_version.tfe_credentials.arn
+      TFE_CREDENTIALS_SECRET_VERSION_ID = aws_secretsmanager_secret_version.tfe_credentials.version_id
     }
   }
 
@@ -72,7 +105,7 @@ resource "aws_lambda_function" "send_apply_command_function" {
 
 # Poll Run Status Lambda
 
-data "aws_iam_policy_document" "poll_run_status" {
+data "aws_iam_policy_document" "poll_run_status_assume_policy" {
   statement {
     effect = "Allow"
 
@@ -87,13 +120,33 @@ data "aws_iam_policy_document" "poll_run_status" {
 
 resource "aws_iam_role" "poll_run_status" {
   name               = "terraform_engine_poll_run_status_role"
-  assume_role_policy = data.aws_iam_policy_document.poll_run_status.json
+  assume_role_policy = data.aws_iam_policy_document.poll_run_status_assume_policy.json
 }
 
 resource "aws_iam_role_policy_attachment" "poll_run_status" {
   for_each   = toset(["arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess", "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"])
   role       = aws_iam_role.poll_run_status.name
   policy_arn = each.value
+}
+
+resource "aws_iam_role_policy" "poll_run_status" {
+  name   = "terraform_engine_send_apply_role_policy"
+  role   = aws_iam_role.poll_run_status.id
+  policy = data.aws_iam_policy_document.poll_run_status.json
+}
+
+data "aws_iam_policy_document" "poll_run_status" {
+  version = "2012-10-17"
+
+  statement {
+    sid = "tfeCredentialsAccess"
+
+    effect = "Allow"
+
+    actions = ["secretsmanager:GetSecretValue"]
+
+    resources = ["*"]
+  }
 }
 
 data "archive_file" "poll_run_status" {
@@ -111,7 +164,8 @@ resource "aws_lambda_function" "poll_run_status" {
 
   environment {
     variables = {
-      TFE_TOKEN = var.tfe_token
+      TFE_CREDENTIALS_SECRET_ID = aws_secretsmanager_secret_version.tfe_credentials.arn
+      TFE_CREDENTIALS_SECRET_VERSION_ID = aws_secretsmanager_secret_version.tfe_credentials.version_id
     }
   }
 

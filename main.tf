@@ -7,12 +7,6 @@ terraform {
   }
 }
 
-variable "tfe_token" {
-  type = string
-  description = "TFE token"
-  sensitive = true
-}
-
 provider "aws" {
   # Configuration options
   region = "us-west-2"

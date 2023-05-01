@@ -80,9 +80,6 @@ resource "aws_servicecatalog_constraint" "example" {
 
   parameters = jsonencode({
     "RoleArn" : aws_iam_role.example_product_launch_role.arn,
-#    "Environment" : {
-#      "Name": "coconut"
-#    }
     "TerraformOrganization" : "tf-rocket-tfcb-test"
   })
 }

@@ -2,9 +2,15 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/hashicorp/go-tfe"
 	"log"
+	"os"
 )
 
 type PollRunStatus struct {
@@ -18,9 +24,18 @@ type PollRunStatusResponse struct {
 }
 
 func HandleRequest(ctx context.Context, request PollRunStatus) (PollRunStatusResponse, error) {
-	client, err := tfe.NewClient(tfe.DefaultConfig())
+	sdkConfig, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		log.Fatal(err)
+		return PollRunStatusResponse{}, err
+	}
+
+	secretsManager := secretsmanager.NewFromConfig(sdkConfig)
+
+	client, err := getTFEClient(ctx, secretsManager)
+	if err != nil {
+		log.Fatal(err)
+		return PollRunStatusResponse{}, err
 	}
 
 	run, err := client.Runs.Read(ctx, request.TerraformRunId)
@@ -49,6 +64,39 @@ func HandleRequest(ctx context.Context, request PollRunStatus) (PollRunStatusRes
 
 func main() {
 	lambda.Start(HandleRequest)
+}
+
+type TFECredentialsSecret struct {
+	Hostname string `json:"hostname"`
+	Token    string `json:"token"`
+}
+
+func getTFEClient(ctx context.Context, secretsManagerClient *secretsmanager.Client) (*tfe.Client, error) {
+	// Fetch the TFE credentials/config from AWS Secrets Manager
+	secretId := os.Getenv("TFE_CREDENTIALS_SECRET_ID")
+	versionId := os.Getenv("TFE_CREDENTIALS_SECRET_VERSION_ID")
+
+	tfeCredentialsSecretJson, err := secretsManagerClient.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{
+		SecretId:  aws.String(secretId),
+		VersionId: aws.String(versionId),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Decode the response from AWS Secrets Manager
+	var tfeCredentialsSecret TFECredentialsSecret
+	if err = json.Unmarshal([]byte(*tfeCredentialsSecretJson.SecretString), &tfeCredentialsSecret); err != nil {
+		return nil, err
+	}
+
+	// Use the credentials to create a TFE client
+	client, err := tfe.NewClient(&tfe.Config{
+		Address: fmt.Sprintf("https://%s", tfeCredentialsSecret.Hostname),
+		Token:   tfeCredentialsSecret.Token,
+	})
+
+	return client, err
 }
 
 func failed(runStatus tfe.RunStatus, message string) PollRunStatusResponse {
