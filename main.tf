@@ -4,6 +4,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "4.63.0"
     }
+    tfe = {
+      source = "hashicorp/tfe"
+      version = "0.44.1"
+    }
   }
 }
 
@@ -16,6 +20,10 @@ provider "aws" {
       "projects" = "aws-service-catalog-engine"
     }
   }
+}
+
+provider "tfe" {
+  hostname = var.tfe_hostname
 }
 
 data "aws_caller_identity" "current" {}
@@ -60,7 +68,6 @@ data "aws_iam_policy_document" "queue_key_policy" {
     # TODO: Maybe cut down on this a bit
     resources = ["*"]
   }
-
 }
 
 resource "aws_kms_key" "queue_key" {

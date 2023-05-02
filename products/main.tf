@@ -12,6 +12,7 @@ terraform {
   }
 }
 
+data "aws_caller_identity" "current" {}
 
 provider "aws" {
   # Configuration options
@@ -84,7 +85,6 @@ resource "aws_servicecatalog_constraint" "example" {
   })
 }
 
-
 resource "aws_iam_role" "example_product_launch_role" {
   name = "example_product_launch_role"
 
@@ -94,9 +94,24 @@ resource "aws_iam_role" "example_product_launch_role" {
       {
         Action = "sts:AssumeRole"
         Effect = "Allow"
-        Sid    = ""
+        Sid    = "AllowServiceCatalogToAssume"
         Principal = {
           Service = "servicecatalog.amazonaws.com"
+        }
+      },
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Condition = {
+          StringLike = {
+            "aws:PrincipalArn" = [
+              # TODO: Allow this role to be assumed by TFC (see: https://github.com/aws-samples/service-catalog-engine-for-terraform-os/blob/main/template.yaml#L656)
+              "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/ServiceCatalogTerraformTFEParameterParserRole*"
+            ]
+          }
         }
       }
     ]

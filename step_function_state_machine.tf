@@ -33,7 +33,7 @@ data "aws_iam_policy_document" "policy_for_manage_provisioned_product" {
 
     actions = ["lambda:InvokeFunction"]
 
-    resources = [aws_lambda_function.send_apply_command_function.arn, aws_lambda_function.poll_run_status.arn, aws_lambda_function.notify_run_result.arn]
+    resources = [aws_lambda_function.send_apply_command_function.arn, aws_lambda_function.poll_run_status.arn, aws_lambda_function.notify_run_result.arn, aws_lambda_function.parameter_parser.arn]
 
   }
 

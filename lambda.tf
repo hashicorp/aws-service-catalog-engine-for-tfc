@@ -96,3 +96,4 @@ resource "aws_lambda_event_source_mapping" "provision_handler_provisioning_queue
   enabled                 = true
   function_response_types = ["ReportBatchItemFailures"]
 }
+
