@@ -85,6 +85,7 @@ resource "aws_servicecatalog_constraint" "example" {
   })
 }
 
+# TODO: Allow this role to be assumed by TFC (see: https://github.com/aws-samples/service-catalog-engine-for-terraform-os/blob/main/template.yaml#L656)
 resource "aws_iam_role" "example_product_launch_role" {
   name = "example_product_launch_role"
 
@@ -108,7 +109,7 @@ resource "aws_iam_role" "example_product_launch_role" {
         Condition = {
           StringLike = {
             "aws:PrincipalArn" = [
-              # TODO: Allow this role to be assumed by TFC (see: https://github.com/aws-samples/service-catalog-engine-for-terraform-os/blob/main/template.yaml#L656)
+              # TODO: Make sure this Role Arn actually points to the TFE Parameter Parser
               "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/ServiceCatalogTerraformTFEParameterParserRole*"
             ]
           }
