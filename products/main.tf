@@ -85,7 +85,10 @@ resource "aws_servicecatalog_constraint" "example" {
   })
 }
 
-# TODO: Allow this role to be assumed by TFC (see: https://github.com/aws-samples/service-catalog-engine-for-terraform-os/blob/main/template.yaml#L656)
+data "aws_iam_openid_connect_provider" "tfc_provider" {
+  arn = var.tfc_provider_arn
+}
+
 resource "aws_iam_role" "example_product_launch_role" {
   name = "example_product_launch_role"
 
@@ -114,6 +117,22 @@ resource "aws_iam_role" "example_product_launch_role" {
             ]
           }
         }
+      },
+      {
+        Action = "sts:AssumeRoleWithWebIdentity",
+        Effect = "Allow",
+        Principal = {
+          Federated = var.tfc_provider_arn
+        },
+        Condition = {
+          StringEquals = {
+            "${var.tfc_hostname}:aud" = one(data.aws_iam_openid_connect_provider.tfc_provider.client_id_list)
+          },
+          StringLike = {
+            // TODO: Make sure to narrow workspace and project values down
+            "${var.tfc_hostname}:sub" = "organization:${var.tfc_organization}:project:*:workspace:*:run_phase:*"
+          }
+        }
       }
     ]
   })
@@ -124,7 +143,6 @@ resource "aws_iam_role_policy" "example_product_launch_constraint_policy" {
   role   = aws_iam_role.example_product_launch_role.id
   policy = data.aws_iam_policy_document.example_product_launch_constraint_policy.json
 }
-
 
 data "aws_iam_policy_document" "example_product_launch_constraint_policy" {
   version = "2012-10-17"

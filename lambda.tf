@@ -22,7 +22,6 @@ resource "aws_iam_role_policy" "provision_handler_lambda_execution_role_policy" 
   policy = data.aws_iam_policy_document.policy_for_provision_handler.json
 }
 
-
 data "aws_iam_policy_document" "policy_for_provision_handler" {
   version = "2012-10-17"
 
@@ -96,4 +95,3 @@ resource "aws_lambda_event_source_mapping" "provision_handler_provisioning_queue
   enabled                 = true
   function_response_types = ["ReportBatchItemFailures"]
 }
-

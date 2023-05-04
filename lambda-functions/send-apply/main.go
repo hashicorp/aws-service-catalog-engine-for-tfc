@@ -23,6 +23,7 @@ type SendApplyRequest struct {
 	TerraformOrganization string   `json:"terraformOrganization"`
 	ProvisionedProductId  string   `json:"provisionedProductId"`
 	Artifact              Artifact `json:"artifact"`
+	LaunchRoleArn         string   `json:"launchRoleArn"`
 }
 
 type Artifact struct {
@@ -50,11 +51,37 @@ func HandleRequest(ctx context.Context, request SendApplyRequest) (SendApplyResp
 		return SendApplyResponse{}, err
 	}
 
+	// Create the workspace
 	w, err := client.Workspaces.Create(ctx, request.TerraformOrganization, tfe.WorkspaceCreateOptions{
 		Name: &request.ProvisionedProductId,
 	})
 	if err != nil {
 		log.Fatal(err)
+		return SendApplyResponse{}, err
+	}
+
+	// Configure ENV variables for OIDC
+	_, err = client.Variables.Create(ctx, w.ID, tfe.VariableCreateOptions{
+		Key:         tfe.String("TFC_AWS_PROVIDER_AUTH"),
+		Value:       tfe.String("true"),
+		Description: tfe.String("Enable the Workload Identity integration for AWS."),
+		Category:    tfe.Category(tfe.CategoryEnv),
+		HCL:         tfe.Bool(false),
+		Sensitive:   tfe.Bool(false),
+	})
+	if err != nil {
+		return SendApplyResponse{}, err
+	}
+
+	_, err = client.Variables.Create(ctx, w.ID, tfe.VariableCreateOptions{
+		Key:         tfe.String("TFC_AWS_RUN_ROLE_ARN"),
+		Value:       tfe.String(request.LaunchRoleArn),
+		Description: tfe.String("The AWS role arn runs will use to authenticate."),
+		Category:    tfe.Category(tfe.CategoryEnv),
+		HCL:         tfe.Bool(false),
+		Sensitive:   tfe.Bool(false),
+	})
+	if err != nil {
 		return SendApplyResponse{}, err
 	}
 
