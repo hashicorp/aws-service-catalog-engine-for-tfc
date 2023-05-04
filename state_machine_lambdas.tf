@@ -103,6 +103,89 @@ resource "aws_lambda_function" "send_apply_command_function" {
   runtime = "go1.x"
 }
 
+# Send Destroy Lambda
+
+data "aws_iam_policy_document" "send_destroy_assume_policy" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+resource "aws_iam_role" "send_destroy" {
+  name               = "terraform_engine_send_destroy_role"
+  assume_role_policy = data.aws_iam_policy_document.send_destroy_assume_policy.json
+}
+
+resource "aws_iam_role_policy_attachment" "send_destroy" {
+  for_each   = toset(["arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess", "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"])
+  role       = aws_iam_role.send_destroy.name
+  policy_arn = each.value
+}
+
+resource "aws_iam_role_policy" "send_destroy" {
+  name   = "terraform_engine_send_apply_role_policy"
+  role   = aws_iam_role.send_destroy.id
+  policy = data.aws_iam_policy_document.send_destroy.json
+}
+
+
+data "aws_iam_policy_document" "send_destroy" {
+  version = "2012-10-17"
+
+  statement {
+    sid = "s3Access"
+
+    effect = "Allow"
+
+    actions = ["s3:GetObject"]
+
+    resources = ["*"]
+
+  }
+
+  statement {
+    sid = "tfeCredentialsAccess"
+
+    effect = "Allow"
+
+    actions = ["secretsmanager:GetSecretValue"]
+
+    resources = ["*"]
+  }
+}
+
+data "archive_file" "send_destroy" {
+  type        = "zip"
+  output_path = "send_destroy.zip"
+  source_file = "lambda-functions/send-destroy/main"
+}
+
+resource "aws_lambda_function" "send_destroy" {
+  filename      = data.archive_file.send_destroy.output_path
+  function_name = "ServiceCatalogTFCSendDestroy"
+  role          = aws_iam_role.send_destroy.arn
+  handler       = "main"
+  timeout = 60
+
+  environment {
+    variables = {
+      TFE_CREDENTIALS_SECRET_ID = aws_secretsmanager_secret_version.tfe_credentials.arn
+      TFE_CREDENTIALS_SECRET_VERSION_ID = aws_secretsmanager_secret_version.tfe_credentials.version_id
+    }
+  }
+
+  source_code_hash = data.archive_file.send_destroy.output_base64sha256
+
+  runtime = "go1.x"
+}
+
 # Poll Run Status Lambda
 
 data "aws_iam_policy_document" "poll_run_status_assume_policy" {
