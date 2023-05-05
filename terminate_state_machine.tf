@@ -33,7 +33,7 @@ data "aws_iam_policy_document" "terminate_state_machine" {
 
     actions = ["lambda:InvokeFunction"]
 
-    resources = [aws_lambda_function.send_apply_command_function.arn, aws_lambda_function.poll_run_status.arn, aws_lambda_function.notify_run_result.arn, aws_lambda_function.parameter_parser.arn]
+    resources = [aws_lambda_function.send_destroy.arn, aws_lambda_function.poll_run_status.arn, aws_lambda_function.notify_run_result.arn, aws_lambda_function.parameter_parser.arn]
 
   }
 
@@ -65,7 +65,7 @@ resource "aws_cloudwatch_log_group" "terminate_state_machine" {
 
 resource "aws_sfn_state_machine" "terminate_state_machine" {
   name     = "ServiceCatalogTFCTerminateOperationStateMachine"
-  role_arn = aws_iam_role.tfc_manage_provisioned_product.arn
+  role_arn = aws_iam_role.terminate_state_machine.arn
   logging_configuration {
     level                  = "ALL"
     include_execution_data = true
@@ -78,7 +78,7 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
 
   definition = <<EOF
 {
-  "Comment": "A send destroy poll run status",
+  "Comment": "A state machine that terminates a provisioned product",
   "StartAt": "Generate tracer tag",
   "States": {
     "Generate tracer tag": {
@@ -93,11 +93,16 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
     },
     "Send destroy": {
       "Type": "Task",
-      "Resource": "${aws_lambda_function.send_apply_command_function.arn}",
+      "Resource": "${aws_lambda_function.send_destroy.arn}",
+      "Parameters": {
+        "awsAccountId.$": "$.identity.awsAccountId",
+        "terraformOrganization.$": "$.terraformOrganization",
+        "provisionedProductId.$": "$.provisionedProductId"
+      },
       "ResultSelector": {
         "terraformRunId.$": "$.terraformRunId"
       },
-      "ResultPath": "$.sendApplyResult",
+      "ResultPath": "$.sendDestroyResult",
       "Next": "Wait for destroy to complete"
     },
     "Wait for destroy to complete": {
@@ -109,7 +114,7 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
       "Type": "Task",
       "Resource": "${aws_lambda_function.poll_run_status.arn}",
       "Parameters": {
-        "terraformRunId.$": "$.sendApplyResult.terraformRunId"
+        "terraformRunId.$": "$.sendDestroyResult.terraformRunId"
       },
       "ResultPath": "$.pollRunResult",
       "Retry": [
@@ -145,7 +150,7 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
         {
           "Variable": "$.pollRunResult.productProvisioningStatus",
           "StringEquals": "inProgress",
-          "Next": "Wait for apply to complete"
+          "Next": "Wait for destroy to complete"
         },
         {
           "Variable": "$.pollRunResult.productProvisioningStatus",
@@ -160,18 +165,19 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
         {
           "Variable": "$.pollRunResult.productProvisioningStatus",
           "StringEquals": "success",
-          "Next": "Notify run result"
+          "Next": "Notify destroy result"
         }
       ],
       "Default": "Failure"
     },
-    "Notify terminate failure result": {
+    "Notify destroy result": {
       "Type": "Task",
       "Resource": "${aws_lambda_function.notify_run_result.arn}",
       "Parameters": {
         "workflowToken.$": "$.token",
         "recordId.$": "$.recordId",
-        "tracerTag.$": "$.tracerTag"
+        "tracerTag.$": "$.tracerTag",
+        "serviceCatalogOperation": "TERMINATING"
       },
       "End": true
     },

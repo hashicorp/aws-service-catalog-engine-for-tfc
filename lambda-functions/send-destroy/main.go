@@ -14,9 +14,9 @@ import (
 )
 
 type SendDestroyRequest struct {
+	AwsAccountId          string `json:"awsAccountId"`
 	TerraformOrganization string `json:"terraformOrganization"`
 	ProvisionedProductId  string `json:"provisionedProductId"`
-	LaunchRoleArn         string `json:"launchRoleArn"`
 }
 
 type SendDestroyResponse struct {
@@ -30,9 +30,9 @@ func HandleRequest(ctx context.Context, request SendDestroyRequest) (SendDestroy
 		return SendDestroyResponse{}, err
 	}
 
-	workspaceId := request.ProvisionedProductId
+	workspaceId := getWorkspaceName(request.AwsAccountId, request.ProvisionedProductId)
 
-	// Get workspace
+	// Get the workspace
 	workspace, err := client.Workspaces.Read(ctx, request.TerraformOrganization, workspaceId)
 	if err != nil {
 		log.Fatal(err)
@@ -96,4 +96,9 @@ func getTFEClient(ctx context.Context) (*tfe.Client, error) {
 	})
 
 	return client, err
+}
+
+// Get the workspace name, which is `${accountId} - ${provisionedProductId}`
+func getWorkspaceName(awsAccountId string, provisionedProductId string) string {
+	return fmt.Sprintf("%s-%s", awsAccountId, provisionedProductId)
 }

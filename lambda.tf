@@ -32,7 +32,7 @@ data "aws_iam_policy_document" "policy_for_provision_handler" {
 
     actions = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"]
 
-    resources = [aws_sqs_queue.terraform_engine_provision_operation_queue.arn, aws_sqs_queue.terraform_engine_update_queue.arn]
+    resources = [aws_sqs_queue.terraform_engine_provision_operation_queue.arn, aws_sqs_queue.terraform_engine_update_queue.arn, aws_sqs_queue.terraform_engine_terminate_queue.arn]
 
   }
 
@@ -54,7 +54,7 @@ data "aws_iam_policy_document" "policy_for_provision_handler" {
 
       actions = ["states:StartExecution"]
 
-      resources = [aws_sfn_state_machine.manage_provisioned_product.arn]
+      resources = [aws_sfn_state_machine.manage_provisioned_product.arn, aws_sfn_state_machine.terminate_state_machine.arn]
 
     }
 }
@@ -71,9 +71,11 @@ data "archive_file" "provision_handler" {
   source_dir  = "lambda-functions/provisioning-operations-handler"
 }
 
+# Lambda for provisioning products
+
 resource "aws_lambda_function" "provision_handler" {
   filename      = data.archive_file.provision_handler.output_path
-  function_name = "terraform_engine_provisioning_handler_lambda"
+  function_name = "TerraformEngineProvisionHandlerLambda"
   role          = aws_iam_role.provisioning_handler_lambda_execution.arn
   handler       = "provisioning_operations_handler.handle_sqs_records"
 
@@ -88,9 +90,36 @@ resource "aws_lambda_function" "provision_handler" {
   }
 }
 
-resource "aws_lambda_event_source_mapping" "provision_handler_provisioning_queue" {
+resource "aws_lambda_event_source_mapping" "provision_handler_provision_queue" {
   event_source_arn        = aws_sqs_queue.terraform_engine_provision_operation_queue.arn
   function_name           = aws_lambda_function.provision_handler.arn
+  batch_size              = 10
+  enabled                 = true
+  function_response_types = ["ReportBatchItemFailures"]
+}
+
+# Lambda for terminating products
+
+resource "aws_lambda_function" "terminate_handler" {
+  filename      = data.archive_file.provision_handler.output_path
+  function_name = "TerraformEngineTerminateHandlerLambda"
+  role          = aws_iam_role.provisioning_handler_lambda_execution.arn
+  handler       = "provisioning_operations_handler.handle_sqs_records"
+
+  source_code_hash = data.archive_file.provision_handler.output_base64sha256
+
+  runtime = "python3.9"
+
+  environment {
+    variables = {
+      STATE_MACHINE_ARN = aws_sfn_state_machine.terminate_state_machine.arn
+    }
+  }
+}
+
+resource "aws_lambda_event_source_mapping" "terminate_handler_terminate_queue" {
+  event_source_arn        = aws_sqs_queue.terraform_engine_terminate_queue.arn
+  function_name           = aws_lambda_function.terminate_handler.arn
   batch_size              = 10
   enabled                 = true
   function_response_types = ["ReportBatchItemFailures"]

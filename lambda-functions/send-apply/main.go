@@ -17,9 +17,11 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 type SendApplyRequest struct {
+	AwsAccountId          string   `json:"awsAccountId"`
 	TerraformOrganization string   `json:"terraformOrganization"`
 	ProvisionedProductId  string   `json:"provisionedProductId"`
 	Artifact              Artifact `json:"artifact"`
@@ -35,11 +37,11 @@ type SendApplyResponse struct {
 	TerraformRunId string `json:"terraformRunId"`
 }
 
-func HandleRequest(ctx context.Context, request SendApplyRequest) (SendApplyResponse, error) {
+func HandleRequest(ctx context.Context, request SendApplyRequest) (*SendApplyResponse, error) {
 	sdkConfig, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		log.Fatal(err)
-		return SendApplyResponse{}, err
+		return nil, err
 	}
 
 	s3Client := s3.NewFromConfig(sdkConfig)
@@ -48,16 +50,16 @@ func HandleRequest(ctx context.Context, request SendApplyRequest) (SendApplyResp
 	client, err := getTFEClient(ctx, secretsManager)
 	if err != nil {
 		log.Fatal(err)
-		return SendApplyResponse{}, err
+		return nil, err
 	}
 
 	// Create the workspace
 	w, err := client.Workspaces.Create(ctx, request.TerraformOrganization, tfe.WorkspaceCreateOptions{
-		Name: &request.ProvisionedProductId,
+		Name: tfe.String(getWorkspaceName(request.AwsAccountId, request.ProvisionedProductId)),
 	})
 	if err != nil {
 		log.Fatal(err)
-		return SendApplyResponse{}, err
+		return nil, err
 	}
 
 	// Configure ENV variables for OIDC
@@ -70,7 +72,7 @@ func HandleRequest(ctx context.Context, request SendApplyRequest) (SendApplyResp
 		Sensitive:   tfe.Bool(false),
 	})
 	if err != nil {
-		return SendApplyResponse{}, err
+		return nil, err
 	}
 
 	_, err = client.Variables.Create(ctx, w.ID, tfe.VariableCreateOptions{
@@ -82,7 +84,7 @@ func HandleRequest(ctx context.Context, request SendApplyRequest) (SendApplyResp
 		Sensitive:   tfe.Bool(false),
 	})
 	if err != nil {
-		return SendApplyResponse{}, err
+		return nil, err
 	}
 
 	cv, err := client.ConfigurationVersions.Create(ctx,
@@ -94,20 +96,36 @@ func HandleRequest(ctx context.Context, request SendApplyRequest) (SendApplyResp
 	)
 	if err != nil {
 		log.Fatal(err)
-		return SendApplyResponse{}, err
+		return nil, err
 	}
 
 	bucket, key := resolveArtifactPath(request.Artifact.Path)
 	body, err := DownloadS3File(ctx, key, bucket, s3Client)
 	if err != nil {
 		log.Fatal(err)
-		return SendApplyResponse{}, err
+		return nil, err
 	}
 
 	err = client.ConfigurationVersions.UploadTarGzip(ctx, cv.UploadURL, body)
 	if err != nil {
 		log.Fatal(err)
-		return SendApplyResponse{}, err
+		return nil, err
+	}
+
+	uploadTimeoutInSeconds := 120
+	for i := 0; ; i++ {
+		refreshed, err := client.ConfigurationVersions.Read(ctx, cv.ID)
+
+		if refreshed.Status == tfe.ConfigurationUploaded {
+			break
+		}
+
+		if i > uploadTimeoutInSeconds {
+			log.Fatal(err)
+			return nil, err
+		}
+
+		time.Sleep(1 * time.Second)
 	}
 
 	run, err := client.Runs.Create(ctx, tfe.RunCreateOptions{
@@ -117,10 +135,10 @@ func HandleRequest(ctx context.Context, request SendApplyRequest) (SendApplyResp
 	})
 	if err != nil {
 		log.Fatal(err)
-		return SendApplyResponse{}, err
+		return nil, err
 	}
 
-	return SendApplyResponse{TerraformRunId: run.ID}, err
+	return &SendApplyResponse{TerraformRunId: run.ID}, err
 }
 
 func main() {
@@ -186,4 +204,9 @@ func DownloadS3File(ctx context.Context, objectKey string, bucket string, s3Clie
 	}
 
 	return bytes.NewReader(buffer.Bytes()), nil
+}
+
+// Get the workspace name, which is `${accountId} - ${provisionedProductId}`
+func getWorkspaceName(awsAccountId string, provisionedProductId string) string {
+	return fmt.Sprintf("%s-%s", awsAccountId, provisionedProductId)
 }

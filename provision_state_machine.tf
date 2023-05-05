@@ -78,7 +78,7 @@ resource "aws_sfn_state_machine" "manage_provisioned_product" {
 
   definition = <<EOF
 {
-  "Comment": "A send apply poll run status",
+  "Comment": "A state machine that manages the provisioning experience.",
   "StartAt": "Generate tracer tag",
   "States": {
     "Generate tracer tag": {
@@ -94,6 +94,13 @@ resource "aws_sfn_state_machine" "manage_provisioned_product" {
     "Send apply": {
       "Type": "Task",
       "Resource": "${aws_lambda_function.send_apply_command_function.arn}",
+      "Parameters": {
+        "awsAccountId.$": "$.identity.awsAccountId",
+        "terraformOrganization.$": "$.terraformOrganization",
+        "provisionedProductId.$": "$.provisionedProductId",
+        "artifact.$": "$.artifact",
+        "launchRoleArn.$": "$.launchRoleArn"
+      },
       "ResultSelector": {
         "terraformRunId.$": "$.terraformRunId"
       },
@@ -171,7 +178,8 @@ resource "aws_sfn_state_machine" "manage_provisioned_product" {
       "Parameters": {
         "workflowToken.$": "$.token",
         "recordId.$": "$.recordId",
-        "tracerTag.$": "$.tracerTag"
+        "tracerTag.$": "$.tracerTag",
+        "serviceCatalogOperation": "PROVISIONING"
       },
       "End": true
     },
