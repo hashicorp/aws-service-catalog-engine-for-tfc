@@ -105,6 +105,13 @@ resource "aws_sfn_state_machine" "manage_provisioned_product" {
         "terraformRunId.$": "$.terraformRunId"
       },
       "ResultPath": "$.sendApplyResult",
+      "Catch": [
+          {
+              "ErrorEquals": [ "States.TaskFailed" ],
+              "ResultPath": "$.errorInfo",
+              "Next": "Notify run result failure"
+          }
+      ],
       "Next": "Wait for apply to complete"
     },
     "Wait for apply to complete": {
@@ -135,12 +142,12 @@ resource "aws_sfn_state_machine" "manage_provisioned_product" {
         {
           "ErrorEquals": [ "States.TaskFailed" ],
           "ResultPath": "$.errorInfo",
-          "Next": "Failure"
+          "Next": "Notify run result failure"
         },
         {
           "ErrorEquals": [ "States.Timeout" ],
           "ResultPath": "$.errorInfo",
-          "Next": "Failure"
+          "Next": "Notify run result failure"
         }
       ],
       "Next": "Did the run complete successfully?"
@@ -157,12 +164,7 @@ resource "aws_sfn_state_machine" "manage_provisioned_product" {
         {
           "Variable": "$.pollRunResult.productProvisioningStatus",
           "StringEquals": "failed",
-          "Next": "Failure"
-        },
-        {
-          "Variable": "$.pollRunResult.productProvisioningStatus",
-          "StringEquals": "awaitingDecision",
-          "Next": "Failure"
+          "Next": "Convert poll run status error"
         },
         {
           "Variable": "$.pollRunResult.productProvisioningStatus",
@@ -171,6 +173,17 @@ resource "aws_sfn_state_machine" "manage_provisioned_product" {
         }
       ],
       "Default": "Failure"
+    },
+    "Convert poll run status error": {
+        "Type": "Pass",
+        "Comment": "Restructures error from the poll run status task to a format the notify run result task understands",
+        "Parameters": {
+            "Error": "Error applying run in TFC",
+            "Cause.$": "$.pollRunStatus.errorMessage",
+            "isWrapperError": true
+        },
+        "ResultPath": "$.errorInfo",
+        "Next": "Notify run result failure"
     },
     "Notify run result": {
       "Type": "Task",
@@ -183,10 +196,21 @@ resource "aws_sfn_state_machine" "manage_provisioned_product" {
       },
       "End": true
     },
+    "Notify run result failure": {
+      "Type": "Task",
+      "Resource": "${aws_lambda_function.notify_run_result.arn}",
+      "Parameters": {
+        "workflowToken.$": "$.token",
+        "recordId.$": "$.recordId",
+        "tracerTag.$": "$.tracerTag",
+        "serviceCatalogOperation": "PROVISIONING",
+        "error.$": "$.errorInfo.Error",
+        "errorMessage.$": "$.errorInfo.Cause"
+      },
+      "End": true
+    },
     "Failure": {
-      "Type": "Fail",
-      "Cause": "boop",
-      "Error": "womp womp"
+      "Type": "Fail"
     }
   }
 }

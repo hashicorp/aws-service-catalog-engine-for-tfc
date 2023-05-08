@@ -103,6 +103,13 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
         "terraformRunId.$": "$.terraformRunId"
       },
       "ResultPath": "$.sendDestroyResult",
+      "Catch": [
+          {
+              "ErrorEquals": [ "States.TaskFailed" ],
+              "ResultPath": "$.errorInfo",
+              "Next": "Notify destroy result failure"
+          }
+      ],
       "Next": "Wait for destroy to complete"
     },
     "Wait for destroy to complete": {
@@ -155,12 +162,7 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
         {
           "Variable": "$.pollRunResult.productProvisioningStatus",
           "StringEquals": "failed",
-          "Next": "Failure"
-        },
-        {
-          "Variable": "$.pollRunResult.productProvisioningStatus",
-          "StringEquals": "awaitingDecision",
-          "Next": "Failure"
+          "Next": "Convert poll destroy status error"
         },
         {
           "Variable": "$.pollRunResult.productProvisioningStatus",
@@ -169,6 +171,17 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
         }
       ],
       "Default": "Failure"
+    },
+    "Convert poll destroy status error": {
+        "Type": "Pass",
+        "Comment": "Restructures error from the poll destroy status task to a format the notify run result task understands",
+        "Parameters": {
+            "Error": "Error applying run in TFC",
+            "Cause.$": "$.pollRunStatus.errorMessage",
+            "isWrapperError": true
+        },
+        "ResultPath": "$.errorInfo",
+        "Next": "Notify destroy result failure"
     },
     "Notify destroy result": {
       "Type": "Task",
@@ -181,10 +194,21 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
       },
       "End": true
     },
+    "Notify destroy result failure": {
+      "Type": "Task",
+      "Resource": "${aws_lambda_function.notify_run_result.arn}",
+      "Parameters": {
+        "workflowToken.$": "$.token",
+        "recordId.$": "$.recordId",
+        "tracerTag.$": "$.tracerTag",
+        "serviceCatalogOperation": "TERMINATING",
+        "error.$": "$.errorInfo.Error",
+        "errorMessage.$": "$.errorInfo.Cause"
+      },
+      "End": true
+    },
     "Failure": {
-      "Type": "Fail",
-      "Cause": "boop",
-      "Error": "womp womp"
+      "Type": "Fail"
     }
   }
 }

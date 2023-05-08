@@ -298,7 +298,11 @@ data "aws_iam_policy_document" "notify_run_result" {
 
     effect = "Allow"
 
-    actions = ["servicecatalog:NotifyProvisionProductEngineWorkflowResult"]
+    actions = [
+      "servicecatalog:NotifyProvisionProductEngineWorkflowResult",
+      "servicecatalog:NotifyTerminateProvisionedProductEngineWorkflowResult",
+      "servicecatalog:NotifyUpdateProvisionedProductEngineWorkflowResult"
+    ]
 
     resources = ["*"]
 

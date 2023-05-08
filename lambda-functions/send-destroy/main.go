@@ -23,11 +23,11 @@ type SendDestroyResponse struct {
 	TerraformRunId string `json:"terraformRunId"`
 }
 
-func HandleRequest(ctx context.Context, request SendDestroyRequest) (SendDestroyResponse, error) {
+func HandleRequest(ctx context.Context, request SendDestroyRequest) (*SendDestroyResponse, error) {
 	client, err := getTFEClient(ctx)
 	if err != nil {
-		log.Fatal(err)
-		return SendDestroyResponse{}, err
+		log.Printf("Failed to initialize TFE client: %s", err)
+		return nil, err
 	}
 
 	workspaceId := getWorkspaceName(request.AwsAccountId, request.ProvisionedProductId)
@@ -35,11 +35,11 @@ func HandleRequest(ctx context.Context, request SendDestroyRequest) (SendDestroy
 	// Get the workspace
 	workspace, err := client.Workspaces.Read(ctx, request.TerraformOrganization, workspaceId)
 	if err != nil {
-		log.Fatal(err)
-		return SendDestroyResponse{}, err
+		log.Printf("Workspace does not exist or couldn't be found: %s", err)
+		return nil, err
 	}
 
-	// Queue "terraform destroy"
+	// Queue "Terraform destroy"
 	run, err := client.Runs.Create(ctx, tfe.RunCreateOptions{
 		IsDestroy: tfe.Bool(true),
 		Message:   tfe.String("Terminating product via AWS Service Catalog"),
@@ -47,11 +47,11 @@ func HandleRequest(ctx context.Context, request SendDestroyRequest) (SendDestroy
 		AutoApply: tfe.Bool(true),
 	})
 	if err != nil {
-		log.Fatal(err)
-		return SendDestroyResponse{}, err
+		log.Printf("Failed to queue destroy run: %s", err)
+		return nil, err
 	}
 
-	return SendDestroyResponse{TerraformRunId: run.ID}, err
+	return &SendDestroyResponse{TerraformRunId: run.ID}, err
 }
 
 func main() {

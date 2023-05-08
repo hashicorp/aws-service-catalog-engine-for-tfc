@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/servicecatalog"
 	"github.com/aws/aws-sdk-go-v2/service/servicecatalog/types"
@@ -17,6 +18,8 @@ type NotifyRunResultRequest struct {
 	RecordId                string                  `json:"recordId"`
 	TracerTag               TracerTag               `json:"tracerTag"`
 	ServiceCatalogOperation ServiceCatalogOperation `json:"serviceCatalogOperation"`
+	Error                   string                  `json:"error"`
+	ErrorMessage            string                  `json:"errorMessage"`
 }
 
 type ServiceCatalogOperation string
@@ -50,18 +53,27 @@ func HandleRequest(ctx context.Context, request NotifyRunResultRequest) (*Notify
 	case request.ServiceCatalogOperation == Provisioning:
 		return NotifyProvisioningResult(ctx, serviceCatalogClient, request)
 	default:
+		log.Printf("Unknown serviceCatalogOperation: %s\n", request.ServiceCatalogOperation)
 		return nil, errors.New("unknown serviceCatalogOperation")
 	}
 }
 
 func NotifyTerminateResult(ctx context.Context, client *servicecatalog.Client, request NotifyRunResultRequest) (*NotifyRunResultResponse, error) {
+	var status = types.EngineWorkflowStatusSucceeded
+	var failureReason *string = nil
+	if request.ErrorMessage != "" {
+		failureReason = aws.String(request.ErrorMessage)
+		status = types.EngineWorkflowStatusFailed
+	}
+
+	log.Printf("Notifying terminate result %s\n", status)
 	_, err := client.NotifyTerminateProvisionedProductEngineWorkflowResult(
 		ctx,
 		&servicecatalog.NotifyTerminateProvisionedProductEngineWorkflowResultInput{
 			WorkflowToken:    &request.WorkflowToken,
 			RecordId:         &request.RecordId,
-			Status:           types.EngineWorkflowStatusSucceeded,
-			FailureReason:    nil,
+			Status:           status,
+			FailureReason:    failureReason,
 			IdempotencyToken: tfe.String(uuid.New().String()),
 		},
 	)
@@ -73,13 +85,21 @@ func NotifyTerminateResult(ctx context.Context, client *servicecatalog.Client, r
 }
 
 func NotifyProvisioningResult(ctx context.Context, client *servicecatalog.Client, request NotifyRunResultRequest) (*NotifyRunResultResponse, error) {
+	var status = types.EngineWorkflowStatusSucceeded
+	var failureReason *string = nil
+	if request.ErrorMessage != "" {
+		failureReason = FormatError(request.Error, request.ErrorMessage)
+		status = types.EngineWorkflowStatusFailed
+	}
+
+	log.Printf("Notifying provision result %s\n", status)
 	_, err := client.NotifyProvisionProductEngineWorkflowResult(
 		ctx,
 		&servicecatalog.NotifyProvisionProductEngineWorkflowResultInput{
 			WorkflowToken:    &request.WorkflowToken,
 			RecordId:         &request.RecordId,
-			Status:           types.EngineWorkflowStatusSucceeded,
-			FailureReason:    nil,
+			Status:           status,
+			FailureReason:    failureReason,
 			IdempotencyToken: tfe.String(uuid.New().String()),
 			// TODO: Parse outputs here
 			Outputs: []types.RecordOutput{},
@@ -96,6 +116,22 @@ func NotifyProvisioningResult(ctx context.Context, client *servicecatalog.Client
 	}
 
 	return nil, err
+}
+
+func FormatError(err string, errorMessage string) *string {
+	// Check if error was due to lambda timeout
+	if err == "States.Timeout" {
+		return aws.String("A lambda function invoked by the state machine has timed out")
+	}
+
+	// Max error message length is 2048
+	if len(errorMessage) <= (2048) {
+		return aws.String(errorMessage)
+	}
+
+	// Truncate error message to fit maximum failure reason length allowed by Service Catalog.
+	// We use 2045 to make room for the ellipsis.
+	return aws.String(errorMessage[:2045] + "...")
 }
 
 func main() {
