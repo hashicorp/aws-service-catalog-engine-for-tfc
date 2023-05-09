@@ -192,7 +192,10 @@ resource "aws_sfn_state_machine" "manage_provisioned_product" {
         "workflowToken.$": "$.token",
         "recordId.$": "$.recordId",
         "tracerTag.$": "$.tracerTag",
-        "serviceCatalogOperation": "PROVISIONING"
+        "serviceCatalogOperation": "PROVISIONING",
+        "awsAccountId.$": "$.identity.awsAccountId",
+        "terraformOrganization.$": "$.terraformOrganization",
+        "provisionedProductId.$": "$.provisionedProductId"
       },
       "End": true
     },
@@ -200,10 +203,14 @@ resource "aws_sfn_state_machine" "manage_provisioned_product" {
       "Type": "Task",
       "Resource": "${aws_lambda_function.notify_run_result.arn}",
       "Parameters": {
+        "terraformRunId.$": "$.sendApplyResult.terraformRunId",
         "workflowToken.$": "$.token",
         "recordId.$": "$.recordId",
         "tracerTag.$": "$.tracerTag",
         "serviceCatalogOperation": "PROVISIONING",
+        "awsAccountId.$": "$.identity.awsAccountId",
+        "terraformOrganization.$": "$.terraformOrganization",
+        "provisionedProductId.$": "$.provisionedProductId",
         "error.$": "$.errorInfo.Error",
         "errorMessage.$": "$.errorInfo.Cause"
       },

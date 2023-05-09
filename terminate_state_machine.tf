@@ -187,10 +187,14 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
       "Type": "Task",
       "Resource": "${aws_lambda_function.notify_run_result.arn}",
       "Parameters": {
+        "terraformRunId.$": "$.sendDestroyResult.terraformRunId",
         "workflowToken.$": "$.token",
         "recordId.$": "$.recordId",
         "tracerTag.$": "$.tracerTag",
-        "serviceCatalogOperation": "TERMINATING"
+        "serviceCatalogOperation": "TERMINATING",
+        "awsAccountId.$": "$.identity.awsAccountId",
+        "terraformOrganization.$": "$.terraformOrganization",
+        "provisionedProductId.$": "$.provisionedProductId"
       },
       "End": true
     },
@@ -198,10 +202,14 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
       "Type": "Task",
       "Resource": "${aws_lambda_function.notify_run_result.arn}",
       "Parameters": {
+        "terraformRunId.$": "$.sendDestroyResult.terraformRunId",
         "workflowToken.$": "$.token",
         "recordId.$": "$.recordId",
         "tracerTag.$": "$.tracerTag",
         "serviceCatalogOperation": "TERMINATING",
+        "awsAccountId.$": "$.identity.awsAccountId",
+        "terraformOrganization.$": "$.terraformOrganization",
+        "provisionedProductId.$": "$.provisionedProductId",
         "error.$": "$.errorInfo.Error",
         "errorMessage.$": "$.errorInfo.Cause"
       },
