@@ -23,7 +23,7 @@ provider "aws" {
 # # # #
 # THE TEMPLATE OF THE PRODUCT
 
-data "aws_s3_bucket_object" "artifact" {
+data "aws_s3_object" "artifact" {
   bucket = var.artifact_bucket_name
   key    = var.artifact_object_key
 }
@@ -31,32 +31,31 @@ data "aws_s3_bucket_object" "artifact" {
 # # # #
 # THE PRODUCT IN SERVICE CATALOG
 
-resource "aws_servicecatalog_portfolio" "portfolio" {
-  name          = "Example Portfolio"
-  description   = "List of my examples"
-  provider_name = "Taylor Swift"
-}
-
 resource "aws_servicecatalog_product" "example" {
   name  = var.product_name
-  owner = "Swift"
+  owner = var.service_catalog_product_owner
   type  = "TERRAFORM_OPEN_SOURCE"
 
   provisioning_artifact_parameters {
-    disable_template_validation = false
-    template_url                = "https://s3.amazonaws.com/${data.aws_s3_bucket_object.artifact.bucket}/${data.aws_s3_bucket_object.artifact.key}"
+    disable_template_validation = true
+    template_url                = "https://s3.amazonaws.com/${data.aws_s3_object.artifact.bucket}/${data.aws_s3_object.artifact.key}"
     type                        = "TERRAFORM_OPEN_SOURCE"
   }
 }
 
 resource "aws_servicecatalog_product_portfolio_association" "example" {
-  portfolio_id = aws_servicecatalog_portfolio.portfolio.id
+  for_each = local.unique_portfolio_ids
+  portfolio_id = each.value
   product_id   = aws_servicecatalog_product.example.id
 }
 
 resource "aws_servicecatalog_constraint" "example" {
-  description  = "Back off, man. I'm a scientist."
-  portfolio_id = aws_servicecatalog_portfolio.portfolio.id
+  # need to wait a bit after the role is created as service catalog will immediately try to assume the role to test it.
+  depends_on = [time_sleep.wait_for_launch_constraint_role_to_be_assumable]
+
+  for_each = local.unique_portfolio_ids
+  description  = "Launch constraint for the ${var.product_name} product."
+  portfolio_id = each.value
   product_id   = aws_servicecatalog_product.example.id
   type         = "LAUNCH"
 
@@ -70,7 +69,7 @@ data "aws_iam_openid_connect_provider" "tfc_provider" {
 }
 
 resource "aws_iam_role" "example_product_launch_role" {
-  name = "example_product_launch_role"
+  name = "${local.class_case_product_name}LaunchRole"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -115,6 +114,12 @@ resource "aws_iam_role" "example_product_launch_role" {
       }
     ]
   })
+}
+
+resource "time_sleep" "wait_for_launch_constraint_role_to_be_assumable" {
+  depends_on = [aws_iam_role.example_product_launch_role, aws_iam_role_policy.example_product_launch_constraint_policy]
+
+  create_duration = "15s"
 }
 
 resource "aws_iam_role_policy" "example_product_launch_constraint_policy" {

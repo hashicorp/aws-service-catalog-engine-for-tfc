@@ -1,4 +1,20 @@
+variable "service_catalog_portfolio_ids" {
+  type = list(string)
+  description = "ID of the AWS Service Catalog Portfolios to assign the product to"
+}
+
+locals {
+  unique_portfolio_ids = { for index, portfolio_id in var.service_catalog_portfolio_ids: index => portfolio_id }
+}
+
+variable "service_catalog_product_owner" {
+  type = string
+  description = "Name of the owner of the AWS Service Catalog Product"
+  default = "Service Catalog Admin"
+}
+
 variable "tfc_provider_arn" {
+  type = string
   description = "Arn of the AWS IAM OpenID Connect Provider that establishes trust with TFC"
 }
 
@@ -16,6 +32,12 @@ variable "tfc_organization" {
 variable "product_name" {
   type = string
   description = "Name of the Service Catalog product"
+}
+
+locals {
+  _product_name_convert_snake_case_to_class_case = join("", [for word in split("_", var.product_name): title(word)])
+  _product_name_convert_kebab_case_to_class_case = join("", [for word in split("-", local._product_name_convert_snake_case_to_class_case): title(word)])
+  class_case_product_name = local._product_name_convert_kebab_case_to_class_case
 }
 
 variable "artifact_bucket_name" {
