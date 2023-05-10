@@ -48,8 +48,8 @@ resource "aws_s3_bucket" "my_bucket" {
 resource "aws_s3_bucket_object" "object" {
   bucket = aws_s3_bucket.my_bucket.bucket
   key    = "product.tar.gz"
-  source = "${path.module}/product.tar.gz"
-  etag   = filemd5("${path.module}/product.tar.gz")
+  source = "${path.module}/example-product/product.tar.gz"
+  etag   = filemd5("${path.module}/example-product/product.tar.gz")
 }
 
 module "example_product" {
