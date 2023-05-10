@@ -307,6 +307,16 @@ data "aws_iam_policy_document" "notify_run_result" {
     resources = ["*"]
 
   }
+
+  statement {
+    sid = "tfeCredentialsAccess"
+
+    effect = "Allow"
+
+    actions = ["secretsmanager:GetSecretValue"]
+
+    resources = ["*"]
+  }
 }
 
 data "archive_file" "notify_run_result" {
@@ -320,7 +330,14 @@ resource "aws_lambda_function" "notify_run_result" {
   function_name = "terraform_engine_notify_run_result_lambda"
   role          = aws_iam_role.notify_run_result.arn
   handler       = "main"
-  timeout = 30
+  timeout = 60
+
+  environment {
+    variables = {
+      TFE_CREDENTIALS_SECRET_ID = aws_secretsmanager_secret_version.tfe_credentials.arn
+      TFE_CREDENTIALS_SECRET_VERSION_ID = aws_secretsmanager_secret_version.tfe_credentials.version_id
+    }
+  }
 
   source_code_hash = data.archive_file.notify_run_result.output_base64sha256
 

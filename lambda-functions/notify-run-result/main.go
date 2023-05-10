@@ -55,6 +55,9 @@ func HandleRequest(ctx context.Context, request NotifyRunResultRequest) (*Notify
 	serviceCatalogClient := servicecatalog.NewFromConfig(sdkConfig)
 
 	tfeClient, err := getTFEClient(ctx, sdkConfig)
+	if err != nil {
+		return nil, err
+	}
 
 	switch {
 	case request.ServiceCatalogOperation == Terminating:
