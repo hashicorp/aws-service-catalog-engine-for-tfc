@@ -42,7 +42,7 @@ func HandleRequest(ctx context.Context, request SendDestroyRequest) (*SendDestro
 	// Queue "Terraform destroy"
 	run, err := client.Runs.Create(ctx, tfe.RunCreateOptions{
 		IsDestroy: tfe.Bool(true),
-		Message:   tfe.String("Terminating product via AWS Service Catalog"),
+		Message:   tfe.String("Terminating example-product via AWS Service Catalog"),
 		Workspace: workspace,
 		AutoApply: tfe.Bool(true),
 	})

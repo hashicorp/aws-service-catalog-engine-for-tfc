@@ -54,5 +54,5 @@ func createTarGzipArchive(files []string, outputPath string) {
 }
 
 func main() {
-	createTarGzipArchive([]string{"main.tf"}, "product.tar.gz")
+	createTarGzipArchive([]string{"main.tf"}, "example-product.tar.gz")
 }

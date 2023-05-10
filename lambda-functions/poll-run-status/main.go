@@ -119,7 +119,7 @@ func awaitingDecision(runStatus tfe.RunStatus) PollRunStatusResponse {
 	return PollRunStatusResponse{
 		ProductProvisioningStatus: "failed",
 		RunStatus:                 runStatus,
-		ErrorMessage:              "Run requires approval in TFC. Approve the run in TFC, then update the product in Service Catalog to clear the error.",
+		ErrorMessage:              "Run requires approval in TFC. Approve the run in TFC, then update the example-product in Service Catalog to clear the error.",
 	}
 }
 

@@ -4,11 +4,6 @@ terraform {
       source  = "hashicorp/aws"
       version = "4.63.0"
     }
-
-    random = {
-      source  = "hashicorp/random"
-      version = "3.5.1"
-    }
   }
 }
 
@@ -25,25 +20,12 @@ provider "aws" {
   }
 }
 
-resource "random_string" "random" {
-  length  = 16
-  special = false
-  lower   = true
-  upper   = false
-}
-
 # # # #
 # THE TEMPLATE OF THE PRODUCT
 
-resource "aws_s3_bucket" "my_bucket" {
-  bucket = "service-catalog-example-product-${random_string.random.result}"
-}
-
-resource "aws_s3_bucket_object" "object" {
-  bucket = aws_s3_bucket.my_bucket.bucket
-  key    = "product.tar.gz"
-  source = "${path.module}/product.tar.gz"
-  etag   = filemd5("${path.module}/product.tar.gz")
+data "aws_s3_bucket_object" "artifact" {
+  bucket = var.artifact_bucket_name
+  key    = var.artifact_object_key
 }
 
 # # # #
@@ -56,14 +38,13 @@ resource "aws_servicecatalog_portfolio" "portfolio" {
 }
 
 resource "aws_servicecatalog_product" "example" {
-  name  = "service-catalog-example-product-${random_string.random.result}"
+  name  = var.product_name
   owner = "Swift"
   type  = "TERRAFORM_OPEN_SOURCE"
 
   provisioning_artifact_parameters {
-    # TODO: re-enable this to test
-    disable_template_validation = true
-    template_url                = "https://s3.amazonaws.com/${aws_s3_bucket.my_bucket.bucket}/${aws_s3_bucket_object.object.key}"
+    disable_template_validation = false
+    template_url                = "https://s3.amazonaws.com/${data.aws_s3_bucket_object.artifact.bucket}/${data.aws_s3_bucket_object.artifact.key}"
     type                        = "TERRAFORM_OPEN_SOURCE"
   }
 }
@@ -80,8 +61,7 @@ resource "aws_servicecatalog_constraint" "example" {
   type         = "LAUNCH"
 
   parameters = jsonencode({
-    "RoleArn" : aws_iam_role.example_product_launch_role.arn,
-    "TerraformOrganization" : "tf-rocket-tfcb-test"
+    "RoleArn" : aws_iam_role.example_product_launch_role.arn
   })
 }
 
@@ -112,8 +92,7 @@ resource "aws_iam_role" "example_product_launch_role" {
         Condition = {
           StringLike = {
             "aws:PrincipalArn" = [
-              # TODO: Make sure this Role Arn actually points to the TFE Parameter Parser
-              "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/ServiceCatalogTerraformTFEParameterParserRole*"
+              "${var.parameter_parser_role_arn}*"
             ]
           }
         }
