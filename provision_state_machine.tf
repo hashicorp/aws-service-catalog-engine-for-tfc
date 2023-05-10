@@ -189,6 +189,7 @@ resource "aws_sfn_state_machine" "manage_provisioned_product" {
       "Type": "Task",
       "Resource": "${aws_lambda_function.notify_run_result.arn}",
       "Parameters": {
+        "terraformRunId.$": "$.sendApplyResult.terraformRunId",
         "workflowToken.$": "$.token",
         "recordId.$": "$.recordId",
         "tracerTag.$": "$.tracerTag",
