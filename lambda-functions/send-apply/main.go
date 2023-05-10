@@ -40,7 +40,6 @@ type SendApplyResponse struct {
 func HandleRequest(ctx context.Context, request SendApplyRequest) (*SendApplyResponse, error) {
 	sdkConfig, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		log.Fatal(err)
 		return nil, err
 	}
 
@@ -49,40 +48,18 @@ func HandleRequest(ctx context.Context, request SendApplyRequest) (*SendApplyRes
 
 	client, err := getTFEClient(ctx, secretsManager)
 	if err != nil {
-		log.Fatal(err)
 		return nil, err
 	}
 
-	// Create the workspace
-	w, err := client.Workspaces.Create(ctx, request.TerraformOrganization, tfe.WorkspaceCreateOptions{
-		Name: tfe.String(getWorkspaceName(request.AwsAccountId, request.ProvisionedProductId)),
-	})
+	// Create or find the workspace
+	workspaceName := getWorkspaceName(request.AwsAccountId, request.ProvisionedProductId)
+	w, err := FindOrCreateWorkspace(ctx, client, request.TerraformOrganization, workspaceName)
 	if err != nil {
-		log.Fatal(err)
 		return nil, err
 	}
 
 	// Configure ENV variables for OIDC
-	_, err = client.Variables.Create(ctx, w.ID, tfe.VariableCreateOptions{
-		Key:         tfe.String("TFC_AWS_PROVIDER_AUTH"),
-		Value:       tfe.String("true"),
-		Description: tfe.String("Enable the Workload Identity integration for AWS."),
-		Category:    tfe.Category(tfe.CategoryEnv),
-		HCL:         tfe.Bool(false),
-		Sensitive:   tfe.Bool(false),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = client.Variables.Create(ctx, w.ID, tfe.VariableCreateOptions{
-		Key:         tfe.String("TFC_AWS_RUN_ROLE_ARN"),
-		Value:       tfe.String(request.LaunchRoleArn),
-		Description: tfe.String("The AWS role arn runs will use to authenticate."),
-		Category:    tfe.Category(tfe.CategoryEnv),
-		HCL:         tfe.Bool(false),
-		Sensitive:   tfe.Bool(false),
-	})
+	err = UpdateWorkspaceVariables(ctx, client, w, request.LaunchRoleArn)
 	if err != nil {
 		return nil, err
 	}
@@ -95,23 +72,21 @@ func HandleRequest(ctx context.Context, request SendApplyRequest) (*SendApplyRes
 		},
 	)
 	if err != nil {
-		log.Fatal(err)
 		return nil, err
 	}
 
 	bucket, key := resolveArtifactPath(request.Artifact.Path)
 	body, err := DownloadS3File(ctx, key, bucket, s3Client)
 	if err != nil {
-		log.Fatal(err)
 		return nil, err
 	}
 
 	err = client.ConfigurationVersions.UploadTarGzip(ctx, cv.UploadURL, body)
 	if err != nil {
-		log.Fatal(err)
 		return nil, err
 	}
 
+	// TODO: Increase this timeout to as large as possible to account for large artifacts
 	uploadTimeoutInSeconds := 120
 	for i := 0; ; i++ {
 		refreshed, err := client.ConfigurationVersions.Read(ctx, cv.ID)
@@ -121,7 +96,6 @@ func HandleRequest(ctx context.Context, request SendApplyRequest) (*SendApplyRes
 		}
 
 		if i > uploadTimeoutInSeconds {
-			log.Fatal(err)
 			return nil, err
 		}
 
@@ -134,7 +108,6 @@ func HandleRequest(ctx context.Context, request SendApplyRequest) (*SendApplyRes
 		AutoApply:            tfe.Bool(true),
 	})
 	if err != nil {
-		log.Fatal(err)
 		return nil, err
 	}
 
@@ -209,4 +182,85 @@ func DownloadS3File(ctx context.Context, objectKey string, bucket string, s3Clie
 // Get the workspace name, which is `${accountId} - ${provisionedProductId}`
 func getWorkspaceName(awsAccountId string, provisionedProductId string) string {
 	return fmt.Sprintf("%s-%s", awsAccountId, provisionedProductId)
+}
+
+func FindOrCreateWorkspace(ctx context.Context, client *tfe.Client, organizationName string, workspaceName string) (*tfe.Workspace, error) {
+	// Check if the workspace already exists...
+	workspaces, err := client.Workspaces.List(ctx, organizationName, &tfe.WorkspaceListOptions{
+		ListOptions: tfe.ListOptions{
+			PageNumber: 0,
+			PageSize:   100,
+		},
+		Search: workspaceName,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, workspace := range workspaces.Items {
+		// Check for exact name match, because the search we made is a partial search
+		if workspace.Name == workspaceName {
+			return workspace, nil
+		}
+	}
+
+	// Otherwise, create the workspace
+	return client.Workspaces.Create(ctx, organizationName, tfe.WorkspaceCreateOptions{
+		Name: tfe.String(workspaceName),
+	})
+}
+
+func UpdateWorkspaceVariables(ctx context.Context, client *tfe.Client, w *tfe.Workspace, launchRoleArn string) error {
+	log.Default().Print("Updating variable TFC_AWS_PROVIDER_AUTH")
+	err := FindOrCreateVariable(ctx, client, w, "TFC_AWS_PROVIDER_AUTH", "true", "Enable the Workload Identity integration for AWS.")
+	if err != nil {
+		return err
+	}
+
+	log.Default().Print("Updating variable TFC_AWS_RUN_ROLE_ARN")
+	return FindOrCreateVariable(ctx, client, w, "TFC_AWS_RUN_ROLE_ARN", launchRoleArn, "The AWS role arn runs will use to authenticate.")
+}
+
+func FindOrCreateVariable(ctx context.Context, client *tfe.Client, w *tfe.Workspace, key string, value string, description string) error {
+	// TODO: Update to support workspaces that contain more than 100 variables
+	variables, err := client.Variables.List(ctx, w.ID, &tfe.VariableListOptions{
+		ListOptions: tfe.ListOptions{
+			PageNumber: 0,
+			PageSize:   100,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	var variableToUpdate *tfe.Variable
+	for _, v := range variables.Items {
+		if v.Key == key {
+			variableToUpdate = v
+			break
+		}
+	}
+
+	if variableToUpdate != nil {
+		// Update the variables
+		log.Default().Printf("Updating variable with ID: %s", variableToUpdate.ID)
+		_, err = client.Variables.Update(ctx, w.ID, variableToUpdate.ID, tfe.VariableUpdateOptions{
+			Key:      tfe.String(key),
+			Value:    tfe.String(value),
+			Category: tfe.Category(tfe.CategoryEnv),
+			HCL:      tfe.Bool(false),
+		})
+		return err
+	}
+
+	// Create the variable as it does not currently exist
+	_, err = client.Variables.Create(ctx, w.ID, tfe.VariableCreateOptions{
+		Key:         tfe.String(key),
+		Value:       tfe.String(value),
+		Description: tfe.String(description),
+		Category:    tfe.Category(tfe.CategoryEnv),
+		HCL:         tfe.Bool(false),
+		Sensitive:   tfe.Bool(false),
+	})
+	return err
 }

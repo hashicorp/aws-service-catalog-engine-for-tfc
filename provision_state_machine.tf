@@ -11,14 +11,14 @@ data "aws_iam_policy_document" "manage_provisioned_product" {
   }
 }
 
-resource "aws_iam_role" "tfc_manage_provisioned_product" {
-  name               = "tfc_manage_provisioned_product_state_machine"
+resource "aws_iam_role" "provision_state_machine" {
+  name               = "ServiceCatalogTFCProvisionOperationStateMachineRole"
   assume_role_policy = data.aws_iam_policy_document.manage_provisioned_product.json
 }
 
 resource "aws_iam_role_policy" "manage_provisioned_product_role_policy" {
-  name   = "tfc_manage_provisioned_product_role_policy"
-  role   = aws_iam_role.tfc_manage_provisioned_product.id
+  name   = "ServiceCatalogTFCProvisionOperationStateMachineRolePolicy"
+  role   = aws_iam_role.provision_state_machine.id
   policy = data.aws_iam_policy_document.policy_for_manage_provisioned_product.json
 }
 
@@ -59,17 +59,17 @@ data "aws_iam_policy_document" "policy_for_manage_provisioned_product" {
   }
 }
 
-resource "aws_cloudwatch_log_group" "tfc_manage_provisioned_product" {
-  name = "tfc_manage_provisioned_product_state_machine"
+resource "aws_cloudwatch_log_group" "provision_state_machine" {
+  name = "ServiceCatalogTFCProvisionOperationStateMachine"
 }
 
-resource "aws_sfn_state_machine" "manage_provisioned_product" {
-  name     = "tfc_manage_provisioned_product"
-  role_arn = aws_iam_role.tfc_manage_provisioned_product.arn
+resource "aws_sfn_state_machine" "provision_state_machine" {
+  name     = "ServiceCatalogTFCProvisionOperationStateMachine"
+  role_arn = aws_iam_role.provision_state_machine.arn
   logging_configuration {
     level                  = "ALL"
     include_execution_data = true
-    log_destination        = "${aws_cloudwatch_log_group.tfc_manage_provisioned_product.arn}:*"
+    log_destination        = "${aws_cloudwatch_log_group.provision_state_machine.arn}:*"
   }
 
   tracing_configuration {

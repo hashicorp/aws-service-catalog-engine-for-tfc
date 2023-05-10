@@ -45,6 +45,7 @@ def __start_state_machine(record: dict, state_machine_arn: str):
     provisioned_product_id: str = state_machine_payload[PROVISIONED_PRODUCT_ID_KEY]
     record_id: str = state_machine_payload[RECORD_ID_KEY]
     execution_name = f'{provisioned_product_id}-{record_id}'
+    # TODO: get organization dynamically
     state_machine_payload[TERRAFORM_ORGANIZATION] = 'tf-rocket-tfcb-test'
 
     log.info(f'Starting state machine {state_machine_arn} with token {token} & name: {execution_name} & payload: {state_machine_payload}')

@@ -91,6 +91,7 @@ func GetCurrentStateVersionForApply(ctx context.Context, client *tfe.Client, app
 	}
 
 	if len(a.StateVersions) == 0 {
+		// TODO: Fetch latest state version instead
 		return nil, errors.New("run has no state version")
 	}
 

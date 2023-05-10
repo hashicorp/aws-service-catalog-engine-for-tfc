@@ -36,6 +36,7 @@ type ServiceCatalogOperation string
 const (
 	Terminating  ServiceCatalogOperation = "TERMINATING"
 	Provisioning ServiceCatalogOperation = "PROVISIONING"
+	Updating     ServiceCatalogOperation = "UPDATING"
 )
 
 type TracerTag struct {
@@ -64,6 +65,8 @@ func HandleRequest(ctx context.Context, request NotifyRunResultRequest) (*Notify
 		return NotifyTerminateResult(ctx, serviceCatalogClient, tfeClient, request)
 	case request.ServiceCatalogOperation == Provisioning:
 		return NotifyProvisioningResult(ctx, serviceCatalogClient, tfeClient, request)
+	case request.ServiceCatalogOperation == Updating:
+		return NotifyUpdatingResult(ctx, serviceCatalogClient, tfeClient, request)
 	default:
 		log.Printf("Unknown serviceCatalogOperation: %s\n", request.ServiceCatalogOperation)
 		return nil, errors.New("unknown serviceCatalogOperation")
@@ -131,6 +134,38 @@ func NotifyProvisioningResult(ctx context.Context, scClient *servicecatalog.Clie
 					Value: tfe.String(request.TracerTag.TracerTagValue),
 				},
 			},
+		},
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return nil, err
+}
+
+func NotifyUpdatingResult(ctx context.Context, scClient *servicecatalog.Client, tfeClient *tfe.Client, request NotifyRunResultRequest) (*NotifyRunResultResponse, error) {
+	outputs, err := FetchRunOutputs(ctx, tfeClient, request.TerraformRunId)
+	if err != nil {
+		return nil, err
+	}
+
+	var status = types.EngineWorkflowStatusSucceeded
+	var failureReason *string = nil
+	if request.ErrorMessage != "" {
+		failureReason = FormatError(request.Error, request.ErrorMessage)
+		status = types.EngineWorkflowStatusFailed
+	}
+
+	log.Printf("Notifying update result %s\n", status)
+	_, err = scClient.NotifyUpdateProvisionedProductEngineWorkflowResult(
+		ctx,
+		&servicecatalog.NotifyUpdateProvisionedProductEngineWorkflowResultInput{
+			IdempotencyToken: tfe.String(uuid.New().String()),
+			RecordId:         &request.RecordId,
+			Status:           status,
+			WorkflowToken:    &request.WorkflowToken,
+			FailureReason:    failureReason,
+			Outputs:          outputs,
 		},
 	)
 	if err != nil {
