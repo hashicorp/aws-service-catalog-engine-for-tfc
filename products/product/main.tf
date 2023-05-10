@@ -25,3 +25,7 @@ resource "random_string" "random" {
 resource "aws_s3_bucket" "my-bucket" {
   bucket = "aws-tfc-service-catalog-example-${random_string.random.result}"
 }
+
+output "bucket_name" {
+  value = aws_s3_bucket.my-bucket.bucket
+}
