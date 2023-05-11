@@ -98,7 +98,8 @@ resource "aws_sfn_state_machine" "update_state_machine" {
         "terraformOrganization.$": "$.terraformOrganization",
         "provisionedProductId.$": "$.provisionedProductId",
         "artifact.$": "$.artifact",
-        "launchRoleArn.$": "$.launchRoleArn"
+        "launchRoleArn.$": "$.launchRoleArn",
+        "productId.$": "$.productId"
       },
       "ResultSelector": {
         "terraformRunId.$": "$.terraformRunId"
@@ -197,6 +198,13 @@ resource "aws_sfn_state_machine" "update_state_machine" {
         "terraformOrganization.$": "$.terraformOrganization",
         "provisionedProductId.$": "$.provisionedProductId"
       },
+      "Catch": [
+          {
+              "ErrorEquals": [ "States.TaskFailed" ],
+              "ResultPath": "$.errorInfo",
+              "Next": "Notify update result failure"
+          }
+      ],
       "End": true
     },
     "Notify update result failure": {

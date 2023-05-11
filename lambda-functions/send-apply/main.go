@@ -1,19 +1,15 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/hashicorp/go-tfe"
-	"io"
 	"log"
 	"os"
 	"strings"
@@ -26,6 +22,7 @@ type SendApplyRequest struct {
 	ProvisionedProductId  string   `json:"provisionedProductId"`
 	Artifact              Artifact `json:"artifact"`
 	LaunchRoleArn         string   `json:"launchRoleArn"`
+	ProductId             string   `json:"productId"`
 }
 
 type Artifact struct {
@@ -51,9 +48,16 @@ func HandleRequest(ctx context.Context, request SendApplyRequest) (*SendApplyRes
 		return nil, err
 	}
 
-	// Create or find the workspace
+	// Find or create the Project
+	projectName := request.ProductId
+	p, err := FindOrCreateProject(ctx, client, request.TerraformOrganization, projectName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create or find the Workspace
 	workspaceName := getWorkspaceName(request.AwsAccountId, request.ProvisionedProductId)
-	w, err := FindOrCreateWorkspace(ctx, client, request.TerraformOrganization, workspaceName)
+	w, err := FindOrCreateWorkspace(ctx, client, request.TerraformOrganization, p, workspaceName)
 	if err != nil {
 		return nil, err
 	}
@@ -114,6 +118,32 @@ func HandleRequest(ctx context.Context, request SendApplyRequest) (*SendApplyRes
 	return &SendApplyResponse{TerraformRunId: run.ID}, err
 }
 
+func FindOrCreateProject(ctx context.Context, client *tfe.Client, organizationName string, name string) (*tfe.Project, error) {
+	// Check if the Project already exists...
+	projects, err := client.Projects.List(ctx, organizationName, &tfe.ProjectListOptions{
+		ListOptions: tfe.ListOptions{
+			PageNumber: 0,
+			PageSize:   100,
+		},
+		Name: name,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, project := range projects.Items {
+		// Check for exact name match, because the search we made is a partial search
+		if project.Name == name {
+			return project, nil
+		}
+	}
+
+	// Otherwise, create the Project
+	return client.Projects.Create(ctx, organizationName, tfe.ProjectCreateOptions{
+		Name: name,
+	})
+}
+
 func main() {
 	lambda.Start(HandleRequest)
 }
@@ -158,33 +188,12 @@ func resolveArtifactPath(artifactPath string) (string, string) {
 	return bucket, key
 }
 
-func DownloadS3File(ctx context.Context, objectKey string, bucket string, s3Client *s3.Client) (io.Reader, error) {
-
-	buffer := manager.NewWriteAtBuffer([]byte{})
-
-	downloader := manager.NewDownloader(s3Client)
-
-	numBytes, err := downloader.Download(ctx, buffer, &s3.GetObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(objectKey),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if numBytes < 1 {
-		return nil, errors.New("zero bytes written to memory")
-	}
-
-	return bytes.NewReader(buffer.Bytes()), nil
-}
-
 // Get the workspace name, which is `${accountId} - ${provisionedProductId}`
 func getWorkspaceName(awsAccountId string, provisionedProductId string) string {
 	return fmt.Sprintf("%s-%s", awsAccountId, provisionedProductId)
 }
 
-func FindOrCreateWorkspace(ctx context.Context, client *tfe.Client, organizationName string, workspaceName string) (*tfe.Workspace, error) {
+func FindOrCreateWorkspace(ctx context.Context, client *tfe.Client, organizationName string, project *tfe.Project, workspaceName string) (*tfe.Workspace, error) {
 	// Check if the workspace already exists...
 	workspaces, err := client.Workspaces.List(ctx, organizationName, &tfe.WorkspaceListOptions{
 		ListOptions: tfe.ListOptions{
@@ -204,9 +213,10 @@ func FindOrCreateWorkspace(ctx context.Context, client *tfe.Client, organization
 		}
 	}
 
-	// Otherwise, create the workspace
+	// Otherwise, create the Workspace
 	return client.Workspaces.Create(ctx, organizationName, tfe.WorkspaceCreateOptions{
-		Name: tfe.String(workspaceName),
+		Name:    tfe.String(workspaceName),
+		Project: project,
 	})
 }
 

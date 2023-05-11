@@ -106,7 +106,7 @@ func NotifyTerminateResult(ctx context.Context, scClient *servicecatalog.Client,
 }
 
 func NotifyProvisioningResult(ctx context.Context, scClient *servicecatalog.Client, tfeClient *tfe.Client, request NotifyRunResultRequest) (*NotifyRunResultResponse, error) {
-	outputs, err := FetchRunOutputs(ctx, tfeClient, request.TerraformRunId)
+	outputs, err := FetchRunOutputs(ctx, tfeClient, request)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func NotifyProvisioningResult(ctx context.Context, scClient *servicecatalog.Clie
 }
 
 func NotifyUpdatingResult(ctx context.Context, scClient *servicecatalog.Client, tfeClient *tfe.Client, request NotifyRunResultRequest) (*NotifyRunResultResponse, error) {
-	outputs, err := FetchRunOutputs(ctx, tfeClient, request.TerraformRunId)
+	outputs, err := FetchRunOutputs(ctx, tfeClient, request)
 	if err != nil {
 		return nil, err
 	}

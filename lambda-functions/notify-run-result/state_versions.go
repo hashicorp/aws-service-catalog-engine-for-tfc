@@ -7,18 +7,26 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/servicecatalog/types"
 	"github.com/hashicorp/go-tfe"
+	"log"
 	"net/url"
 	"regexp"
 )
 
-func FetchRunOutputs(ctx context.Context, client *tfe.Client, terraformRunId string) ([]types.RecordOutput, error) {
-	run, err := client.Runs.Read(ctx, terraformRunId)
+func FetchRunOutputs(ctx context.Context, client *tfe.Client, request NotifyRunResultRequest) ([]types.RecordOutput, error) {
+	// Get workspace name
+	workspaceName := getWorkspaceName(request.AwsAccountId, request.ProvisionedProductId)
+	w, err := client.Workspaces.Read(ctx, request.TerraformOrganization, workspaceName)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get state version of the apply
-	stateVersion, err := GetStateVersionFromRun(ctx, client, run.ID)
+	run, err := client.Runs.Read(ctx, request.TerraformRunId)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get state version of the Apply
+	stateVersion, err := GetStateVersionFromRun(ctx, client, run.ID, w)
 	if err != nil {
 		return nil, err
 	}
@@ -38,20 +46,20 @@ func FetchRunOutputs(ctx context.Context, client *tfe.Client, terraformRunId str
 	return recordOutputs, nil
 }
 
-func GetStateVersionFromRun(ctx context.Context, client *tfe.Client, runId string) (*tfe.StateVersion, error) {
+func GetStateVersionFromRun(ctx context.Context, client *tfe.Client, runId string, workspace *tfe.Workspace) (*tfe.StateVersion, error) {
 	run, err := client.Runs.Read(ctx, runId)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get the apply
+	// Get the Apply
 	if run.Apply == nil {
 		return nil, errors.New("run from TFC was missing apply data, retry again later")
 	}
 
 	applyID := run.Apply.ID
 
-	return GetCurrentStateVersionForApply(ctx, client, applyID)
+	return GetCurrentStateVersionForApply(ctx, client, applyID, workspace)
 }
 
 // Apply represents a Terraform Enterprise apply.
@@ -66,7 +74,7 @@ type Apply struct {
 	StateVersions        []*tfe.StateVersion        `jsonapi:"relation,state-versions,omitempty"`
 }
 
-func GetCurrentStateVersionForApply(ctx context.Context, client *tfe.Client, applyID string) (*tfe.StateVersion, error) {
+func GetCurrentStateVersionForApply(ctx context.Context, client *tfe.Client, applyID string, workspace *tfe.Workspace) (*tfe.StateVersion, error) {
 	if !validStringID(&applyID) {
 		return nil, tfe.ErrInvalidApplyID
 	}
@@ -77,12 +85,14 @@ func GetCurrentStateVersionForApply(ctx context.Context, client *tfe.Client, app
 		return nil, err
 	}
 
-	// Get apply
+	// Get the Apply
 	a := &Apply{}
 	err = req.Do(ctx, a)
 	if err != nil {
 		return nil, err
 	}
+
+	log.Default().Printf("Apply status is currently: %s", a.Status)
 
 	// We expect there will be only one state version for the Apply. It is a has-many relationship due to
 	// legacy decisions, but all modern versions of Terraform should only have a single State Version.
@@ -90,12 +100,20 @@ func GetCurrentStateVersionForApply(ctx context.Context, client *tfe.Client, app
 		return nil, errors.New("too many state versions exist for this run to determine the current state version")
 	}
 
+	var currentStateVersion *tfe.StateVersion
 	if len(a.StateVersions) == 0 {
-		// TODO: Fetch latest state version instead
-		return nil, errors.New("run has no state version")
-	}
+		// If Run wasn't applied due to no changes being present in the Plan, fetch the latest State Version
+		currentStateVersion, err = client.StateVersions.ReadCurrent(ctx, workspace.ID)
+		if err != nil {
+			return nil, err
+		}
 
-	currentStateVersion := a.StateVersions[0]
+		if currentStateVersion == nil {
+			return nil, errors.New("run has no state version")
+		}
+	} else {
+		currentStateVersion = a.StateVersions[0]
+	}
 
 	return currentStateVersion, nil
 }
