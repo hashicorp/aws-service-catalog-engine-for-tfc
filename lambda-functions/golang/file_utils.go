@@ -15,6 +15,7 @@ import (
 	"strings"
 	"path"
 	"fmt"
+	"time"
 )
 
 func DownloadS3File(ctx context.Context, objectKey string, bucket string, s3Client *s3.Client) (*os.File, error) {
@@ -76,7 +77,8 @@ func UnzipFile(compressed *os.File) (*os.File, error) {
 	}
 
 	// Create new tmp file for uncompressed source
-	tmpFileName := strings.TrimSuffix(path.Base(compressed.Name()), filepath.Ext(compressed.Name()))
+	tmpFileNameSuffix := strings.TrimSuffix(path.Base(compressed.Name()), filepath.Ext(compressed.Name()))
+	tmpFileName := fmt.Sprintf("%d-%s", time.Now().Unix(), tmpFileNameSuffix)
 	tmpDir := os.TempDir()
 	tmpFilePath := path.Join(tmpDir, tmpFileName)
 	destinationFile, err := os.OpenFile(tmpFilePath, os.O_RDWR|os.O_CREATE, os.ModePerm)
@@ -120,7 +122,8 @@ func ZipFile(uncompressed *os.File) (*os.File, error) {
 	defer originalSource.Close()
 
 	// Create a new, gzipped file
-	gzippedFileName := fmt.Sprintf("%s.gz", path.Base(originalSource.Name()))
+	gzippedFileNameSuffix := fmt.Sprintf("%s.gz", path.Base(originalSource.Name()))
+	gzippedFileName := fmt.Sprintf("%d-%s", time.Now().Unix(), gzippedFileNameSuffix)
 	tmpDir := os.TempDir()
 	tmpFilePath := path.Join(tmpDir, gzippedFileName)
 	gzippedFile, err := os.OpenFile(tmpFilePath, os.O_RDWR|os.O_CREATE, os.ModePerm)
