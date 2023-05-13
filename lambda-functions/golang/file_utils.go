@@ -1,4 +1,4 @@
-package main
+package golang
 
 import (
 	"archive/tar"
@@ -11,6 +11,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"path/filepath"
+	"strings"
+	"path"
+	"fmt"
 )
 
 func DownloadS3File(ctx context.Context, objectKey string, bucket string, s3Client *s3.Client) (*os.File, error) {
@@ -34,18 +38,20 @@ func DownloadS3File(ctx context.Context, objectKey string, bucket string, s3Clie
 	}
 
 	if err := tmp.Close(); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return tmp, nil
 }
 
 func UploadS3File(ctx context.Context, s3Client *s3.Client, objectKey string, bucket string, file *os.File) error {
-	// Upload rezipped file to s3
+	// Upload re-zipped file to s3
 	uploader := manager.NewUploader(s3Client)
 
 	_, err := uploader.Upload(ctx, &s3.PutObjectInput{
-		Body: file,
+		Bucket: aws.String(bucket),
+		Key:    aws.String(objectKey),
+		Body:   file,
 	})
 	if err != nil {
 		return err
@@ -54,8 +60,8 @@ func UploadS3File(ctx context.Context, s3Client *s3.Client, objectKey string, bu
 	return nil
 }
 
-// UnzipFile decompresses the file that is passed and returns an open file containing the newly decompressed source. It
-// closes the file that was passed to it after it has been fully read.
+// UnzipFile decompresses the file that is passed and returns an open file containing the newly decompressed source.
+//  It closes the file that was passed to it after it has been fully read.
 func UnzipFile(compressed *os.File) (*os.File, error) {
 	// Open the compressed file
 	gzippedFile, err := os.Open(compressed.Name())
@@ -70,7 +76,10 @@ func UnzipFile(compressed *os.File) (*os.File, error) {
 	}
 
 	// Create new tmp file for uncompressed source
-	destinationFile, err := os.CreateTemp("", "uncompressed-artifact-")
+	tmpFileName := strings.TrimSuffix(path.Base(compressed.Name()), filepath.Ext(compressed.Name()))
+	tmpDir := os.TempDir()
+	tmpFilePath := path.Join(tmpDir, tmpFileName)
+	destinationFile, err := os.OpenFile(tmpFilePath, os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +102,12 @@ func UnzipFile(compressed *os.File) (*os.File, error) {
 		return nil, err
 	}
 
+	// Rewind the destination file so that it can be read
+	_, err = destinationFile.Seek(0, io.SeekStart)
+	if err != nil {
+		return nil, err
+	}
+
 	return destinationFile, err
 }
 
@@ -105,7 +120,10 @@ func ZipFile(uncompressed *os.File) (*os.File, error) {
 	defer originalSource.Close()
 
 	// Create a new, gzipped file
-	gzippedFile, err := os.Create("compressed-artifact-")
+	gzippedFileName := fmt.Sprintf("%s.gz", path.Base(originalSource.Name()))
+	tmpDir := os.TempDir()
+	tmpFilePath := path.Join(tmpDir, gzippedFileName)
+	gzippedFile, err := os.OpenFile(tmpFilePath, os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if err != nil {
 		return nil, err
 	}
@@ -131,15 +149,45 @@ func ZipFile(uncompressed *os.File) (*os.File, error) {
 		return nil, err
 	}
 
+	// Rewind the destination file so that it can be read
+	_, err = gzippedFile.Seek(0, io.SeekStart)
+	if err != nil {
+		return nil, err
+	}
+
 	return gzippedFile, err
 }
 
 func AddEntryToTar(source *os.File, entryName string, entryContents string) error {
+	// Seek to the start of the last file and check its size
+	var lastFileSize, lastStreamPos int64
+	tr := tar.NewReader(source)
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		lastStreamPos, err = source.Seek(0, io.SeekCurrent)
+		if err != nil {
+			return err
+		}
+		lastFileSize = hdr.Size
+	}
 
-	// TODO: Decide on byte offset -- should we use the below or use 1024 bytes or something else?
-	// Seek to x number of bytes before the end of the file before writing to it
-	if _, err := source.Seek(-2<<9, os.SEEK_END); err != nil {
-		return nil
+	// Find the next block boundary
+	const blockSize = 512
+	newOffset := lastStreamPos + lastFileSize
+	distanceToNextBlockBoundary := newOffset % blockSize
+	// If the newOffset is already on a block boundary, we need to avoid writing an empty block
+	if distanceToNextBlockBoundary != 0 {
+		newOffset += blockSize - (newOffset % blockSize)
+	}
+
+	if _, err := source.Seek(newOffset, io.SeekStart); err != nil {
+		return err
 	}
 
 	// Create a new tar writer
@@ -152,17 +200,16 @@ func AddEntryToTar(source *os.File, entryName string, entryContents string) erro
 	}
 
 	if err := tarWriter.WriteHeader(header); err != nil {
-		return nil
+		return err
 	}
 
 	if _, err := tarWriter.Write([]byte(entryContents)); err != nil {
-		return nil
+		return err
 	}
 
 	if err := tarWriter.Close(); err != nil {
-		return nil
+		return err
 	}
-	source.Close()
 
 	return nil
 }
