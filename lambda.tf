@@ -68,7 +68,7 @@ resource "aws_iam_role_policy_attachment" "provision_handler_lambda_execution" {
 data "archive_file" "provision_handler" {
   type        = "zip"
   output_path = "provisioning_operations_handler.zip"
-  source_dir  = "lambda-functions/provisioning-operations-handler"
+  source_dir  = "lambda-functions/python/provisioning-operations-handler"
 }
 
 # Lambda for provisioning products

@@ -2,19 +2,17 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/aws/aws-sdk-go-v2/service/servicecatalog"
 	"github.com/aws/aws-sdk-go-v2/service/servicecatalog/types"
 	"github.com/google/uuid"
-	"github.com/hashicorp/go-tfe"
 	"log"
-	"os"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfeauth"
+	"github.com/hashicorp/go-tfe"
 )
 
 type NotifyRunResultRequest struct {
@@ -55,7 +53,7 @@ func HandleRequest(ctx context.Context, request NotifyRunResultRequest) (*Notify
 	}
 	serviceCatalogClient := servicecatalog.NewFromConfig(sdkConfig)
 
-	tfeClient, err := getTFEClient(ctx, sdkConfig)
+	tfeClient, err := tfeauth.GetTFEClient(ctx, sdkConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -189,42 +187,6 @@ func FormatError(err string, errorMessage string) *string {
 	// Truncate error message to fit maximum failure reason length allowed by Service Catalog.
 	// We use 2045 to make room for the ellipsis.
 	return aws.String(errorMessage[:2045] + "...")
-}
-
-type TFECredentialsSecret struct {
-	Hostname string `json:"hostname"`
-	Token    string `json:"token"`
-}
-
-func getTFEClient(ctx context.Context, sdkConfig aws.Config) (*tfe.Client, error) {
-	// Create secrets client SDK to fetch TFE credentials
-	secretsManagerClient := secretsmanager.NewFromConfig(sdkConfig)
-
-	// Fetch the TFE credentials/config from AWS Secrets Manager
-	secretId := os.Getenv("TFE_CREDENTIALS_SECRET_ID")
-	versionId := os.Getenv("TFE_CREDENTIALS_SECRET_VERSION_ID")
-
-	tfeCredentialsSecretJson, err := secretsManagerClient.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{
-		SecretId:  aws.String(secretId),
-		VersionId: aws.String(versionId),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// Decode the response from AWS Secrets Manager
-	var tfeCredentialsSecret TFECredentialsSecret
-	if err = json.Unmarshal([]byte(*tfeCredentialsSecretJson.SecretString), &tfeCredentialsSecret); err != nil {
-		return nil, err
-	}
-
-	// Use the credentials to create a TFE client
-	client, err := tfe.NewClient(&tfe.Config{
-		Address: fmt.Sprintf("https://%s", tfeCredentialsSecret.Hostname),
-		Token:   tfeCredentialsSecret.Token,
-	})
-
-	return client, err
 }
 
 func main() {

@@ -2,18 +2,16 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/hashicorp/go-tfe"
 	"log"
-	"os"
 	"strings"
 	"time"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/fileutils"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/identifiers"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfeauth"
 )
 
 type SendApplyRequest struct {
@@ -41,9 +39,8 @@ func HandleRequest(ctx context.Context, request SendApplyRequest) (*SendApplyRes
 	}
 
 	s3Client := s3.NewFromConfig(sdkConfig)
-	secretsManager := secretsmanager.NewFromConfig(sdkConfig)
 
-	client, err := getTFEClient(ctx, secretsManager)
+	client, err := tfeauth.GetTFEClient(ctx, sdkConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +53,7 @@ func HandleRequest(ctx context.Context, request SendApplyRequest) (*SendApplyRes
 	}
 
 	// Create or find the Workspace
-	workspaceName := getWorkspaceName(request.AwsAccountId, request.ProvisionedProductId)
+	workspaceName := identifiers.GetWorkspaceName(request.AwsAccountId, request.ProvisionedProductId)
 	w, err := FindOrCreateWorkspace(ctx, client, request.TerraformOrganization, p, workspaceName)
 	if err != nil {
 		return nil, err
@@ -80,7 +77,7 @@ func HandleRequest(ctx context.Context, request SendApplyRequest) (*SendApplyRes
 	}
 
 	bucket, key := resolveArtifactPath(request.Artifact.Path)
-	body, err := DownloadS3File(ctx, key, bucket, s3Client)
+	body, err := fileutils.DownloadS3File(ctx, key, bucket, s3Client)
 	if err != nil {
 		return nil, err
 	}
@@ -148,49 +145,11 @@ func main() {
 	lambda.Start(HandleRequest)
 }
 
-type TFECredentialsSecret struct {
-	Hostname string `json:"hostname"`
-	Token    string `json:"token"`
-}
-
-func getTFEClient(ctx context.Context, secretsManagerClient *secretsmanager.Client) (*tfe.Client, error) {
-	// Fetch the TFE credentials/config from AWS Secrets Manager
-	secretId := os.Getenv("TFE_CREDENTIALS_SECRET_ID")
-	versionId := os.Getenv("TFE_CREDENTIALS_SECRET_VERSION_ID")
-
-	tfeCredentialsSecretJson, err := secretsManagerClient.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{
-		SecretId:  aws.String(secretId),
-		VersionId: aws.String(versionId),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// Decode the response from AWS Secrets Manager
-	var tfeCredentialsSecret TFECredentialsSecret
-	if err = json.Unmarshal([]byte(*tfeCredentialsSecretJson.SecretString), &tfeCredentialsSecret); err != nil {
-		return nil, err
-	}
-
-	// Use the credentials to create a TFE client
-	client, err := tfe.NewClient(&tfe.Config{
-		Address: fmt.Sprintf("https://%s", tfeCredentialsSecret.Hostname),
-		Token:   tfeCredentialsSecret.Token,
-	})
-
-	return client, err
-}
-
 // Resolves artifactPath to bucket and key
 func resolveArtifactPath(artifactPath string) (string, string) {
 	bucket := strings.Split(artifactPath, "/")[2]
 	key := strings.SplitN(artifactPath, "/", 4)[3]
 	return bucket, key
-}
-
-// Get the workspace name, which is `${accountId} - ${provisionedProductId}`
-func getWorkspaceName(awsAccountId string, provisionedProductId string) string {
-	return fmt.Sprintf("%s-%s", awsAccountId, provisionedProductId)
 }
 
 func FindOrCreateWorkspace(ctx context.Context, client *tfe.Client, organizationName string, project *tfe.Project, workspaceName string) (*tfe.Workspace, error) {
