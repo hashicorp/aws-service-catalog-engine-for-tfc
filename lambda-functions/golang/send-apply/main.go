@@ -5,13 +5,13 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/fileutils"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/identifiers"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfeauth"
 	"github.com/hashicorp/go-tfe"
 	"log"
 	"strings"
 	"time"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/fileutils"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/identifiers"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfeauth"
 )
 
 type SendApplyRequest struct {
@@ -21,6 +21,12 @@ type SendApplyRequest struct {
 	Artifact              Artifact `json:"artifact"`
 	LaunchRoleArn         string   `json:"launchRoleArn"`
 	ProductId             string   `json:"productId"`
+	Tags                  []AWSTag `json:"tags"`
+}
+
+type AWSTag struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 type Artifact struct {
@@ -76,13 +82,24 @@ func HandleRequest(ctx context.Context, request SendApplyRequest) (*SendApplyRes
 		return nil, err
 	}
 
+	// Download product configuration files
 	bucket, key := resolveArtifactPath(request.Artifact.Path)
-	body, err := fileutils.DownloadS3File(ctx, key, bucket, s3Client)
+	sourceProductConfig, err := fileutils.DownloadS3File(ctx, key, bucket, s3Client)
 	if err != nil {
 		return nil, err
 	}
 
-	err = client.ConfigurationVersions.UploadTarGzip(ctx, cv.UploadURL, body)
+	// Create override files for injecting AWS default tags
+	providerOverrides, _ := CreateAWSProviderOverrides(sdkConfig.Region, request.Tags)
+
+	// Inject AWS default tags, via the override file, into the tar file
+	modifiedProductConfig, err := InjectOverrides(sourceProductConfig, []ConfigurationOverride{*providerOverrides})
+	if err != nil {
+		return nil, err
+	}
+
+	// Upload newly modified configuration to TFE
+	err = client.ConfigurationVersions.UploadTarGzip(ctx, cv.UploadURL, modifiedProductConfig)
 	if err != nil {
 		return nil, err
 	}

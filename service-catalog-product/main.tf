@@ -9,17 +9,6 @@ terraform {
 
 data "aws_caller_identity" "current" {}
 
-provider "aws" {
-  # Configuration options
-  region = "us-west-2"
-
-  default_tags {
-    tags = {
-      "projects" = "aws-service-catalog-engine"
-    }
-  }
-}
-
 # # # #
 # THE TEMPLATE OF THE PRODUCT
 
@@ -40,6 +29,11 @@ resource "aws_servicecatalog_product" "example" {
     disable_template_validation = true
     template_url                = "https://s3.amazonaws.com/${data.aws_s3_object.artifact.bucket}/${data.aws_s3_object.artifact.key}"
     type                        = "TERRAFORM_OPEN_SOURCE"
+  }
+
+  tags = {
+    ServiceCatalogProduct = var.product_name
+    ManagedBy = "tfc"
   }
 }
 

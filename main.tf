@@ -21,7 +21,7 @@ provider "aws" {
 
   default_tags {
     tags = {
-      "projects" = "aws-service-catalog-engine"
+      "Projects" = "aws-service-catalog-engine"
     }
   }
 }
@@ -34,8 +34,8 @@ data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 resource "aws_servicecatalog_portfolio" "portfolio" {
-  name          = "TFE Example Portfolio"
-  description   = "Example Portfolio created via AWS Service Catalog Engine for TFE"
+  name          = "TFC Example Portfolio"
+  description   = "Example Portfolio created via AWS Service Catalog Engine for TFC"
   provider_name = "Hashicorp Examples"
 }
 
@@ -51,8 +51,8 @@ resource "aws_s3_bucket" "my_bucket" {
   bucket = "service-catalog-example-product-${random_string.random.result}"
 }
 
-resource "aws_s3_bucket_object" "object" {
-  bucket = aws_s3_bucket.my_bucket.bucket
+resource "aws_s3_object" "object" {
+  bucket = aws_s3_bucket.my_bucket.id
   key    = "product.tar.gz"
   source = "${path.module}/example-product/product.tar.gz"
   etag   = filemd5("${path.module}/example-product/product.tar.gz")
@@ -60,8 +60,8 @@ resource "aws_s3_bucket_object" "object" {
 
 module "example_product" {
   source = "./service-catalog-product"
-  artifact_bucket_name = aws_s3_bucket_object.object.bucket
-  artifact_object_key = aws_s3_bucket_object.object.key
+  artifact_bucket_name = aws_s3_object.object.bucket
+  artifact_object_key = aws_s3_object.object.id
   tfc_organization = "tf-rocket-tfcb-test"
   tfc_provider_arn = aws_iam_openid_connect_provider.tfc_provider.arn
   product_name = "service-catalog-example-product-${random_string.random.result}"

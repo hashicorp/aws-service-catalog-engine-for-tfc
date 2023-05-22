@@ -5,19 +5,22 @@ import (
 	"compress/gzip"
 	"context"
 	"errors"
-	"io"
-	"os"
+	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"io"
+	"log"
+	"os"
+	"path"
 	"path/filepath"
 	"strings"
-	"path"
-	"fmt"
 	"time"
 )
 
 func DownloadS3File(ctx context.Context, objectKey string, bucket string, s3Client *s3.Client) (*os.File, error) {
+	log.Default().Print("downloading product terraform configuration from s3")
+
 	tmp, err := os.CreateTemp("", "artifact-")
 	if err != nil {
 		panic(err)
@@ -37,11 +40,12 @@ func DownloadS3File(ctx context.Context, objectKey string, bucket string, s3Clie
 		return nil, errors.New("zero bytes were read from S3")
 	}
 
-	if err := tmp.Close(); err != nil {
-		return nil, err
-	}
+	// Rewind the file so that it can be read in the future
+	_, err = tmp.Seek(0, io.SeekStart)
 
-	return tmp, nil
+	log.Default().Print("downloaded product terraform configuration from s3")
+
+	return tmp, err
 }
 
 func UploadS3File(ctx context.Context, s3Client *s3.Client, objectKey string, bucket string, file *os.File) error {
@@ -61,7 +65,8 @@ func UploadS3File(ctx context.Context, s3Client *s3.Client, objectKey string, bu
 }
 
 // UnzipFile decompresses the file that is passed and returns an open file containing the newly decompressed source.
-//  It closes the file that was passed to it after it has been fully read.
+//
+//	It closes the file that was passed to it after it has been fully read.
 func UnzipFile(compressed *os.File) (*os.File, error) {
 	// Open the compressed file
 	gzippedFile, err := os.Open(compressed.Name())
@@ -199,6 +204,7 @@ func AddEntryToTar(source *os.File, entryName string, entryContents string) erro
 	header := &tar.Header{
 		Name: entryName,
 		Size: int64(len(entryContents)),
+		Mode: 0777,
 	}
 
 	if err := tarWriter.WriteHeader(header); err != nil {

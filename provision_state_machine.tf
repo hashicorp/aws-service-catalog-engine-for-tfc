@@ -100,7 +100,8 @@ resource "aws_sfn_state_machine" "provision_state_machine" {
         "provisionedProductId.$": "$.provisionedProductId",
         "artifact.$": "$.artifact",
         "launchRoleArn.$": "$.launchRoleArn",
-        "productId.$": "$.productId"
+        "productId.$": "$.productId",
+        "tags.$": "$.tags"
       },
       "ResultSelector": {
         "terraformRunId.$": "$.terraformRunId"
