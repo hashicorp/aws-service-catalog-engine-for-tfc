@@ -13,3 +13,6 @@ terraform.tfvars
 
 .DS_Store
 .idea
+
+# Terraform artifacts
+dist/

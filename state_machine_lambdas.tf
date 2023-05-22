@@ -80,7 +80,7 @@ resource "aws_secretsmanager_secret_version" "tfe_credentials" {
 
 data "archive_file" "send_apply" {
   type        = "zip"
-  output_path = "send_apply.zip"
+  output_path = "dist/send_apply.zip"
   source_file = "lambda-functions/golang/send-apply/main"
 }
 
@@ -163,7 +163,7 @@ data "aws_iam_policy_document" "send_destroy" {
 
 data "archive_file" "send_destroy" {
   type        = "zip"
-  output_path = "send_destroy.zip"
+  output_path = "dist/send_destroy.zip"
   source_file = "lambda-functions/golang/send-destroy/main"
 }
 
@@ -234,7 +234,7 @@ data "aws_iam_policy_document" "poll_run_status" {
 
 data "archive_file" "poll_run_status" {
   type        = "zip"
-  output_path = "poll_run_status.zip"
+  output_path = "dist/poll_run_status.zip"
   source_file = "lambda-functions/golang/poll-run-status/main"
 }
 
@@ -321,7 +321,7 @@ data "aws_iam_policy_document" "notify_run_result" {
 
 data "archive_file" "notify_run_result" {
   type        = "zip"
-  output_path = "notify_run_result.zip"
+  output_path = "dist/notify_run_result.zip"
   source_file = "lambda-functions/golang/notify-run-result/main"
 }
 
