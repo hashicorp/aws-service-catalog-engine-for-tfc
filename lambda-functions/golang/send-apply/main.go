@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/fileutils"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/identifiers"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfeauth"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tracertag"
 	"github.com/hashicorp/go-tfe"
 	"log"
 	"strings"
@@ -15,13 +16,14 @@ import (
 )
 
 type SendApplyRequest struct {
-	AwsAccountId          string   `json:"awsAccountId"`
-	TerraformOrganization string   `json:"terraformOrganization"`
-	ProvisionedProductId  string   `json:"provisionedProductId"`
-	Artifact              Artifact `json:"artifact"`
-	LaunchRoleArn         string   `json:"launchRoleArn"`
-	ProductId             string   `json:"productId"`
-	Tags                  []AWSTag `json:"tags"`
+	AwsAccountId          string              `json:"awsAccountId"`
+	TerraformOrganization string              `json:"terraformOrganization"`
+	ProvisionedProductId  string              `json:"provisionedProductId"`
+	Artifact              Artifact            `json:"artifact"`
+	LaunchRoleArn         string              `json:"launchRoleArn"`
+	ProductId             string              `json:"productId"`
+	Tags                  []AWSTag            `json:"tags"`
+	TracerTag             tracertag.TracerTag `json:"tracerTag"`
 }
 
 type AWSTag struct {
@@ -90,7 +92,7 @@ func HandleRequest(ctx context.Context, request SendApplyRequest) (*SendApplyRes
 	}
 
 	// Create override files for injecting AWS default tags
-	providerOverrides, _ := CreateAWSProviderOverrides(sdkConfig.Region, request.Tags)
+	providerOverrides, _ := CreateAWSProviderOverrides(sdkConfig.Region, request.Tags, request.TracerTag)
 
 	// Inject AWS default tags, via the override file, into the tar file
 	modifiedProductConfig, err := InjectOverrides(sourceProductConfig, []ConfigurationOverride{*providerOverrides})
@@ -104,7 +106,6 @@ func HandleRequest(ctx context.Context, request SendApplyRequest) (*SendApplyRes
 		return nil, err
 	}
 
-	// TODO: Increase this timeout to as large as possible to account for large artifacts
 	uploadTimeoutInSeconds := 120
 	for i := 0; ; i++ {
 		refreshed, err := client.ConfigurationVersions.Read(ctx, cv.ID)

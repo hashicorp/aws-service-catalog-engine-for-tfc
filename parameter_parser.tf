@@ -24,12 +24,12 @@ data "aws_iam_policy_document" "parameter_parser_assume_policy" {
 }
 
 resource "aws_iam_role" "parameter_parser" {
-  name               = "ServiceCatalogTerraformTFEParameterParserRole"
+  name               = "ServiceCatalogTerraformTFCParameterParserRole"
   assume_role_policy = data.aws_iam_policy_document.parameter_parser_assume_policy.json
 }
 
 resource "aws_iam_role_policy" "parameter_parser" {
-  name   = "ServiceCatalogTerraformTFEParameterParserRolePolicy"
+  name   = "ServiceCatalogTerraformTFCParameterParserRolePolicy"
   role   = aws_iam_role.parameter_parser.id
   policy = data.aws_iam_policy_document.parameter_parser.json
 }

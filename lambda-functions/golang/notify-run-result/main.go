@@ -10,16 +10,17 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/servicecatalog"
 	"github.com/aws/aws-sdk-go-v2/service/servicecatalog/types"
 	"github.com/google/uuid"
-	"log"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfeauth"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tracertag"
 	"github.com/hashicorp/go-tfe"
+	"log"
 )
 
 type NotifyRunResultRequest struct {
 	TerraformRunId          string                  `json:"terraformRunId"`
 	WorkflowToken           string                  `json:"workflowToken"`
 	RecordId                string                  `json:"recordId"`
-	TracerTag               TracerTag               `json:"tracerTag"`
+	TracerTag               tracertag.TracerTag     `json:"tracerTag"`
 	ServiceCatalogOperation ServiceCatalogOperation `json:"serviceCatalogOperation"`
 	AwsAccountId            string                  `json:"awsAccountId"`
 	TerraformOrganization   string                  `json:"terraformOrganization"`
@@ -37,14 +38,7 @@ const (
 	Updating     ServiceCatalogOperation = "UPDATING"
 )
 
-type TracerTag struct {
-	TracerTagKey   string `json:"key"`
-	TracerTagValue string `json:"value"`
-}
-
-type NotifyRunResultResponse struct {
-	Name string `json:"terraformRunId"`
-}
+type NotifyRunResultResponse struct{}
 
 func HandleRequest(ctx context.Context, request NotifyRunResultRequest) (*NotifyRunResultResponse, error) {
 	sdkConfig, err := config.LoadDefaultConfig(ctx)
@@ -104,16 +98,19 @@ func NotifyTerminateResult(ctx context.Context, scClient *servicecatalog.Client,
 }
 
 func NotifyProvisioningResult(ctx context.Context, scClient *servicecatalog.Client, tfeClient *tfe.Client, request NotifyRunResultRequest) (*NotifyRunResultResponse, error) {
-	outputs, err := FetchRunOutputs(ctx, tfeClient, request)
-	if err != nil {
-		return nil, err
-	}
+	var outputs []types.RecordOutput
+	var err error
 
 	var status = types.EngineWorkflowStatusSucceeded
 	var failureReason *string = nil
 	if request.ErrorMessage != "" {
 		failureReason = FormatError(request.Error, request.ErrorMessage)
 		status = types.EngineWorkflowStatusFailed
+	} else {
+		outputs, err = FetchRunOutputs(ctx, tfeClient, request)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	log.Printf("Notifying provision result %s\n", status)
@@ -142,16 +139,19 @@ func NotifyProvisioningResult(ctx context.Context, scClient *servicecatalog.Clie
 }
 
 func NotifyUpdatingResult(ctx context.Context, scClient *servicecatalog.Client, tfeClient *tfe.Client, request NotifyRunResultRequest) (*NotifyRunResultResponse, error) {
-	outputs, err := FetchRunOutputs(ctx, tfeClient, request)
-	if err != nil {
-		return nil, err
-	}
+	var outputs []types.RecordOutput
+	var err error
 
 	var status = types.EngineWorkflowStatusSucceeded
 	var failureReason *string = nil
 	if request.ErrorMessage != "" {
 		failureReason = FormatError(request.Error, request.ErrorMessage)
 		status = types.EngineWorkflowStatusFailed
+	} else {
+		outputs, err = FetchRunOutputs(ctx, tfeClient, request)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	log.Printf("Notifying update result %s\n", status)

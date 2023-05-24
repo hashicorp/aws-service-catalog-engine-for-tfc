@@ -89,6 +89,15 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
         "value.$": "$.provisionedProductId"
       },
       "ResultPath": "$.tracerTag",
+      "Next": "Default state for destroy"
+    },
+    "Default state for destroy": {
+      "Type": "Pass",
+      "Comment": "Set default values for state so that future steps do not error on missing parameters",
+      "Parameters": {
+        "terraformRunId": ""
+      },
+      "ResultPath": "$.sendDestroyResult",
       "Next": "Send destroy"
     },
     "Send destroy": {
@@ -140,12 +149,12 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
         {
           "ErrorEquals": [ "States.TaskFailed" ],
           "ResultPath": "$.errorInfo",
-          "Next": "Failure"
+          "Next": "Convert poll destroy status error"
         },
         {
           "ErrorEquals": [ "States.Timeout" ],
           "ResultPath": "$.errorInfo",
-          "Next": "Failure"
+          "Next": "Convert poll destroy status error"
         }
       ],
       "Next": "Did the destroy complete successfully?"
@@ -170,7 +179,7 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
           "Next": "Notify destroy result"
         }
       ],
-      "Default": "Failure"
+      "Default": "Convert poll destroy status error""
     },
     "Convert poll destroy status error": {
         "Type": "Pass",
@@ -214,9 +223,6 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
         "errorMessage.$": "$.errorInfo.Cause"
       },
       "End": true
-    },
-    "Failure": {
-      "Type": "Fail"
     }
   }
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/fileutils"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tracertag"
 	"io"
 	"log"
 	"os"
@@ -13,11 +14,15 @@ type ConfigurationOverride struct {
 	fileContents string
 }
 
-func CreateAWSProviderOverrides(region string, tags []AWSTag) (*ConfigurationOverride, error) {
+func CreateAWSProviderOverrides(region string, tags []AWSTag, tracerTag tracertag.TracerTag) (*ConfigurationOverride, error) {
+	// Format AWS billing tags
 	formattedTags := map[string]interface{}{}
 	for _, tag := range tags {
 		formattedTags[tag.Key] = tag.Value
 	}
+
+	// Add tracer tag for resource tracking
+	formattedTags[tracerTag.TracerTagKey] = tracerTag.TracerTagValue
 
 	// The keys need to be strings, the values can be
 	// any serializable value

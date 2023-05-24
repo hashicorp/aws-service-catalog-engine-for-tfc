@@ -56,13 +56,13 @@ data "aws_iam_policy_document" "policy_for_send_apply_lambda" {
   }
 }
 
-data "tfe_team" "provisioning_team" {
-  name         = var.tfe_team
-  organization = var.tfe_organization
+data "tfc_team" "provisioning_team" {
+  name         = var.tfc_team
+  organization = var.tfc_organization
 }
 
-resource "tfe_team_token" "test_team_token" {
-  team_id = data.tfe_team.provisioning_team.id
+resource "tfc_team_token" "test_team_token" {
+  team_id = data.tfc_team.provisioning_team.id
 }
 
 resource "aws_secretsmanager_secret" "team_token_values" {
@@ -72,9 +72,9 @@ resource "aws_secretsmanager_secret" "team_token_values" {
 resource "aws_secretsmanager_secret_version" "tfe_credentials" {
   secret_id     = aws_secretsmanager_secret.team_token_values.id
   secret_string = jsonencode({
-    hostname = var.tfe_hostname
-    id = data.tfe_team.provisioning_team.id
-    token = tfe_team_token.test_team_token.token
+    hostname = var.tfc_hostname
+    id = data.tfc_team.provisioning_team.id
+    token = tfc_team_token.test_team_token.token
   })
 }
 

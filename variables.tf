@@ -1,15 +1,15 @@
-variable "tfe_hostname" {
+variable "tfc_hostname" {
   type = string
   description = "TFC hostname (defaults to TFC: app.terraform.io)"
   default = "app.terraform.io"
 }
 
-variable "tfe_organization" {
+variable "tfc_organization" {
   type = string
   description = "Name of the organization to manage infrastructure with in TFC"
 }
 
-variable "tfe_team" {
+variable "tfc_team" {
   type = string
   description = "Name of the TFC team to use to provision infrastructure with in TFC"
 }

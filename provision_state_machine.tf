@@ -89,6 +89,15 @@ resource "aws_sfn_state_machine" "provision_state_machine" {
         "value.$": "$.provisionedProductId"
       },
       "ResultPath": "$.tracerTag",
+      "Next": "Default state for apply"
+    },
+    "Default state for apply": {
+      "Type": "Pass",
+      "Comment": "Set default values for state so that future steps do not error on missing parameters",
+      "Parameters": {
+        "terraformRunId": ""
+      },
+      "ResultPath": "$.sendApplyResult",
       "Next": "Send apply"
     },
     "Send apply": {
@@ -101,6 +110,7 @@ resource "aws_sfn_state_machine" "provision_state_machine" {
         "artifact.$": "$.artifact",
         "launchRoleArn.$": "$.launchRoleArn",
         "productId.$": "$.productId",
+        "tracerTag.$": "$.tracerTag",
         "tags.$": "$.tags"
       },
       "ResultSelector": {
@@ -174,7 +184,7 @@ resource "aws_sfn_state_machine" "provision_state_machine" {
           "Next": "Notify run result"
         }
       ],
-      "Default": "Failure"
+      "Default": "Convert poll run status error"
     },
     "Convert poll run status error": {
         "Type": "Pass",
@@ -218,9 +228,6 @@ resource "aws_sfn_state_machine" "provision_state_machine" {
         "errorMessage.$": "$.errorInfo.Cause"
       },
       "End": true
-    },
-    "Failure": {
-      "Type": "Fail"
     }
   }
 }
