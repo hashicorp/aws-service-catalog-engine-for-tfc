@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/awsconfig"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfeauth"
 	"github.com/hashicorp/go-tfe"
 	"log"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfeauth"
-	"github.com/aws/aws-sdk-go-v2/config"
 )
 
 type SendDestroyRequest struct {
@@ -21,10 +21,7 @@ type SendDestroyResponse struct {
 }
 
 func HandleRequest(ctx context.Context, request SendDestroyRequest) (*SendDestroyResponse, error) {
-	sdkConfig, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		return nil, err
-	}
+	sdkConfig := awsconfig.GetSdkConfig(ctx)
 
 	client, err := tfeauth.GetTFEClient(ctx, sdkConfig)
 	if err != nil {

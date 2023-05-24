@@ -68,7 +68,7 @@ resource "aws_iam_role_policy_attachment" "provision_handler_lambda_execution" {
 data "archive_file" "provision_handler" {
   type        = "zip"
   output_path = "dist/provisioning_operations_handler.zip"
-  source_dir  = "lambda-functions/python/provisioning-operations-handler"
+  source_dir  = "lambda-functions/golang/provisioning-operations-handler/main"
 }
 
 # Lambda for provisioning products
@@ -77,11 +77,11 @@ resource "aws_lambda_function" "provision_handler" {
   filename      = data.archive_file.provision_handler.output_path
   function_name = "TerraformEngineProvisionHandlerLambda"
   role          = aws_iam_role.provisioning_handler_lambda_execution.arn
-  handler       = "provisioning_operations_handler.handle_sqs_records"
+  handler       = "main"
 
   source_code_hash = data.archive_file.provision_handler.output_base64sha256
 
-  runtime = "python3.9"
+  runtime = "go1.x"
 
   environment {
     variables = {
@@ -104,11 +104,11 @@ resource "aws_lambda_function" "terminate_handler" {
   filename      = data.archive_file.provision_handler.output_path
   function_name = "TerraformEngineTerminateHandlerLambda"
   role          = aws_iam_role.provisioning_handler_lambda_execution.arn
-  handler       = "provisioning_operations_handler.handle_sqs_records"
+  handler       = "main"
 
   source_code_hash = data.archive_file.provision_handler.output_base64sha256
 
-  runtime = "python3.9"
+  runtime = "go1.x"
 
   environment {
     variables = {
@@ -131,11 +131,11 @@ resource "aws_lambda_function" "update_handler" {
   filename      = data.archive_file.provision_handler.output_path
   function_name = "TerraformEngineUpdateHandlerLambda"
   role          = aws_iam_role.provisioning_handler_lambda_execution.arn
-  handler       = "provisioning_operations_handler.handle_sqs_records"
+  handler       = "main"
 
   source_code_hash = data.archive_file.provision_handler.output_base64sha256
 
-  runtime = "python3.9"
+  runtime = "go1.x"
 
   environment {
     variables = {

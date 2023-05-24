@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/awsconfig"
 	"github.com/hashicorp/go-tfe"
 	"log"
 	"os"
@@ -24,11 +24,7 @@ type PollRunStatusResponse struct {
 }
 
 func HandleRequest(ctx context.Context, request PollRunStatus) (PollRunStatusResponse, error) {
-	sdkConfig, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		log.Fatal(err)
-		return PollRunStatusResponse{}, err
-	}
+	sdkConfig := awsconfig.GetSdkConfig(ctx)
 
 	secretsManager := secretsmanager.NewFromConfig(sdkConfig)
 
