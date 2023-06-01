@@ -27,7 +27,7 @@ provider "aws" {
 }
 
 provider "tfe" {
-  hostname = var.tfe_hostname
+  hostname = var.tfc_hostname
 }
 
 data "aws_caller_identity" "current" {}
