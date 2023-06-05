@@ -1,4 +1,4 @@
-package tfeauth
+package tfc
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"os"
 	"context"
 	"encoding/json"
+	"github.com/hashicorp/go-retryablehttp"
 )
 
 type TFECredentialsSecret struct {
@@ -38,10 +39,17 @@ func GetTFEClient(ctx context.Context, sdkConfig aws.Config) (*tfe.Client, error
 	}
 
 	// Use the credentials to create a TFE client
-	client, err := tfe.NewClient(&tfe.Config{
-		Address: fmt.Sprintf("https://%s", tfeCredentialsSecret.Hostname),
-		Token:   tfeCredentialsSecret.Token,
-	})
+	return ClientWithDefaultConfig(fmt.Sprintf("https://%s", tfeCredentialsSecret.Hostname), tfeCredentialsSecret.Token)
+}
 
-	return client, err
+func ClientWithDefaultConfig(address string, token string) (*tfe.Client, error) {
+	retryClient := retryablehttp.NewClient()
+	retryClient.RetryMax = 10
+
+	return tfe.NewClient(&tfe.Config{
+		Address:           fmt.Sprintf(address),
+		Token:             token,
+		RetryServerErrors: true,
+		HTTPClient:        retryClient.HTTPClient,
+	})
 }

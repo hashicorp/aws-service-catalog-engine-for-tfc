@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/awsconfig"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfeauth"
 	"github.com/hashicorp/go-tfe"
 	"log"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
 )
 
 type SendDestroyRequest struct {
@@ -23,7 +23,7 @@ type SendDestroyResponse struct {
 func HandleRequest(ctx context.Context, request SendDestroyRequest) (*SendDestroyResponse, error) {
 	sdkConfig := awsconfig.GetSdkConfig(ctx)
 
-	client, err := tfeauth.GetTFEClient(ctx, sdkConfig)
+	client, err := tfc.GetTFEClient(ctx, sdkConfig)
 	if err != nil {
 		log.Printf("Failed to initialize TFE client: %s", err)
 		return nil, err

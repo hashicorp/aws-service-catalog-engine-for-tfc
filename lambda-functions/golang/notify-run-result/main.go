@@ -10,10 +10,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/servicecatalog/types"
 	"github.com/google/uuid"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/awsconfig"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfeauth"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tracertag"
 	"github.com/hashicorp/go-tfe"
 	"log"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
 )
 
 type NotifyRunResultRequest struct {
@@ -44,7 +44,7 @@ func HandleRequest(ctx context.Context, request NotifyRunResultRequest) (*Notify
 	sdkConfig := awsconfig.GetSdkConfig(ctx)
 	serviceCatalogClient := servicecatalog.NewFromConfig(sdkConfig)
 
-	tfeClient, err := tfeauth.GetTFEClient(ctx, sdkConfig)
+	tfeClient, err := tfc.GetTFEClient(ctx, sdkConfig)
 	if err != nil {
 		return nil, err
 	}

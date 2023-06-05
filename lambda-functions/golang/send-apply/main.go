@@ -7,12 +7,12 @@ import (
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/awsconfig"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/fileutils"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/identifiers"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfeauth"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tracertag"
 	"github.com/hashicorp/go-tfe"
 	"log"
 	"strings"
 	"time"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
 )
 
 type SendApplyRequest struct {
@@ -45,7 +45,7 @@ func HandleRequest(ctx context.Context, request SendApplyRequest) (*SendApplyRes
 
 	s3Client := s3.NewFromConfig(sdkConfig)
 
-	client, err := tfeauth.GetTFEClient(ctx, sdkConfig)
+	client, err := tfc.GetTFEClient(ctx, sdkConfig)
 	if err != nil {
 		return nil, err
 	}
