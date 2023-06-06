@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/servicecatalog"
@@ -14,6 +13,7 @@ import (
 	"github.com/hashicorp/go-tfe"
 	"log"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/identifiers"
 )
 
 type NotifyRunResultRequest struct {
@@ -192,15 +192,10 @@ func main() {
 
 func DeleteWorkspace(ctx context.Context, client *tfe.Client, request NotifyRunResultRequest) error {
 	// Get workspace name
-	workspaceName := getWorkspaceName(request.AwsAccountId, request.ProvisionedProductId)
+	workspaceName := identifiers.GetWorkspaceName(request.AwsAccountId, request.ProvisionedProductId)
 
 	// Make a call to delete workspace
 	err := client.Workspaces.Delete(ctx, request.TerraformOrganization, workspaceName)
 
 	return err
-}
-
-// Get the workspace name, which is `${accountId} - ${provisionedProductId}`
-func getWorkspaceName(awsAccountId string, provisionedProductId string) string {
-	return fmt.Sprintf("%s-%s", awsAccountId, provisionedProductId)
 }

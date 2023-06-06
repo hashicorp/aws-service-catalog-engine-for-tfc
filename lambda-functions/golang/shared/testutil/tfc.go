@@ -10,17 +10,29 @@ import (
 
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/mocking"
 	"github.com/hashicorp/go-tfe"
+	"log"
 )
 
-// MockTFC handles mocking the agent-related TFC API's. It
+// MockTFC handles mocking the agent-related TFC APIs. It
 // exposes methods for creating server-side state, such as jobs in the queue.
 type MockTFC struct {
 	Address string
 
+	OrganizationName string
+
 	http *httptest.Server
 
-	// runs is a map containing the all the runs the mock TFC server can serve, the keys are the paths for the runs
+	// projects is a map of all the projects the mock TFC contains, with their respective id as the keys
+	projects map[string]*tfe.Project
+
+	// workspaces is a map of all the workspaces the mock TFC contains, with their respective id as the keys
+	workspaces map[string]*tfe.Workspace
+
+	// runs is a map containing the all the runs the mock TFC contains, the keys are the paths for the runs
 	runs map[string]*tfe.Run
+
+	// vars is a map of all the vars the mock TFC server contains, the keys are the IDs of the workspaces that own them
+	vars map[string][]*tfe.Variable
 
 	retryAfter     int
 	retryAfterLock sync.Mutex
@@ -38,7 +50,11 @@ type MockTFC struct {
 
 func NewMockTFC() *MockTFC {
 	mock := &MockTFC{
-		runs: map[string]*tfe.Run{},
+		OrganizationName: "team-rocket-blast-off",
+		projects:         map[string]*tfe.Project{},
+		workspaces:       map[string]*tfe.Workspace{},
+		runs:             map[string]*tfe.Run{},
+		vars:             map[string][]*tfe.Variable{},
 	}
 	mock.http = httptest.NewServer(mock)
 	mock.Address = mock.http.URL
@@ -97,7 +113,9 @@ func (srv *MockTFC) checkForMockHandler(r *http.Request) http.HandlerFunc {
 }
 
 func (srv *MockTFC) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// check if the request should be handled via mock instead
+	log.Default().Printf("mock TFC server handling request: %s %s", r.Method, r.URL.Path)
+
+	// Check if the request should be handled via mock instead
 	if mockHandler := srv.checkForMockHandler(r); mockHandler != nil {
 		mockHandler(w, r)
 		return
@@ -130,30 +148,18 @@ func (srv *MockTFC) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (srv *MockTFC) handlePOST(w http.ResponseWriter, r *http.Request) {
-	switch r.URL.Path {
-	case "/api/agent/register":
-		//var registration *structs.Registration
-		//if err := json.NewDecoder(r.Body).Decode(&registration); err != nil {
-		//	w.WriteHeader(500)
-		//	return
-		//}
-		//srv.SetAgentName(registration.Name)
-
-		//receipt := &structs.RegistrationReceipt{
-		//	ID:     "agent-xsJUw5nKg2aSdEAt",
-		//	PoolID: "apool-oBL64SBYezMaVt3i",
-		//}
-		//body, err := json.Marshal(receipt)
-		//if err != nil {
-		//	w.WriteHeader(500)
-		//	return
-		//}
-		//w.WriteHeader(200)
-		//w.Write(body)
-
-	default:
-		w.WriteHeader(400)
+	if srv.HandleProjectsPostRequests(w, r) {
+		return
 	}
+	if srv.HandleWorkspacesPostRequests(w, r) {
+		return
+	}
+	if srv.HandleVarsPostRequests(w, r) {
+		return
+	}
+
+	// Not found error
+	w.WriteHeader(404)
 }
 
 func (srv *MockTFC) handleGET(w http.ResponseWriter, r *http.Request) {
@@ -164,16 +170,16 @@ func (srv *MockTFC) handleGET(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Handle requests for Runs
-	run := srv.runs[r.URL.Path]
-	if run != nil {
-		body, err := json.Marshal(MakeGetRunResponse(*run))
-		if err != nil {
-			w.WriteHeader(500)
-			return
-		}
-		w.WriteHeader(200)
-		w.Write(body)
+	if srv.HandleProjectsGetRequests(w, r) {
+		return
+	}
+	if srv.HandleWorkspacesGetRequests(w, r) {
+		return
+	}
+	if srv.HandleRunsRequests(w, r) {
+		return
+	}
+	if srv.HandleVarsGetRequests(w, r) {
 		return
 	}
 
