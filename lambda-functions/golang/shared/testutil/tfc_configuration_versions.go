@@ -7,6 +7,7 @@ import (
 	"strings"
 	"log"
 	"encoding/json"
+	"io"
 )
 
 func (srv *MockTFC) AddConfigurationVersion(workspaceId string, configVersion *tfe.ConfigurationVersion) *tfe.ConfigurationVersion {
@@ -66,6 +67,12 @@ func (srv *MockTFC) HandleConfigurationVersionsUploads(w http.ResponseWriter, r 
 
 	if urlPathParts[1] == "configuration-version-uploads" {
 		configVersionId := urlPathParts[2]
+
+		uploadedArtifact, err := io.ReadAll(r.Body)
+		if err != nil {
+			return false
+		}
+		srv.SetUploadedArtifact(uploadedArtifact)
 
 		// set the configuration version's status to uploaded
 		configVersion := srv.configurationVersionsById[configVersionId]

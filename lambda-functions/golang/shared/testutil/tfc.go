@@ -40,6 +40,9 @@ type MockTFC struct {
 	// configurationVersionsById is a map of all the ConfigurationVersions the mock TFC server contains, the keys are the IDs of the configurationVersions
 	configurationVersionsById map[string]*tfe.ConfigurationVersion
 
+	uploadedArtifactLock sync.Mutex
+	uploadedArtifact     []byte
+
 	retryAfter     int
 	retryAfterLock sync.Mutex
 
@@ -67,6 +70,18 @@ func NewMockTFC() *MockTFC {
 	mock.http = httptest.NewServer(mock)
 	mock.Address = mock.http.URL
 	return mock
+}
+
+func (srv *MockTFC) SetUploadedArtifact(artifact []byte) {
+	srv.uploadedArtifactLock.Lock()
+	defer srv.uploadedArtifactLock.Unlock()
+	srv.uploadedArtifact = artifact
+}
+
+func (srv *MockTFC) UploadedArtifact() []byte {
+	srv.uploadedArtifactLock.Lock()
+	defer srv.uploadedArtifactLock.Unlock()
+	return srv.uploadedArtifact
 }
 
 // SetRetryAfter sets the value which will be used as the Retry-After header.
