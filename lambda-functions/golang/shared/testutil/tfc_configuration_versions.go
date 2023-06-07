@@ -112,33 +112,6 @@ func (srv *MockTFC) HandleConfigurationVersionsGetRequests(w http.ResponseWriter
 	return false
 }
 
-//func MakeListVarsResponse(vars []*tfe.Variable) map[string]interface{} {
-//
-//	data := make([]map[string]interface{}, 0)
-//
-//	for _, variable := range vars {
-//		selfLink := fmt.Sprintf("/api/v2/vars/%s", variable.ID)
-//		datum := map[string]interface{}{
-//			"id":   variable.ID,
-//			"type": "vars",
-//			"attributes": map[string]interface{}{
-//				"key":   variable.Key,
-//				"value": variable.Value,
-//			},
-//			"relationships": map[string]interface{}{},
-//			"links": map[string]interface{}{
-//				"self": selfLink,
-//			},
-//		}
-//
-//		data = append(data, datum)
-//	}
-//
-//	return map[string]interface{}{
-//		"data": data,
-//	}
-//}
-
 func MakeConfigurationVersionResponse(configVersion *tfe.ConfigurationVersion) map[string]interface{} {
 	selfLink := fmt.Sprintf("/api/v2/configuration-versions/%s", configVersion.ID)
 
