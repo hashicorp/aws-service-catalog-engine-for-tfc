@@ -31,8 +31,14 @@ type MockTFC struct {
 	// runs is a map containing the all the runs the mock TFC contains, the keys are the paths for the runs
 	runs map[string]*tfe.Run
 
-	// vars is a map of all the vars the mock TFC server contains, the keys are the IDs of the workspaces that own them
+	// vars is a map of all the Variables the mock TFC server contains, the keys are the IDs of the workspaces that own them
 	vars map[string][]*tfe.Variable
+
+	// configurationVersionsByWorkspace is a map of all the ConfigurationVersions the mock TFC server contains, the keys are the IDs of the workspaces that own them
+	configurationVersionsByWorkspace map[string][]*tfe.ConfigurationVersion
+
+	// configurationVersionsById is a map of all the ConfigurationVersions the mock TFC server contains, the keys are the IDs of the configurationVersions
+	configurationVersionsById map[string]*tfe.ConfigurationVersion
 
 	retryAfter     int
 	retryAfterLock sync.Mutex
@@ -50,11 +56,13 @@ type MockTFC struct {
 
 func NewMockTFC() *MockTFC {
 	mock := &MockTFC{
-		OrganizationName: "team-rocket-blast-off",
-		projects:         map[string]*tfe.Project{},
-		workspaces:       map[string]*tfe.Workspace{},
-		runs:             map[string]*tfe.Run{},
-		vars:             map[string][]*tfe.Variable{},
+		OrganizationName:                 "team-rocket-blast-off",
+		projects:                         map[string]*tfe.Project{},
+		workspaces:                       map[string]*tfe.Workspace{},
+		runs:                             map[string]*tfe.Run{},
+		vars:                             map[string][]*tfe.Variable{},
+		configurationVersionsById:        map[string]*tfe.ConfigurationVersion{},
+		configurationVersionsByWorkspace: map[string][]*tfe.ConfigurationVersion{},
 	}
 	mock.http = httptest.NewServer(mock)
 	mock.Address = mock.http.URL
@@ -157,6 +165,12 @@ func (srv *MockTFC) handlePOST(w http.ResponseWriter, r *http.Request) {
 	if srv.HandleVarsPostRequests(w, r) {
 		return
 	}
+	if srv.HandleConfigurationVersionsPostRequests(w, r) {
+		return
+	}
+	if srv.HandleRunsPostRequests(w, r) {
+		return
+	}
 
 	// Not found error
 	w.WriteHeader(404)
@@ -176,10 +190,13 @@ func (srv *MockTFC) handleGET(w http.ResponseWriter, r *http.Request) {
 	if srv.HandleWorkspacesGetRequests(w, r) {
 		return
 	}
-	if srv.HandleRunsRequests(w, r) {
+	if srv.HandleRunsGetRequests(w, r) {
 		return
 	}
 	if srv.HandleVarsGetRequests(w, r) {
+		return
+	}
+	if srv.HandleConfigurationVersionsGetRequests(w, r) {
 		return
 	}
 
@@ -188,7 +205,11 @@ func (srv *MockTFC) handleGET(w http.ResponseWriter, r *http.Request) {
 }
 
 func (srv *MockTFC) handlePUT(w http.ResponseWriter, r *http.Request) {
+	if srv.HandleConfigurationVersionsUploads(w, r) {
+		return
+	}
 
+	w.WriteHeader(404)
 }
 
 func (srv *MockTFC) checkBaseRequest(r *http.Request) (int, []byte) {

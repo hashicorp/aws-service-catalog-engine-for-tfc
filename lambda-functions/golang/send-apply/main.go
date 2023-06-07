@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/awsconfig"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/fileutils"
 )
 
 type SendApplyRequest struct {
@@ -46,11 +47,14 @@ func main() {
 		log.Fatalf("failed to initialize TFE client: %s", err)
 	}
 
-	// Initialize the s3 client
+	// Initialize the s3 downloader
 	s3Client := s3.NewFromConfig(sdkConfig)
+	s3Downloader := fileutils.S3ManagerDownloader{
+		S3Client: s3Client,
+	}
 
 	// Create the handler
-	handler := &SendApplyHandler{tfeClient: client, s3Client: s3Client, region: sdkConfig.Region}
+	handler := &SendApplyHandler{tfeClient: client, s3Downloader: s3Downloader, region: sdkConfig.Region}
 
 	// Start the lambda using the handler
 	lambda.Start(handler.HandleRequest)

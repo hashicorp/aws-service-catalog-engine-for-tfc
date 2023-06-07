@@ -101,43 +101,6 @@ func TestAddEntryToTar(t *testing.T) {
 		t.Error(err)
 	}
 
-	//f, err := os.Create("test.tar")
-	//if err != nil {
-	//	log.Fatalln(err)
-	//}
-	//
-	//tw := tar.NewWriter(f)
-	//
-	//var files = []struct {
-	//	Name, Body string
-	//}{
-	//	{"readme.txt", "This archive contains some text files."},
-	//	{"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"},
-	//	{"todo.txt", "Get animal handling licence."},
-	//}
-	//for _, file := range files {
-	//	hdr := &tar.Header{
-	//		Name: file.Name,
-	//		Size: int64(len(file.Body)),
-	//	}
-	//	if err := tw.WriteHeader(hdr); err != nil {
-	//		log.Fatalln(err)
-	//	}
-	//	if _, err := tw.Write([]byte(file.Body)); err != nil {
-	//		log.Fatalln(err)
-	//	}
-	//}
-	//if err := tw.Close(); err != nil {
-	//	log.Fatalln(err)
-	//}
-	//f.Close()
-	//
-	//// Open the tar file that we just closed
-	//newTarFile, err := os.OpenFile("test.tar", os.O_RDWR, os.ModePerm)
-	//if err != nil {
-	//	t.Error(err)
-	//}
-
 	// Append entry to tar file
 	err = AddEntryToTar(newTarFile, "elephants", "canoe")
 	if err != nil {

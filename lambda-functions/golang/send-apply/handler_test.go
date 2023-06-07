@@ -6,6 +6,7 @@ import (
 	"context"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tracertag"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/s3"
 )
 
 func TestSendApplyHandler_Success(t *testing.T) {
@@ -19,11 +20,17 @@ func TestSendApplyHandler_Success(t *testing.T) {
 		t.Error(err)
 	}
 
+	// Create mock S3 downlaoder
+	const MockArtifactPath = "../../../example-product/product.tar.gz"
+	mockDownloader := s3.MockDownloader{
+		MockArtifactPath: MockArtifactPath,
+	}
+
 	// Create a test instance of the Lambda function
 	testHandler := &SendApplyHandler{
-		tfeClient: tfeClient,
-		s3Client:  nil,
-		region:    "us-west-2",
+		tfeClient:    tfeClient,
+		s3Downloader: mockDownloader,
+		region:       "us-west-2",
 	}
 
 	// Create test request
@@ -36,7 +43,7 @@ func TestSendApplyHandler_Success(t *testing.T) {
 			Type: "beeg-test",
 		},
 		LaunchRoleArn: "arn:::some/fake/role/arn",
-		ProductId:     "id-4-number-1-best-producy",
+		ProductId:     "id-4-number-1-best-product",
 		Tags:          make([]AWSTag, 0),
 		TracerTag: tracertag.TracerTag{
 			TracerTagKey:   "test-tracer-tag-key",

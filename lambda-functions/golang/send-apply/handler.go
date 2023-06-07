@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/hashicorp/go-tfe"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"time"
 	"context"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/identifiers"
@@ -12,9 +11,9 @@ import (
 )
 
 type SendApplyHandler struct {
-	tfeClient *tfe.Client
-	s3Client  *s3.Client
-	region    string
+	tfeClient    *tfe.Client
+	s3Downloader fileutils.S3Downloader
+	region       string
 }
 
 func (h *SendApplyHandler) HandleRequest(ctx context.Context, request SendApplyRequest) (*SendApplyResponse, error) {
@@ -52,7 +51,7 @@ func (h *SendApplyHandler) HandleRequest(ctx context.Context, request SendApplyR
 
 	// Download product configuration files
 	bucket, key := resolveArtifactPath(request.Artifact.Path)
-	sourceProductConfig, err := fileutils.DownloadS3File(ctx, key, bucket, h.s3Client)
+	sourceProductConfig, err := fileutils.DownloadS3File(ctx, h.s3Downloader, key, bucket)
 	if err != nil {
 		return nil, err
 	}
@@ -75,6 +74,9 @@ func (h *SendApplyHandler) HandleRequest(ctx context.Context, request SendApplyR
 	uploadTimeoutInSeconds := 120
 	for i := 0; ; i++ {
 		refreshed, err := h.tfeClient.ConfigurationVersions.Read(ctx, cv.ID)
+		if err != nil {
+			return nil, err
+		}
 
 		if refreshed.Status == tfe.ConfigurationUploaded {
 			break

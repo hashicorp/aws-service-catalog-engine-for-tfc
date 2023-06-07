@@ -10,11 +10,12 @@ import (
 	"log"
 	"net/url"
 	"regexp"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/identifiers"
 )
 
 func FetchRunOutputs(ctx context.Context, client *tfe.Client, request NotifyRunResultRequest) ([]types.RecordOutput, error) {
 	// Get workspace name
-	workspaceName := getWorkspaceName(request.AwsAccountId, request.ProvisionedProductId)
+	workspaceName := identifiers.GetWorkspaceName(request.AwsAccountId, request.ProvisionedProductId)
 	w, err := client.Workspaces.Read(ctx, request.TerraformOrganization, workspaceName)
 	if err != nil {
 		return nil, err

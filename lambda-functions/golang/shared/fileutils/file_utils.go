@@ -6,9 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"io"
 	"log"
 	"os"
@@ -18,7 +15,7 @@ import (
 	"time"
 )
 
-func DownloadS3File(ctx context.Context, objectKey string, bucket string, s3Client *s3.Client) (*os.File, error) {
+func DownloadS3File(ctx context.Context, s3Downloader S3Downloader, objectKey string, bucket string) (*os.File, error) {
 	log.Default().Print("downloading product terraform configuration from s3")
 
 	tmp, err := os.CreateTemp("", "artifact-")
@@ -26,12 +23,8 @@ func DownloadS3File(ctx context.Context, objectKey string, bucket string, s3Clie
 		panic(err)
 	}
 
-	downloader := manager.NewDownloader(s3Client)
+	numBytes, err := s3Downloader.Download(ctx, tmp, bucket, objectKey)
 
-	numBytes, err := downloader.Download(ctx, tmp, &s3.GetObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(objectKey),
-	})
 	if err != nil {
 		return nil, err
 	}
@@ -46,22 +39,6 @@ func DownloadS3File(ctx context.Context, objectKey string, bucket string, s3Clie
 	log.Default().Print("downloaded product terraform configuration from s3")
 
 	return tmp, err
-}
-
-func UploadS3File(ctx context.Context, s3Client *s3.Client, objectKey string, bucket string, file *os.File) error {
-	// Upload re-zipped file to s3
-	uploader := manager.NewUploader(s3Client)
-
-	_, err := uploader.Upload(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(objectKey),
-		Body:   file,
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // UnzipFile decompresses the file that is passed and returns an open file containing the newly decompressed source.

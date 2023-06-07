@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"net/http"
 	"encoding/json"
+	"time"
 )
 
 type RunFactoryParameters struct {
 	RunStatus tfe.RunStatus
 }
 
-func (srv *MockTFC) AddRun(runId string, p RunFactoryParameters) {
+func (srv *MockTFC) AddRun(runId string, p RunFactoryParameters) *tfe.Run {
 	// Create the mock run
 	run := &tfe.Run{
 		ID:     runId,
@@ -21,9 +22,46 @@ func (srv *MockTFC) AddRun(runId string, p RunFactoryParameters) {
 	// Save the run to the mock server
 	runPath := fmt.Sprintf("/api/v2/runs/%s", runId)
 	srv.runs[runPath] = run
+
+	return run
 }
 
-func (srv *MockTFC) HandleRunsRequests(w http.ResponseWriter, r *http.Request) bool {
+func (srv *MockTFC) PersistRun(run *tfe.Run) *tfe.Run {
+	runId := RunId(run)
+
+	// Save the run to the mock server
+	runPath := fmt.Sprintf("/api/v2/runs/%s", runId)
+	srv.runs[runPath] = run
+
+	return run
+}
+
+func (srv *MockTFC) HandleRunsPostRequests(w http.ResponseWriter, r *http.Request) bool {
+	if r.URL.Path == "/api/v2/runs" {
+		var runRequest *RunPostRequest
+		if err := json.NewDecoder(r.Body).Decode(&runRequest); err != nil {
+			w.WriteHeader(500)
+			return true
+		}
+
+		run := RunFromRequest(*runRequest)
+		srv.PersistRun(run)
+
+		receipt := MakeGetRunResponse(*run)
+		body, err := json.Marshal(receipt)
+		if err != nil {
+			w.WriteHeader(500)
+			return true
+		}
+		w.WriteHeader(200)
+		w.Write(body)
+		return true
+	}
+
+	return false
+}
+
+func (srv *MockTFC) HandleRunsGetRequests(w http.ResponseWriter, r *http.Request) bool {
 	run := srv.runs[r.URL.Path]
 	if run != nil {
 		body, err := json.Marshal(MakeGetRunResponse(*run))
@@ -53,6 +91,33 @@ func MakeGetRunResponse(run tfe.Run) map[string]interface{} {
 		"relationships": map[string]interface{}{},
 		"links": map[string]interface{}{
 			"self": selfLink,
+		},
+	}
+}
+
+type RunPostRequest struct {
+	Data struct {
+		Id         int `json:"id"`
+		Attributes struct {
+			AutoApply bool `json:"auto-apply"`
+		} `json:"attributes"`
+		Relationships struct {
+			Workspace struct {
+				Data struct {
+					Id string `json:"id"`
+				} `json:"data"`
+			} `json:"workspace"`
+		} `json:"relationships"`
+	} `json:"data"`
+}
+
+func RunFromRequest(req RunPostRequest) *tfe.Run {
+	return &tfe.Run{
+		AutoApply:              req.Data.Attributes.AutoApply,
+		CreatedAt:              time.Now(),
+		ForceCancelAvailableAt: time.Now(),
+		Workspace: &tfe.Workspace{
+			ID: req.Data.Relationships.Workspace.Data.Id,
 		},
 	}
 }
