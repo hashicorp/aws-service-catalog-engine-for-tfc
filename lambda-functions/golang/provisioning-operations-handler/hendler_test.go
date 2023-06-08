@@ -9,12 +9,52 @@ import (
 	"github.com/aws/smithy-go/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"time"
+	"errors"
 )
 
 func TestProvisioningOperationsHandler_Success(t *testing.T) {
 
 	// Create mock StepFunctions facade
-	mockStepFunctions := MockStepFunctions{}
+	mockStepFunctions := MockStepFunctionsWithSuccessfulResponse{}
+
+	// Create a test instance of the Lambda function
+	testHandler := &ProvisioningOperationsHandler{
+		stepFunctions:   mockStepFunctions,
+		stateMachineArn: "arn:::such-a-great-state-machine/like/wow",
+	}
+
+	// Create test request
+	testPayload := StateMachinePayload{
+		Token:                "tolkien",
+		ProvisionedProductId: "the-bestest-product-id",
+		RecordId:             "the-bestest-record-id",
+	}
+	testPayloadJson, err := json.Marshal(testPayload)
+	if err != nil {
+		t.Error(err)
+	}
+
+	testRequest := ProvisioningOperationsHandlerRequest{
+		Records: []Record{{
+			MessageId: "the-bestest-msg-id",
+			Body:      string(testPayloadJson),
+		}},
+	}
+
+	// Send the test request
+	response, err := testHandler.HandleRequest(context.Background(), testRequest)
+	// Verify no errors were returned
+	if err != nil {
+		t.Error(err)
+	}
+
+	assert.Empty(t, response.BatchItemFailures, "No failures should be returned")
+}
+
+func TestProvisioningOperationsHandler_Failure(t *testing.T) {
+
+	// Create mock StepFunctions facade
+	mockStepFunctions := MockStepFunctionsWithErrorResponse{}
 
 	// Create a test instance of the Lambda function
 	testHandler := &ProvisioningOperationsHandler{
@@ -46,12 +86,15 @@ func TestProvisioningOperationsHandler_Success(t *testing.T) {
 		t.Error(err)
 	}
 
-	assert.Empty(t, response.BatchItemFailures, "No failures should be returned")
+	expectedFailures := []BatchItemFailure{{
+		ItemIdentifier: "the-bestest-msg-id",
+	}}
+	assert.Equal(t, expectedFailures, response.BatchItemFailures, "Expected a failure")
 }
 
-type MockStepFunctions struct{}
+type MockStepFunctionsWithSuccessfulResponse struct{}
 
-func (stepFunctions MockStepFunctions) StartExecution(ctx context.Context, input *sfn.StartExecutionInput) (*sfn.StartExecutionOutput, error) {
+func (stepFunctions MockStepFunctionsWithSuccessfulResponse) StartExecution(ctx context.Context, input *sfn.StartExecutionInput) (*sfn.StartExecutionOutput, error) {
 	metadata := middleware.Metadata{}
 
 	metadata.Set("RequestId", "the-bestest-request")
@@ -61,4 +104,10 @@ func (stepFunctions MockStepFunctions) StartExecution(ctx context.Context, input
 		StartDate:      aws.Time(time.Now()),
 		ResultMetadata: metadata,
 	}, nil
+}
+
+type MockStepFunctionsWithErrorResponse struct{}
+
+func (stepFunctions MockStepFunctionsWithErrorResponse) StartExecution(ctx context.Context, input *sfn.StartExecutionInput) (*sfn.StartExecutionOutput, error) {
+	return nil, errors.New("whoopsies")
 }

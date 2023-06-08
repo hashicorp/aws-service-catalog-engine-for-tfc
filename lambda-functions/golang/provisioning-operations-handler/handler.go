@@ -14,7 +14,7 @@ type ProvisioningOperationsHandler struct {
 }
 
 func (h *ProvisioningOperationsHandler) HandleRequest(ctx context.Context, request ProvisioningOperationsHandlerRequest) (*ProvisioningOperationsHandlerResponse, error) {
-	response := ProvisioningOperationsHandlerResponse{}
+	response := &ProvisioningOperationsHandlerResponse{}
 	for _, record := range request.Records {
 		err := h.StartStateMachineExecution(ctx, record)
 		if err != nil {
@@ -25,7 +25,7 @@ func (h *ProvisioningOperationsHandler) HandleRequest(ctx context.Context, reque
 		}
 	}
 
-	return &ProvisioningOperationsHandlerResponse{}, nil
+	return response, nil
 }
 
 func (h *ProvisioningOperationsHandler) StartStateMachineExecution(ctx context.Context, record Record) error {
