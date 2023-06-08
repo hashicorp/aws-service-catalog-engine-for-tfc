@@ -39,6 +39,17 @@ func ConfigVersionId(workspaceId string) string {
 	return fmt.Sprintf("cv-%s", trimmedSha)
 }
 
+func StateVersionId(workspaceId string) string {
+	uniqueIdentifier := fmt.Sprintf("%s %s", workspaceId, uuid.New().String())
+
+	hasher := sha1.New()
+	hasher.Write([]byte(uniqueIdentifier))
+	sha := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
+
+	trimmedSha := TruncateString(sha, 16)
+	return fmt.Sprintf("sv-%s", trimmedSha)
+}
+
 func RunId(run *tfe.Run) string {
 	uniqueIdentifier := fmt.Sprintf("%s %s", run.Workspace.ID, uuid.New().String())
 

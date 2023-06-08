@@ -34,6 +34,9 @@ func FetchRunOutputs(ctx context.Context, client *tfe.Client, request NotifyRunR
 
 	// Get state version outputs
 	stateVersionOutputs, err := GetAllStateVersionOutputs(ctx, client, stateVersion.ID)
+	if err != nil {
+		return nil, err
+	}
 
 	var recordOutputs []types.RecordOutput
 	for _, stateVersionOutput := range stateVersionOutputs {
@@ -127,6 +130,9 @@ func GetAllStateVersionOutputs(ctx context.Context, client *tfe.Client, stateVer
 			PageSize:   100,
 		},
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	return stateVersionOutputs.Items, err
 }

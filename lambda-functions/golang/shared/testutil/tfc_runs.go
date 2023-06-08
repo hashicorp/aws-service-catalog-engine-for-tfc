@@ -10,6 +10,7 @@ import (
 
 type RunFactoryParameters struct {
 	RunStatus tfe.RunStatus
+	Apply     *tfe.Apply
 }
 
 func (srv *MockTFC) AddRun(runId string, p RunFactoryParameters) *tfe.Run {
@@ -17,6 +18,7 @@ func (srv *MockTFC) AddRun(runId string, p RunFactoryParameters) *tfe.Run {
 	run := &tfe.Run{
 		ID:     runId,
 		Status: p.RunStatus,
+		Apply:  p.Apply,
 	}
 
 	// Save the run to the mock server
@@ -80,6 +82,20 @@ func (srv *MockTFC) HandleRunsGetRequests(w http.ResponseWriter, r *http.Request
 func MakeGetRunResponse(run tfe.Run) map[string]interface{} {
 	selfLink := fmt.Sprintf("/api/v2/runs/%s", run.ID)
 
+	relationships := map[string]interface{}{}
+
+	if run.Apply != nil {
+		relationships["apply"] = map[string]interface{}{
+			"data": map[string]interface{}{
+				"id":   run.Apply.ID,
+				"type": "applies",
+				"attributes": map[string]interface{}{
+					"status": run.Apply.Status,
+				},
+			},
+		}
+	}
+
 	return map[string]interface{}{
 		"data": map[string]interface{}{
 			"id":   run.ID,
@@ -87,10 +103,10 @@ func MakeGetRunResponse(run tfe.Run) map[string]interface{} {
 			"attributes": map[string]interface{}{
 				"status": run.Status,
 			},
-		},
-		"relationships": map[string]interface{}{},
-		"links": map[string]interface{}{
-			"self": selfLink,
+			"relationships": relationships,
+			"links": map[string]interface{}{
+				"self": selfLink,
+			},
 		},
 	}
 }

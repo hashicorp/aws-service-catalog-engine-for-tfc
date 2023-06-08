@@ -34,6 +34,15 @@ type MockTFC struct {
 	// Vars is a map of all the Variables the mock TFC server contains, the keys are the IDs of the Workspaces that own them
 	Vars map[string][]*tfe.Variable
 
+	// Applies is a map containing the all the Applies the mock TFC contains, the keys are the paths for the Applies
+	Applies map[string]*tfe.Apply
+
+	// StateVersions is a map containing the all the StateVersions the mock TFC contains, the keys are the IDs of the Workspaces that own them
+	StateVersions map[string]*tfe.StateVersion
+
+	// StateVersionOutputs is a map containing the all the StateVersionOutputs the mock TFC contains, the keys are the IDs of the StateVersion that own them
+	StateVersionOutputs map[string][]*tfe.StateVersionOutput
+
 	// configurationVersionsById is a map of all the ConfigurationVersions the mock TFC server contains, the keys are the IDs of the configurationVersions
 	configurationVersionsById map[string]*tfe.ConfigurationVersion
 
@@ -61,6 +70,9 @@ func NewMockTFC() *MockTFC {
 		Workspaces:                map[string]*tfe.Workspace{},
 		Runs:                      map[string]*tfe.Run{},
 		Vars:                      map[string][]*tfe.Variable{},
+		Applies:                   map[string]*tfe.Apply{},
+		StateVersions:             map[string]*tfe.StateVersion{},
+		StateVersionOutputs:       map[string][]*tfe.StateVersionOutput{},
 		configurationVersionsById: map[string]*tfe.ConfigurationVersion{},
 	}
 	mock.http = httptest.NewServer(mock)
@@ -211,6 +223,12 @@ func (srv *MockTFC) handleGET(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if srv.HandleConfigurationVersionsGetRequests(w, r) {
+		return
+	}
+	if srv.HandleAppliesGetRequests(w, r) {
+		return
+	}
+	if srv.HandleStateVersionsGetRequests(w, r) {
 		return
 	}
 
