@@ -103,6 +103,19 @@ func (srv *MockTFC) HandleWorkspacesGetRequests(w http.ResponseWriter, r *http.R
 	return false
 }
 
+func (srv *MockTFC) HandleWorkspacesDeleteRequests(w http.ResponseWriter, r *http.Request) bool {
+	// /api/v2/organizations/team-rocket-blast-off/workspaces/123456789042-amazingly => "", "api", "v2", "organizations", "team-rocket-blast-off", "workspaces", "123456789042-amazingly"
+	urlPathParts := strings.Split(r.URL.Path, "/")
+	if urlPathParts[3] == "organizations" && urlPathParts[5] == "workspaces" && urlPathParts[6] != "" {
+		workspaceId := urlPathParts[6]
+		srv.workspaces[workspaceId] = nil
+		w.WriteHeader(204)
+		return true
+	}
+
+	return false
+}
+
 func MakeListWorkspacesResponse(workspaces []*tfe.Workspace) map[string]interface{} {
 
 	data := make([]map[string]interface{}, 0)

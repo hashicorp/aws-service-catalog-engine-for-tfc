@@ -165,6 +165,9 @@ func (srv *MockTFC) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "PUT":
 		srv.handlePUT(w, r)
 
+	case "DELETE":
+		srv.handleDELETE(w, r)
+
 	default:
 		w.WriteHeader(400)
 	}
@@ -221,6 +224,14 @@ func (srv *MockTFC) handleGET(w http.ResponseWriter, r *http.Request) {
 
 func (srv *MockTFC) handlePUT(w http.ResponseWriter, r *http.Request) {
 	if srv.HandleConfigurationVersionsUploads(w, r) {
+		return
+	}
+
+	w.WriteHeader(404)
+}
+
+func (srv *MockTFC) handleDELETE(w http.ResponseWriter, r *http.Request) {
+	if srv.HandleWorkspacesDeleteRequests(w, r) {
 		return
 	}
 
