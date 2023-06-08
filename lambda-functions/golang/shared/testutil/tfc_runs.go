@@ -21,7 +21,7 @@ func (srv *MockTFC) AddRun(runId string, p RunFactoryParameters) *tfe.Run {
 
 	// Save the run to the mock server
 	runPath := fmt.Sprintf("/api/v2/runs/%s", runId)
-	srv.runs[runPath] = run
+	srv.Runs[runPath] = run
 
 	return run
 }
@@ -31,7 +31,7 @@ func (srv *MockTFC) PersistRun(run *tfe.Run) *tfe.Run {
 
 	// Save the run to the mock server
 	runPath := fmt.Sprintf("/api/v2/runs/%s", runId)
-	srv.runs[runPath] = run
+	srv.Runs[runPath] = run
 
 	return run
 }
@@ -62,7 +62,7 @@ func (srv *MockTFC) HandleRunsPostRequests(w http.ResponseWriter, r *http.Reques
 }
 
 func (srv *MockTFC) HandleRunsGetRequests(w http.ResponseWriter, r *http.Request) bool {
-	run := srv.runs[r.URL.Path]
+	run := srv.Runs[r.URL.Path]
 	if run != nil {
 		body, err := json.Marshal(MakeGetRunResponse(*run))
 		if err != nil {

@@ -25,7 +25,7 @@ func (srv *MockTFC) AddProject(id string, p ProjectFactoryParameters) {
 
 	// Save the Project to the mock server
 	projectId := fmt.Sprintf(id)
-	srv.projects[projectId] = project
+	srv.Projects[projectId] = project
 }
 
 func (srv *MockTFC) HandleProjectsPostRequests(w http.ResponseWriter, r *http.Request) bool {
@@ -53,9 +53,9 @@ func (srv *MockTFC) HandleProjectsPostRequests(w http.ResponseWriter, r *http.Re
 
 func (srv *MockTFC) HandleProjectsGetRequests(w http.ResponseWriter, r *http.Request) bool {
 	if r.URL.Path == fmt.Sprintf("/api/v2/organizations/%s/projects", srv.OrganizationName) {
-		projects := make([]*tfe.Project, 0, len(srv.workspaces))
+		projects := make([]*tfe.Project, 0, len(srv.Workspaces))
 
-		for _, value := range srv.projects {
+		for _, value := range srv.Projects {
 			projects = append(projects, value)
 		}
 

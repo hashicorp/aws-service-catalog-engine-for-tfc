@@ -16,11 +16,11 @@ func (srv *MockTFC) AddVar(variable *tfe.Variable) *tfe.Variable {
 
 	// Get or create existing array of Variables for the workspace
 	vars := make([]*tfe.Variable, 0)
-	if existingVars := srv.vars[workspaceId]; existingVars != nil {
+	if existingVars := srv.Vars[workspaceId]; existingVars != nil {
 		vars = existingVars
 	}
 
-	srv.vars[workspaceId] = append(vars, variable)
+	srv.Vars[workspaceId] = append(vars, variable)
 
 	return variable
 }
@@ -66,7 +66,7 @@ func (srv *MockTFC) HandleVarsGetRequests(w http.ResponseWriter, r *http.Request
 	if urlPathParts[3] == "workspaces" && urlPathParts[5] == "vars" {
 		workspaceId := urlPathParts[4]
 
-		vars := srv.vars[workspaceId]
+		vars := srv.Vars[workspaceId]
 
 		body, err := json.Marshal(MakeListVarsResponse(vars))
 		if err != nil {

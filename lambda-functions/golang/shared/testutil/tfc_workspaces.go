@@ -27,7 +27,7 @@ func (srv *MockTFC) AddWorkspace(id string, p WorkspaceFactoryParameters) *tfe.W
 
 	// save the workspace to the mock server
 	workspaceId := fmt.Sprintf(id)
-	srv.workspaces[workspaceId] = workspace
+	srv.Workspaces[workspaceId] = workspace
 
 	return workspace
 }
@@ -59,9 +59,9 @@ func (srv *MockTFC) HandleWorkspacesPostRequests(w http.ResponseWriter, r *http.
 
 func (srv *MockTFC) HandleWorkspacesGetRequests(w http.ResponseWriter, r *http.Request) bool {
 	if r.URL.Path == fmt.Sprintf("/api/v2/organizations/%s/workspaces", srv.OrganizationName) {
-		workspaces := make([]*tfe.Workspace, 0, len(srv.workspaces))
+		workspaces := make([]*tfe.Workspace, 0, len(srv.Workspaces))
 
-		for _, value := range srv.workspaces {
+		for _, value := range srv.Workspaces {
 			workspaces = append(workspaces, value)
 		}
 
@@ -84,7 +84,7 @@ func (srv *MockTFC) HandleWorkspacesGetRequests(w http.ResponseWriter, r *http.R
 	if urlPathParts[3] == "organizations" && urlPathParts[5] == "workspaces" && urlPathParts[6] != "" {
 		workspaceId := urlPathParts[6]
 
-		workspace := srv.workspaces[workspaceId]
+		workspace := srv.Workspaces[workspaceId]
 
 		body, err := json.Marshal(MakeWorkspaceResponse(workspace))
 		if err != nil {
@@ -108,7 +108,8 @@ func (srv *MockTFC) HandleWorkspacesDeleteRequests(w http.ResponseWriter, r *htt
 	urlPathParts := strings.Split(r.URL.Path, "/")
 	if urlPathParts[3] == "organizations" && urlPathParts[5] == "workspaces" && urlPathParts[6] != "" {
 		workspaceId := urlPathParts[6]
-		srv.workspaces[workspaceId] = nil
+
+		delete(srv.Workspaces, workspaceId)
 		w.WriteHeader(204)
 		return true
 	}

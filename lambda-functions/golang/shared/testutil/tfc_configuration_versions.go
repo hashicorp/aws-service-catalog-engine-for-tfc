@@ -19,13 +19,6 @@ func (srv *MockTFC) AddConfigurationVersion(workspaceId string, configVersion *t
 	// Save the configuration version to the server's 'configuration versions by id" map
 	srv.configurationVersionsById[configVersion.ID] = configVersion
 
-	// Save the configuration version to the server's mappings of configuration versions to workspaces
-	configVersions := make([]*tfe.ConfigurationVersion, 0)
-	if existingConfigVersions := srv.configurationVersionsByWorkspace[workspaceId]; existingConfigVersions != nil {
-		configVersions = existingConfigVersions
-	}
-	srv.configurationVersionsByWorkspace[workspaceId] = append(configVersions, configVersion)
-
 	return configVersion
 }
 
