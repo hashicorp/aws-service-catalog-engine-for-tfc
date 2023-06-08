@@ -36,6 +36,7 @@ func (h NotifyRunResultHandler) NotifyTerminateResult(ctx context.Context, reque
 	// Delete the workspace
 	err := DeleteWorkspace(ctx, h.tfeClient, request)
 	if err != nil {
+		log.Default().Printf("failed to delete workspace: %v", err)
 		request.ErrorMessage = err.Error()
 	}
 
@@ -59,7 +60,7 @@ func (h NotifyRunResultHandler) NotifyTerminateResult(ctx context.Context, reque
 		},
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Default().Printf("failed to notify service catalog: %v", err)
 	}
 
 	return nil, err
@@ -77,6 +78,7 @@ func (h NotifyRunResultHandler) NotifyProvisioningResult(ctx context.Context, re
 	} else {
 		outputs, err = FetchRunOutputs(ctx, h.tfeClient, request)
 		if err != nil {
+			log.Default().Printf("failed to fetch run outputs: %v", err)
 			return nil, err
 		}
 	}
@@ -101,7 +103,7 @@ func (h NotifyRunResultHandler) NotifyProvisioningResult(ctx context.Context, re
 		},
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Default().Printf("failed to notify service catalog: %v", err)
 	}
 
 	return nil, err
@@ -136,7 +138,7 @@ func (h NotifyRunResultHandler) NotifyUpdatingResult(ctx context.Context, reques
 		},
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Default().Printf("failed to notify service catalog: %v", err)
 	}
 
 	return nil, err

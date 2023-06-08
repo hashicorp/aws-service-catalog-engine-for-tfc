@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
 )
 
-func TestRunStatusHandler_Success(t *testing.T) {
+func TestPollRunStatusHandler_Success(t *testing.T) {
 	// Create mock TFC instance
 	tfcServer := testutil.NewMockTFC()
 	defer tfcServer.Stop()
@@ -131,7 +131,7 @@ func TestRunStatusHandler_Success(t *testing.T) {
 	})
 }
 
-func TestRunStatusHandler_InvalidTFCToken(t *testing.T) {
+func TestPollRunStatusHandler_InvalidTFCToken(t *testing.T) {
 	// Create mock TFC instance
 	tfcServer := testutil.NewMockTFC()
 	defer tfcServer.Stop()
@@ -164,7 +164,7 @@ func TestRunStatusHandler_InvalidTFCToken(t *testing.T) {
 	assert.ErrorContains(t, err, "authorization token for TFC was acquired, but invalid or lacks sufficient permissions")
 }
 
-func TestRunStatusHandler_CannotConnect(t *testing.T) {
+func TestPollRunStatusHandler_CannotConnect(t *testing.T) {
 	t.Skip("Skipping test because it takes 9 minutes for the client to expend all of its retries")
 
 	// Create mock TFC instance
@@ -200,7 +200,7 @@ func TestRunStatusHandler_CannotConnect(t *testing.T) {
 
 }
 
-func TestRunStatusHandler_RetriesFailures(t *testing.T) {
+func TestPollRunStatusHandler_RetriesFailures(t *testing.T) {
 	// Create mock TFC instance
 	tfcServer := testutil.NewMockTFC()
 

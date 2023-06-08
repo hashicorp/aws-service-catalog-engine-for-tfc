@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
 )
 
-func TestSendApplyHandler_Success(t *testing.T) {
+func TestSendDestroyHandler_Success(t *testing.T) {
 	// Create mock TFC instance
 	tfcServer := testutil.NewMockTFC()
 	defer tfcServer.Stop()

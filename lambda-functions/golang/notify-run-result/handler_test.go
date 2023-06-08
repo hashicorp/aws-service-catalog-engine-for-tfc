@@ -62,6 +62,73 @@ func TestNotifyRunResultHandler_Terminating_Success(t *testing.T) {
 
 	// Verify the TFC workspace was deleted
 	assert.Equal(t, 0, len(tfcServer.Workspaces), "The TFC workspace should have been deleted")
+
+	// Verify the workflow was successfully reported as a success
+	assert.Equal(t, types.EngineWorkflowStatusSucceeded, mockServiceCatalog.NotifyTerminateProvisionedProductEngineWorkflowResultInput.Status)
+
+	// Verify workflow token
+	assert.Equal(t, testRequest.WorkflowToken, *mockServiceCatalog.NotifyTerminateProvisionedProductEngineWorkflowResultInput.WorkflowToken)
+}
+
+func TestNotifyRunResultHandler_Terminating_WithError(t *testing.T) {
+	// Create mock TFC instance
+	tfcServer := testutil.NewMockTFC()
+	defer tfcServer.Stop()
+
+	// Add a workspace to the TFC instance
+	tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testutil.WorkspaceFactoryParameters{Name: "yolo"})
+	assert.Equal(t, 1, len(tfcServer.Workspaces), "Make sure the TFC instance has only 1 workspace")
+
+	// Create tfe client that will send requests to the mock TFC instance
+	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Create mock ServiceCatalog
+	mockServiceCatalog := servicecatalog.MockServiceCatalog{}
+
+	// Create a test instance of the Lambda function
+	testHandler := &NotifyRunResultHandler{
+		serviceCatalog: &mockServiceCatalog,
+		tfeClient:      tfeClient,
+	}
+
+	// Create test request
+	testRequest := NotifyRunResultRequest{
+		TerraformRunId: "run-forrest-run",
+		WorkflowToken:  "whistle-while-you-work",
+		RecordId:       "record-this-id",
+		TracerTag: tracertag.TracerTag{
+			TracerTagKey:   "test-tracer-tag-key",
+			TracerTagValue: "test-trace-tag-value",
+		},
+		ServiceCatalogOperation: Terminating,
+		AwsAccountId:            "123456789042",
+		TerraformOrganization:   tfcServer.OrganizationName,
+		ProvisionedProductId:    "amazingly-great-product-instance",
+		Error:                   "My.Bad",
+		ErrorMessage:            "you win some, you lose some",
+	}
+
+	// Send the test request
+	_, err = testHandler.HandleRequest(context.Background(), testRequest)
+	// Verify no errors were returned
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Verify the TFC workspace was deleted
+	assert.Equal(t, 0, len(tfcServer.Workspaces), "The TFC workspace should have been deleted")
+
+	// Verify the workflow was successfully reported as a failure
+	assert.Equal(t, types.EngineWorkflowStatusFailed, mockServiceCatalog.NotifyTerminateProvisionedProductEngineWorkflowResultInput.Status)
+
+	// Verify Error was successfully returned
+	assert.Equal(t, testRequest.ErrorMessage, *mockServiceCatalog.NotifyTerminateProvisionedProductEngineWorkflowResultInput.FailureReason)
+
+	// Verify workflow token
+	assert.Equal(t, testRequest.WorkflowToken, *mockServiceCatalog.NotifyTerminateProvisionedProductEngineWorkflowResultInput.WorkflowToken)
 }
 
 func TestNotifyRunResultHandler_Provisioning_Success(t *testing.T) {
@@ -155,6 +222,66 @@ func TestNotifyRunResultHandler_Provisioning_Success(t *testing.T) {
 		assert.Equal(t, testStateVersionOutput.Value, *actualOutput.OutputValue)
 		assert.Nil(t, actualOutput.Description)
 	}
+
+	// Verify workflow token
+	assert.Equal(t, testRequest.WorkflowToken, *mockServiceCatalog.NotifyProvisionProductEngineWorkflowResultInput.WorkflowToken)
+}
+
+func TestNotifyRunResultHandler_Provisioning_MissingApply(t *testing.T) {
+	// Create mock TFC instance
+	tfcServer := testutil.NewMockTFC()
+	defer tfcServer.Stop()
+
+	// Add a workspace to the TFC instance
+	tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testutil.WorkspaceFactoryParameters{Name: "yolo"})
+
+	// Add a Run
+	tfcServer.AddRun("run-forrest-run", testutil.RunFactoryParameters{
+		RunStatus: tfe.RunApplied,
+	})
+
+	// Create tfe client that will send requests to the mock TFC instance
+	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Create mock ServiceCatalog
+	mockServiceCatalog := servicecatalog.MockServiceCatalog{}
+
+	// Create a test instance of the Lambda function
+	testHandler := &NotifyRunResultHandler{
+		serviceCatalog: &mockServiceCatalog,
+		tfeClient:      tfeClient,
+	}
+
+	// Create test request
+	testRequest := NotifyRunResultRequest{
+		TerraformRunId: "run-forrest-run",
+		WorkflowToken:  "whistle-while-you-work",
+		RecordId:       "record-this-id",
+		TracerTag: tracertag.TracerTag{
+			TracerTagKey:   "test-tracer-tag-key",
+			TracerTagValue: "test-trace-tag-value",
+		},
+		ServiceCatalogOperation: Provisioning,
+		AwsAccountId:            "123456789042",
+		TerraformOrganization:   tfcServer.OrganizationName,
+		ProvisionedProductId:    "amazingly-great-product-instance",
+		Error:                   "",
+		ErrorMessage:            "",
+	}
+
+	// Send the test request
+	_, err = testHandler.HandleRequest(context.Background(), testRequest)
+	// Verify that an error was returned so that the lambda can be retried
+	assert.NotNil(t, err, "Error should have been returned by the Lambda")
+
+	// Verify the TFC workspace was not deleted (like in the terminating workflow)
+	assert.Equal(t, 1, len(tfcServer.Workspaces), "The TFC workspace should have been deleted")
+
+	// Verify the workflow was not reported as a failure, so the lambda can be retried
+	assert.Nil(t, mockServiceCatalog.NotifyProvisionProductEngineWorkflowResultInput)
 }
 
 func TestNotifyRunResultHandler_Updating_Success(t *testing.T) {
@@ -248,4 +375,7 @@ func TestNotifyRunResultHandler_Updating_Success(t *testing.T) {
 		assert.Equal(t, testStateVersionOutput.Value, *actualOutput.OutputValue)
 		assert.Nil(t, actualOutput.Description)
 	}
+
+	// Verify workflow token
+	assert.Equal(t, testRequest.WorkflowToken, *mockServiceCatalog.NotifyUpdateProvisionedProductEngineWorkflowResultInput.WorkflowToken)
 }

@@ -27,7 +27,7 @@ func FetchRunOutputs(ctx context.Context, client *tfe.Client, request NotifyRunR
 	}
 
 	// Get state version of the Apply
-	stateVersion, err := GetStateVersionFromRun(ctx, client, run.ID, w)
+	stateVersion, err := GetStateVersionFromRun(ctx, client, run, w)
 	if err != nil {
 		return nil, err
 	}
@@ -50,12 +50,7 @@ func FetchRunOutputs(ctx context.Context, client *tfe.Client, request NotifyRunR
 	return recordOutputs, nil
 }
 
-func GetStateVersionFromRun(ctx context.Context, client *tfe.Client, runId string, workspace *tfe.Workspace) (*tfe.StateVersion, error) {
-	run, err := client.Runs.Read(ctx, runId)
-	if err != nil {
-		return nil, err
-	}
-
+func GetStateVersionFromRun(ctx context.Context, client *tfe.Client, run *tfe.Run, workspace *tfe.Workspace) (*tfe.StateVersion, error) {
 	// Get the Apply
 	if run.Apply == nil {
 		return nil, errors.New("run from TFC was missing apply data, retry again later")
