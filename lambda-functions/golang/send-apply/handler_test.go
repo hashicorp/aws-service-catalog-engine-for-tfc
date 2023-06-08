@@ -26,7 +26,7 @@ func TestSendApplyHandler_Success(t *testing.T) {
 		t.Error(err)
 	}
 
-	// Create mock S3 downlaoder
+	// Create mock S3 downloader
 	const MockArtifactPath = "../../../example-product/product.tar.gz"
 	mockDownloader := s3.MockDownloader{
 		MockArtifactPath: MockArtifactPath,

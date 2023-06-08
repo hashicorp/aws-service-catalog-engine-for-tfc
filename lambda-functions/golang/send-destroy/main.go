@@ -1,13 +1,12 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/awsconfig"
-	"github.com/hashicorp/go-tfe"
 	"log"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/awsconfig"
+	"context"
 )
 
 type SendDestroyRequest struct {
@@ -20,41 +19,22 @@ type SendDestroyResponse struct {
 	TerraformRunId string `json:"terraformRunId"`
 }
 
-func HandleRequest(ctx context.Context, request SendDestroyRequest) (*SendDestroyResponse, error) {
-	sdkConfig := awsconfig.GetSdkConfig(ctx)
-
-	client, err := tfc.GetTFEClient(ctx, sdkConfig)
-	if err != nil {
-		log.Printf("Failed to initialize TFE client: %s", err)
-		return nil, err
-	}
-
-	workspaceId := getWorkspaceName(request.AwsAccountId, request.ProvisionedProductId)
-
-	// Get the workspace
-	workspace, err := client.Workspaces.Read(ctx, request.TerraformOrganization, workspaceId)
-	if err != nil {
-		log.Printf("Workspace does not exist or couldn't be found: %s", err)
-		return nil, err
-	}
-
-	// Queue "Terraform destroy"
-	run, err := client.Runs.Create(ctx, tfe.RunCreateOptions{
-		IsDestroy: tfe.Bool(true),
-		Message:   tfe.String("Terminating example-product via AWS Service Catalog"),
-		Workspace: workspace,
-		AutoApply: tfe.Bool(true),
-	})
-	if err != nil {
-		log.Printf("Failed to queue destroy run: %s", err)
-		return nil, err
-	}
-
-	return &SendDestroyResponse{TerraformRunId: run.ID}, err
-}
-
 func main() {
-	lambda.Start(HandleRequest)
+	// Create temporary context to initialize the handler with
+	initContext := context.TODO()
+
+	sdkConfig := awsconfig.GetSdkConfig(initContext)
+
+	client, err := tfc.GetTFEClient(initContext, sdkConfig)
+	if err != nil {
+		log.Fatalf("failed to initialize TFE client: %s", err)
+	}
+
+	handler := SendDestroyHandler{
+		tfeClient: client,
+	}
+
+	lambda.Start(handler.HandleRequest)
 }
 
 // Get the workspace name, which is `${accountId} - ${provisionedProductId}`

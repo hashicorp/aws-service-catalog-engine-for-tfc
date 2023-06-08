@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"encoding/json"
 	"log"
+	"strings"
 )
 
 type WorkspaceFactoryParameters struct {
@@ -65,6 +66,27 @@ func (srv *MockTFC) HandleWorkspacesGetRequests(w http.ResponseWriter, r *http.R
 		}
 
 		body, err := json.Marshal(MakeListWorkspacesResponse(workspaces))
+		if err != nil {
+			w.WriteHeader(500)
+			return true
+		}
+		w.WriteHeader(200)
+		_, err = w.Write(body)
+		if err != nil {
+			log.Fatal(err)
+			return true
+		}
+		return true
+	}
+
+	// /api/v2/organizations/team-rocket-blast-off/workspaces/123456789042-amazingly => "", "api", "v2", "organizations", "team-rocket-blast-off", "workspaces", "123456789042-amazingly"
+	urlPathParts := strings.Split(r.URL.Path, "/")
+	if urlPathParts[3] == "organizations" && urlPathParts[5] == "workspaces" && urlPathParts[6] != "" {
+		workspaceId := urlPathParts[6]
+
+		workspace := srv.workspaces[workspaceId]
+
+		body, err := json.Marshal(MakeWorkspaceResponse(workspace))
 		if err != nil {
 			w.WriteHeader(500)
 			return true
