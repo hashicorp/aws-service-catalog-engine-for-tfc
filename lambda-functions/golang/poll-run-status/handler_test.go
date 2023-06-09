@@ -2,16 +2,16 @@ package main
 
 import (
 	"testing"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil"
 	"github.com/hashicorp/go-tfe"
 	"context"
 	"github.com/stretchr/testify/assert"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/testtfc"
 )
 
 func TestPollRunStatusHandler_Success(t *testing.T) {
 	// Create mock TFC instance
-	tfcServer := testutil.NewMockTFC()
+	tfcServer := testtfc.NewMockTFC()
 	defer tfcServer.Stop()
 
 	// Create tfe client that will send requests to the mock TFC instance
@@ -27,7 +27,7 @@ func TestPollRunStatusHandler_Success(t *testing.T) {
 
 	t.Run("pending runs are evaluated as inProgress", func(t *testing.T) {
 		// Add a mock Run to the mock TFC server
-		tfcServer.AddRun("run-421337pending", testutil.RunFactoryParameters{RunStatus: tfe.RunPending})
+		tfcServer.AddRun("run-421337pending", testtfc.RunFactoryParameters{RunStatus: tfe.RunPending})
 
 		// Create a test request
 		testRequest := PollRunStatus{
@@ -48,7 +48,7 @@ func TestPollRunStatusHandler_Success(t *testing.T) {
 
 	t.Run("applied runs are evaluated as a success", func(t *testing.T) {
 		// Add a mock Run to the mock TFC server
-		tfcServer.AddRun("run-421337applied", testutil.RunFactoryParameters{RunStatus: tfe.RunApplied})
+		tfcServer.AddRun("run-421337applied", testtfc.RunFactoryParameters{RunStatus: tfe.RunApplied})
 
 		// Create a test request
 		testRequest := PollRunStatus{
@@ -69,7 +69,7 @@ func TestPollRunStatusHandler_Success(t *testing.T) {
 
 	t.Run("canceled runs are evaluated as failed", func(t *testing.T) {
 		// Add a mock Run to the mock TFC server
-		tfcServer.AddRun("run-421337canceled", testutil.RunFactoryParameters{RunStatus: tfe.RunCanceled})
+		tfcServer.AddRun("run-421337canceled", testtfc.RunFactoryParameters{RunStatus: tfe.RunCanceled})
 
 		// Create a test request
 		testRequest := PollRunStatus{
@@ -90,7 +90,7 @@ func TestPollRunStatusHandler_Success(t *testing.T) {
 
 	t.Run("discarded runs are evaluated as failed", func(t *testing.T) {
 		// Add a mock Run to the mock TFC server
-		tfcServer.AddRun("run-421337discarded", testutil.RunFactoryParameters{RunStatus: tfe.RunDiscarded})
+		tfcServer.AddRun("run-421337discarded", testtfc.RunFactoryParameters{RunStatus: tfe.RunDiscarded})
 
 		// Create a test request
 		testRequest := PollRunStatus{
@@ -111,7 +111,7 @@ func TestPollRunStatusHandler_Success(t *testing.T) {
 
 	t.Run("errored runs are evaluated as failed", func(t *testing.T) {
 		// Add a mock Run to the mock TFC server
-		tfcServer.AddRun("run-421337errored", testutil.RunFactoryParameters{RunStatus: tfe.RunErrored})
+		tfcServer.AddRun("run-421337errored", testtfc.RunFactoryParameters{RunStatus: tfe.RunErrored})
 
 		// Create a test request
 		testRequest := PollRunStatus{
@@ -133,7 +133,7 @@ func TestPollRunStatusHandler_Success(t *testing.T) {
 
 func TestPollRunStatusHandler_InvalidTFCToken(t *testing.T) {
 	// Create mock TFC instance
-	tfcServer := testutil.NewMockTFC()
+	tfcServer := testtfc.NewMockTFC()
 	defer tfcServer.Stop()
 
 	// Create tfe client that will send requests to the mock TFC instance
@@ -150,7 +150,7 @@ func TestPollRunStatusHandler_InvalidTFCToken(t *testing.T) {
 	tfcServer.SetToken("a-different-secret")
 
 	// Add a mock Run to the mock TFC server
-	tfcServer.AddRun("run-everything-is-fine", testutil.RunFactoryParameters{RunStatus: tfe.RunApplied})
+	tfcServer.AddRun("run-everything-is-fine", testtfc.RunFactoryParameters{RunStatus: tfe.RunApplied})
 
 	// Create a test request
 	testRequest := PollRunStatus{
@@ -168,7 +168,7 @@ func TestPollRunStatusHandler_CannotConnect(t *testing.T) {
 	t.Skip("Skipping test because it takes 9 minutes for the client to expend all of its retries")
 
 	// Create mock TFC instance
-	tfcServer := testutil.NewMockTFC()
+	tfcServer := testtfc.NewMockTFC()
 
 	// Create tfe client that will send requests to the mock TFC instance
 	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
@@ -177,7 +177,7 @@ func TestPollRunStatusHandler_CannotConnect(t *testing.T) {
 	}
 
 	// Add a mock Run to the mock TFC server
-	tfcServer.AddRun("run-everything-is-fine", testutil.RunFactoryParameters{RunStatus: tfe.RunApplied})
+	tfcServer.AddRun("run-everything-is-fine", testtfc.RunFactoryParameters{RunStatus: tfe.RunApplied})
 
 	// Stop mock TFC instance so that requests fail to reach it
 	tfcServer.Stop()
@@ -202,7 +202,7 @@ func TestPollRunStatusHandler_CannotConnect(t *testing.T) {
 
 func TestPollRunStatusHandler_RetriesFailures(t *testing.T) {
 	// Create mock TFC instance
-	tfcServer := testutil.NewMockTFC()
+	tfcServer := testtfc.NewMockTFC()
 
 	// Create tfe client that will send requests to the mock TFC instance
 	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
@@ -216,7 +216,7 @@ func TestPollRunStatusHandler_RetriesFailures(t *testing.T) {
 	}
 
 	// Add a mock Run to the mock TFC server
-	tfcServer.AddRun("run-everything-is-fine", testutil.RunFactoryParameters{RunStatus: tfe.RunApplied})
+	tfcServer.AddRun("run-everything-is-fine", testtfc.RunFactoryParameters{RunStatus: tfe.RunApplied})
 
 	// Create a test request
 	testRequest := PollRunStatus{

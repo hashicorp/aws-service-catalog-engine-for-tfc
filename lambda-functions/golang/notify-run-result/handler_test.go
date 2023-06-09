@@ -2,7 +2,6 @@ package main
 
 import (
 	"testing"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil"
 	"context"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tracertag"
@@ -10,15 +9,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/hashicorp/go-tfe"
 	"github.com/aws/aws-sdk-go-v2/service/servicecatalog/types"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/testtfc"
 )
 
 func TestNotifyRunResultHandler_Terminating_Success(t *testing.T) {
 	// Create mock TFC instance
-	tfcServer := testutil.NewMockTFC()
+	tfcServer := testtfc.NewMockTFC()
 	defer tfcServer.Stop()
 
 	// Add a workspace to the TFC instance
-	tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testutil.WorkspaceFactoryParameters{Name: "yolo"})
+	tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "yolo"})
 	assert.Equal(t, 1, len(tfcServer.Workspaces), "Make sure the TFC instance has only 1 workspace")
 
 	// Create tfe client that will send requests to the mock TFC instance
@@ -72,11 +72,11 @@ func TestNotifyRunResultHandler_Terminating_Success(t *testing.T) {
 
 func TestNotifyRunResultHandler_Terminating_WithError(t *testing.T) {
 	// Create mock TFC instance
-	tfcServer := testutil.NewMockTFC()
+	tfcServer := testtfc.NewMockTFC()
 	defer tfcServer.Stop()
 
 	// Add a workspace to the TFC instance
-	tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testutil.WorkspaceFactoryParameters{Name: "yolo"})
+	tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "yolo"})
 	assert.Equal(t, 1, len(tfcServer.Workspaces), "Make sure the TFC instance has only 1 workspace")
 
 	// Create tfe client that will send requests to the mock TFC instance
@@ -133,14 +133,14 @@ func TestNotifyRunResultHandler_Terminating_WithError(t *testing.T) {
 
 func TestNotifyRunResultHandler_Provisioning_Success(t *testing.T) {
 	// Create mock TFC instance
-	tfcServer := testutil.NewMockTFC()
+	tfcServer := testtfc.NewMockTFC()
 	defer tfcServer.Stop()
 
 	// Add a workspace to the TFC instance
-	testWorkspace := tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testutil.WorkspaceFactoryParameters{Name: "yolo"})
+	testWorkspace := tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "yolo"})
 
 	// Add a Run
-	tfcServer.AddRun("run-forrest-run", testutil.RunFactoryParameters{
+	tfcServer.AddRun("run-forrest-run", testtfc.RunFactoryParameters{
 		RunStatus: tfe.RunApplied,
 		Apply: &tfe.Apply{
 			ID: "apply-ran-ed",
@@ -229,14 +229,14 @@ func TestNotifyRunResultHandler_Provisioning_Success(t *testing.T) {
 
 func TestNotifyRunResultHandler_Provisioning_MissingApply(t *testing.T) {
 	// Create mock TFC instance
-	tfcServer := testutil.NewMockTFC()
+	tfcServer := testtfc.NewMockTFC()
 	defer tfcServer.Stop()
 
 	// Add a workspace to the TFC instance
-	tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testutil.WorkspaceFactoryParameters{Name: "yolo"})
+	tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "yolo"})
 
 	// Add a Run
-	tfcServer.AddRun("run-forrest-run", testutil.RunFactoryParameters{
+	tfcServer.AddRun("run-forrest-run", testtfc.RunFactoryParameters{
 		RunStatus: tfe.RunApplied,
 	})
 
@@ -286,14 +286,14 @@ func TestNotifyRunResultHandler_Provisioning_MissingApply(t *testing.T) {
 
 func TestNotifyRunResultHandler_Updating_Success(t *testing.T) {
 	// Create mock TFC instance
-	tfcServer := testutil.NewMockTFC()
+	tfcServer := testtfc.NewMockTFC()
 	defer tfcServer.Stop()
 
 	// Add a workspace to the TFC instance
-	testWorkspace := tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testutil.WorkspaceFactoryParameters{Name: "yolo"})
+	testWorkspace := tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "yolo"})
 
 	// Add a Run
-	tfcServer.AddRun("run-forrest-run", testutil.RunFactoryParameters{
+	tfcServer.AddRun("run-forrest-run", testtfc.RunFactoryParameters{
 		RunStatus: tfe.RunApplied,
 		Apply: &tfe.Apply{
 			ID: "apply-ran-ed",

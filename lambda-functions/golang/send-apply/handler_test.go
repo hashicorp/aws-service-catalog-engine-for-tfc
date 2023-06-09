@@ -2,7 +2,6 @@ package main
 
 import (
 	"testing"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil"
 	"context"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tracertag"
@@ -13,11 +12,12 @@ import (
 	"archive/tar"
 	"github.com/stretchr/testify/assert"
 	"encoding/json"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/testtfc"
 )
 
 func TestSendApplyHandler_Success(t *testing.T) {
 	// Create mock TFC instance
-	tfcServer := testutil.NewMockTFC()
+	tfcServer := testtfc.NewMockTFC()
 	defer tfcServer.Stop()
 
 	// Create tfe client that will send requests to the mock TFC instance

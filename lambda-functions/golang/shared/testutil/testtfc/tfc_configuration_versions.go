@@ -1,4 +1,4 @@
-package testutil
+package testtfc
 
 import (
 	"github.com/hashicorp/go-tfe"

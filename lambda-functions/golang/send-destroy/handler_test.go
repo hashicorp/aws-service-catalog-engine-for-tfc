@@ -2,19 +2,19 @@ package main
 
 import (
 	"testing"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil"
 	"context"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/testtfc"
 )
 
 func TestSendDestroyHandler_Success(t *testing.T) {
 	// Create mock TFC instance
-	tfcServer := testutil.NewMockTFC()
+	tfcServer := testtfc.NewMockTFC()
 	defer tfcServer.Stop()
 
-	tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testutil.WorkspaceFactoryParameters{
+	tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{
 		Name: "123456789042-amazingly-great-product-instance",
 	})
 
@@ -53,7 +53,7 @@ func TestSendDestroyHandler_Success(t *testing.T) {
 
 func TestSendDestroyHandler_WorkspaceMissing(t *testing.T) {
 	// Create mock TFC instance
-	tfcServer := testutil.NewMockTFC()
+	tfcServer := testtfc.NewMockTFC()
 	defer tfcServer.Stop()
 
 	// Create tfe client that will send requests to the mock TFC instance
