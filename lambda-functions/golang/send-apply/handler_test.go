@@ -94,6 +94,110 @@ func TestSendApplyHandler_Success(t *testing.T) {
 	assert.True(t, checkedProviderOverrides, "provider_override.tf.json file should be present in the uploaded artifact")
 }
 
+func TestSendApplyHandler_Success_ProjectAlreadyExists(t *testing.T) {
+	// Create mock TFC instance
+	tfcServer := testtfc.NewMockTFC()
+	defer tfcServer.Stop()
+
+	// Create tfe client that will send requests to the mock TFC instance
+	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
+	if err != nil {
+		t.Error(err)
+	}
+
+	tfcServer.AddProject("id-4-number-1-best-product", testtfc.ProjectFactoryParameters{
+		Name: "id-4-number-1-best-product",
+	})
+
+	// Create mock S3 downloader
+	const MockArtifactPath = "../../../example-product/product.tar.gz"
+	mockDownloader := s3.MockDownloader{
+		MockArtifactPath: MockArtifactPath,
+	}
+
+	// Create a test instance of the Lambda function
+	testHandler := &SendApplyHandler{
+		tfeClient:    tfeClient,
+		s3Downloader: mockDownloader,
+		region:       "narnia-west-2",
+	}
+
+	// Create test request
+	testRequest := SendApplyRequest{
+		AwsAccountId:          "123456789042",
+		TerraformOrganization: tfcServer.OrganizationName,
+		ProvisionedProductId:  "amazingly-great-product-instance",
+		Artifact: Artifact{
+			Path: "s3://wowzers-this-is-some/fake/artifact/path",
+			Type: "beeg-test",
+		},
+		LaunchRoleArn: "arn:::some/fake/role/arn",
+		ProductId:     "id-4-number-1-best-product",
+		Tags:          make([]AWSTag, 0),
+		TracerTag: tracertag.TracerTag{
+			TracerTagKey:   "test-tracer-tag-key",
+			TracerTagValue: "test-trace-tag-value",
+		},
+	}
+
+	// Send the test request
+	_, err = testHandler.HandleRequest(context.Background(), testRequest)
+	// Verify no errors were returned
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestSendApplyHandler_ErrorFetchingArtifactFromS3(t *testing.T) {
+	// Create mock TFC instance
+	tfcServer := testtfc.NewMockTFC()
+	defer tfcServer.Stop()
+
+	// Create tfe client that will send requests to the mock TFC instance
+	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
+	if err != nil {
+		t.Error(err)
+	}
+
+	tfcServer.AddProject("id-4-number-1-best-product", testtfc.ProjectFactoryParameters{
+		Name: "id-4-number-1-best-product",
+	})
+
+	// Create mock S3 downloader
+	mockDownloader := s3.MockErrorDownloader{}
+
+	// Create a test instance of the Lambda function
+	testHandler := &SendApplyHandler{
+		tfeClient:    tfeClient,
+		s3Downloader: mockDownloader,
+		region:       "narnia-west-2",
+	}
+
+	// Create test request
+	testRequest := SendApplyRequest{
+		AwsAccountId:          "123456789042",
+		TerraformOrganization: tfcServer.OrganizationName,
+		ProvisionedProductId:  "amazingly-great-product-instance",
+		Artifact: Artifact{
+			Path: "s3://wowzers-this-is-some/fake/artifact/path",
+			Type: "beeg-test",
+		},
+		LaunchRoleArn: "arn:::some/fake/role/arn",
+		ProductId:     "id-4-number-1-best-product",
+		Tags:          make([]AWSTag, 0),
+		TracerTag: tracertag.TracerTag{
+			TracerTagKey:   "test-tracer-tag-key",
+			TracerTagValue: "test-trace-tag-value",
+		},
+	}
+
+	// Send the test request
+	_, err = testHandler.HandleRequest(context.Background(), testRequest)
+
+	// Verify an errors was returned
+	assert.Error(t, err, "Verify handler failed")
+}
+
 type UploadedArtifactEntry struct {
 	FileName     string
 	FileContents string

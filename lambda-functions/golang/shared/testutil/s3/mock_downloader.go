@@ -3,6 +3,7 @@ package s3
 import (
 	"os"
 	"context"
+	"errors"
 )
 
 type MockDownloader struct {
@@ -18,4 +19,11 @@ func (downloader MockDownloader) Download(ctx context.Context, tmp *os.File, buc
 	}
 
 	return int64(write), nil
+}
+
+type MockErrorDownloader struct {
+}
+
+func (downloader MockErrorDownloader) Download(ctx context.Context, tmp *os.File, bucket string, objectKey string) (n int64, err error) {
+	return 0, errors.New("whoopsies")
 }
