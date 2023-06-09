@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/aws/aws-lambda-go/lambda"
+	sc "github.com/aws/aws-sdk-go-v2/service/servicecatalog"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/awsconfig"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/servicecatalog"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
