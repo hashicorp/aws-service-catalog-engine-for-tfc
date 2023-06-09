@@ -30,6 +30,7 @@ func (srv *MockTFC) AddRun(runId string, p RunFactoryParameters) *tfe.Run {
 
 func (srv *MockTFC) PersistRun(run *tfe.Run) *tfe.Run {
 	runId := RunId(run)
+	run.ID = runId
 
 	// Save the run to the mock server
 	runPath := fmt.Sprintf("/api/v2/runs/%s", runId)
@@ -47,7 +48,7 @@ func (srv *MockTFC) HandleRunsPostRequests(w http.ResponseWriter, r *http.Reques
 		}
 
 		run := RunFromRequest(*runRequest)
-		srv.PersistRun(run)
+		run = srv.PersistRun(run)
 
 		receipt := MakeGetRunResponse(*run)
 		body, err := json.Marshal(receipt)
@@ -116,6 +117,7 @@ type RunPostRequest struct {
 		Id         int `json:"id"`
 		Attributes struct {
 			AutoApply bool `json:"auto-apply"`
+			IsDestroy bool `json:"is-destroy"`
 		} `json:"attributes"`
 		Relationships struct {
 			Workspace struct {
@@ -130,6 +132,7 @@ type RunPostRequest struct {
 func RunFromRequest(req RunPostRequest) *tfe.Run {
 	return &tfe.Run{
 		AutoApply:              req.Data.Attributes.AutoApply,
+		IsDestroy:              req.Data.Attributes.IsDestroy,
 		CreatedAt:              time.Now(),
 		ForceCancelAvailableAt: time.Now(),
 		Workspace: &tfe.Workspace{

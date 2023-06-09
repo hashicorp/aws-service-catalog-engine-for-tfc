@@ -86,6 +86,11 @@ func (srv *MockTFC) HandleWorkspacesGetRequests(w http.ResponseWriter, r *http.R
 
 		workspace := srv.Workspaces[workspaceId]
 
+		if workspace == nil {
+			w.WriteHeader(404)
+			return true
+		}
+
 		body, err := json.Marshal(MakeWorkspaceResponse(workspace))
 		if err != nil {
 			w.WriteHeader(500)
