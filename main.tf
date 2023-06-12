@@ -62,7 +62,7 @@ module "example_product" {
   source = "./service-catalog-product"
   artifact_bucket_name = aws_s3_object.object.bucket
   artifact_object_key = aws_s3_object.object.id
-  tfc_organization = "tf-rocket-tfcb-test"
+  tfc_organization = var.tfc_organization
   tfc_provider_arn = aws_iam_openid_connect_provider.tfc_provider.arn
   product_name = "service-catalog-example-product-${random_string.random.result}"
   parameter_parser_role_arn = aws_iam_role.parameter_parser.arn
