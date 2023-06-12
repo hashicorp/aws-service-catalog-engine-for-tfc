@@ -68,7 +68,7 @@ resource "aws_iam_role_policy_attachment" "provision_handler_lambda_execution" {
 data "archive_file" "provision_handler" {
   type        = "zip"
   output_path = "dist/provisioning_operations_handler.zip"
-  source_dir  = "lambda-functions/golang/provisioning-operations-handler/main"
+  source_file  = "lambda-functions/golang/provisioning-operations-handler/main"
 }
 
 # Lambda for provisioning products
@@ -139,6 +139,7 @@ resource "aws_lambda_function" "update_handler" {
 
   environment {
     variables = {
+      TERRAFORM_ORGANIZATION = var.tfc_organization
       STATE_MACHINE_ARN = aws_sfn_state_machine.update_state_machine.arn
     }
   }

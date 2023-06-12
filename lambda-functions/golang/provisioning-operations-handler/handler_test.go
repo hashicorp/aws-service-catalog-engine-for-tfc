@@ -15,12 +15,13 @@ import (
 func TestProvisioningOperationsHandler_Success(t *testing.T) {
 
 	// Create mock StepFunctions facade
-	mockStepFunctions := MockStepFunctionsWithSuccessfulResponse{}
+	mockStepFunctions := &MockStepFunctionsWithSuccessfulResponse{}
 
 	// Create a test instance of the Lambda function
 	testHandler := &ProvisioningOperationsHandler{
-		stepFunctions:   mockStepFunctions,
-		stateMachineArn: "arn:::such-a-great-state-machine/like/wow",
+		terraformOrganization: "yolo",
+		stepFunctions:         mockStepFunctions,
+		stateMachineArn:       "arn:::such-a-great-state-machine/like/wow",
 	}
 
 	// Create test request
@@ -49,6 +50,9 @@ func TestProvisioningOperationsHandler_Success(t *testing.T) {
 	}
 
 	assert.Empty(t, response.BatchItemFailures, "No failures should be returned")
+
+	// Verify Terraform Organization was set
+	assert.Equal(t, "yolo", mockStepFunctions.stateMachinePayload.TerraformOrganization, "terraformOrganization was set")
 }
 
 func TestProvisioningOperationsHandler_Failure(t *testing.T) {
@@ -92,9 +96,19 @@ func TestProvisioningOperationsHandler_Failure(t *testing.T) {
 	assert.Equal(t, expectedFailures, response.BatchItemFailures, "Expected a failure")
 }
 
-type MockStepFunctionsWithSuccessfulResponse struct{}
+type MockStepFunctionsWithSuccessfulResponse struct {
+	stateMachinePayload StateMachinePayload
+}
 
-func (stepFunctions MockStepFunctionsWithSuccessfulResponse) StartExecution(ctx context.Context, input *sfn.StartExecutionInput) (*sfn.StartExecutionOutput, error) {
+func (stepFunctions *MockStepFunctionsWithSuccessfulResponse) StartExecution(ctx context.Context, input *sfn.StartExecutionInput) (*sfn.StartExecutionOutput, error) {
+	var stateMachinePayload StateMachinePayload
+	if err := json.Unmarshal([]byte(*input.Input), &stateMachinePayload); err != nil {
+		return nil, err
+	}
+
+	// Capture payload
+	stepFunctions.stateMachinePayload = stateMachinePayload
+
 	metadata := middleware.Metadata{}
 
 	metadata.Set("RequestId", "the-bestest-request")

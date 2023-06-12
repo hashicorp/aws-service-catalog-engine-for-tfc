@@ -9,7 +9,7 @@
 crash.log
 
 terraform.tfvars
-*.terraform.lock.hcl
+*.tfstate.lock.hcl
 
 .DS_Store
 .idea

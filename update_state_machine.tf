@@ -32,7 +32,7 @@ data "aws_iam_policy_document" "update_state_machine" {
 
     actions = ["lambda:InvokeFunction"]
 
-    resources = [aws_lambda_function.send_apply_command_function.arn, aws_lambda_function.poll_run_status.arn, aws_lambda_function.notify_run_result.arn, aws_lambda_function.parameter_parser.arn]
+    resources = [local.send_apply_lambda_arn, local.poll_run_status_lambda_arn, local.notify_run_result_lambda_arn, aws_lambda_function.parameter_parser.arn]
 
   }
 
@@ -101,7 +101,7 @@ resource "aws_sfn_state_machine" "update_state_machine" {
     },
     "Send apply": {
       "Type": "Task",
-      "Resource": "${aws_lambda_function.send_apply_command_function.arn}",
+      "Resource": "${local.send_apply_lambda_arn}",
       "Parameters": {
         "awsAccountId.$": "$.identity.awsAccountId",
         "terraformOrganization.$": "$.terraformOrganization",
@@ -132,7 +132,7 @@ resource "aws_sfn_state_machine" "update_state_machine" {
     },
     "Poll update status": {
       "Type": "Task",
-      "Resource": "${aws_lambda_function.poll_run_status.arn}",
+      "Resource": "${local.poll_run_status_lambda_arn}",
       "Parameters": {
         "terraformRunId.$": "$.sendApplyResult.terraformRunId"
       },
@@ -198,7 +198,7 @@ resource "aws_sfn_state_machine" "update_state_machine" {
     },
     "Notify update result": {
       "Type": "Task",
-      "Resource": "${aws_lambda_function.notify_run_result.arn}",
+      "Resource": "${local.notify_run_result_lambda_arn}",
       "Parameters": {
         "terraformRunId.$": "$.sendApplyResult.terraformRunId",
         "workflowToken.$": "$.token",
@@ -220,7 +220,7 @@ resource "aws_sfn_state_machine" "update_state_machine" {
     },
     "Notify update result failure": {
       "Type": "Task",
-      "Resource": "${aws_lambda_function.notify_run_result.arn}",
+      "Resource": "${local.notify_run_result_lambda_arn}",
       "Parameters": {
         "terraformRunId.$": "$.sendApplyResult.terraformRunId",
         "workflowToken.$": "$.token",

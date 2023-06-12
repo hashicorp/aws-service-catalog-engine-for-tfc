@@ -6,11 +6,13 @@ import (
 	"log"
 	"fmt"
 	"encoding/json"
+	"github.com/aws/aws-sdk-go-v2/aws"
 )
 
 type ProvisioningOperationsHandler struct {
-	stepFunctions   StepFunctions
-	stateMachineArn string
+	terraformOrganization string
+	stepFunctions         StepFunctions
+	stateMachineArn       string
 }
 
 func (h *ProvisioningOperationsHandler) HandleRequest(ctx context.Context, request ProvisioningOperationsHandlerRequest) (*ProvisioningOperationsHandlerResponse, error) {
@@ -29,15 +31,22 @@ func (h *ProvisioningOperationsHandler) HandleRequest(ctx context.Context, reque
 }
 
 func (h *ProvisioningOperationsHandler) StartStateMachineExecution(ctx context.Context, record Record) error {
-	var stateMachinePayload StateMachinePayload
-	if err := json.Unmarshal([]byte(record.Body), &stateMachinePayload); err != nil {
+	stateMachinePayload := &StateMachinePayload{}
+	if err := json.Unmarshal([]byte(record.Body), stateMachinePayload); err != nil {
+		return err
+	}
+
+	stateMachinePayload.TerraformOrganization = h.terraformOrganization
+
+	modifiedPayload, err := json.Marshal(stateMachinePayload)
+	if err != nil {
 		return err
 	}
 
 	executionName := fmt.Sprintf("%s-%s", stateMachinePayload.ProvisionedProductId, stateMachinePayload.RecordId)
 	execution, err := h.stepFunctions.StartExecution(ctx, &sfn.StartExecutionInput{
 		StateMachineArn: &h.stateMachineArn,
-		Input:           &record.Body,
+		Input:           aws.String(string(modifiedPayload)),
 		Name:            &executionName,
 	})
 	if err != nil {

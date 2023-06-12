@@ -18,9 +18,22 @@ type Record struct {
 }
 
 type StateMachinePayload struct {
-	Token                string `json:"token"`
-	ProvisionedProductId string `json:"provisionedProductId"`
-	RecordId             string `json:"recordId"`
+	Token                  string `json:"token"`
+	Operation              string `json:"operation"`
+	ProvisionedProductId   string `json:"provisionedProductId"`
+	ProvisionedProductName string `json:"provisionedProductName"`
+	RecordId               string `json:"recordId"`
+	LaunchRoleArn          string `json:"launchRoleArn"`
+	Identity               struct {
+		Principal      string `json:"principal"`
+		AwsAccountId   string `json:"awsAccountId"`
+		OrganizationId string `json:"organizationId"`
+	} `json:"identity"`
+	TracerTag struct {
+		Key   string `json:"token"`
+		Value string `json:"operation"`
+	} `json:"tracerTag"`
+	TerraformOrganization string `json:"terraformOrganization"`
 }
 
 type ProvisioningOperationsHandlerResponse struct {
@@ -39,12 +52,16 @@ func main() {
 	sdkConfig := awsconfig.GetSdkConfig(initContext)
 	sfnClient := sfn.NewFromConfig(sdkConfig)
 
+	// Get Terraform Organization
+	terraformOrganization := os.Getenv("TERRAFORM_ORGANIZATION")
+
 	// Get state machine arn
 	stateMachineArn := os.Getenv("STATE_MACHINE_ARN")
 
 	handler := ProvisioningOperationsHandler{
-		stepFunctions:   SF{Client: sfnClient},
-		stateMachineArn: stateMachineArn,
+		terraformOrganization: terraformOrganization,
+		stepFunctions:         SF{Client: sfnClient},
+		stateMachineArn:       stateMachineArn,
 	}
 
 	lambda.Start(handler.HandleRequest)

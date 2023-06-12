@@ -33,7 +33,7 @@ data "aws_iam_policy_document" "policy_for_manage_provisioned_product" {
 
     actions = ["lambda:InvokeFunction"]
 
-    resources = [aws_lambda_function.send_apply_command_function.arn, aws_lambda_function.poll_run_status.arn, aws_lambda_function.notify_run_result.arn, aws_lambda_function.parameter_parser.arn]
+    resources = [local.send_apply_lambda_arn, local.poll_run_status_lambda_arn, local.notify_run_result_lambda_arn, aws_lambda_function.parameter_parser.arn]
 
   }
 
@@ -61,6 +61,7 @@ data "aws_iam_policy_document" "policy_for_manage_provisioned_product" {
 
 resource "aws_cloudwatch_log_group" "provision_state_machine" {
   name = "ServiceCatalogTFCProvisionOperationStateMachine"
+  retention_in_days = var.cloudwatch_log_retention_in_days
 }
 
 resource "aws_sfn_state_machine" "provision_state_machine" {
@@ -102,7 +103,7 @@ resource "aws_sfn_state_machine" "provision_state_machine" {
     },
     "Send apply": {
       "Type": "Task",
-      "Resource": "${aws_lambda_function.send_apply_command_function.arn}",
+      "Resource": "${local.send_apply_lambda_arn}",
       "Parameters": {
         "awsAccountId.$": "$.identity.awsAccountId",
         "terraformOrganization.$": "$.terraformOrganization",
@@ -133,7 +134,7 @@ resource "aws_sfn_state_machine" "provision_state_machine" {
     },
     "Poll run status": {
       "Type": "Task",
-      "Resource": "${aws_lambda_function.poll_run_status.arn}",
+      "Resource": "${local.poll_run_status_lambda_arn}",
       "Parameters": {
         "terraformRunId.$": "$.sendApplyResult.terraformRunId"
       },
@@ -199,7 +200,7 @@ resource "aws_sfn_state_machine" "provision_state_machine" {
     },
     "Notify run result": {
       "Type": "Task",
-      "Resource": "${aws_lambda_function.notify_run_result.arn}",
+      "Resource": "${local.notify_run_result_lambda_arn}",
       "Parameters": {
         "terraformRunId.$": "$.sendApplyResult.terraformRunId",
         "workflowToken.$": "$.token",

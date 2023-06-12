@@ -33,7 +33,7 @@ data "aws_iam_policy_document" "terminate_state_machine" {
 
     actions = ["lambda:InvokeFunction"]
 
-    resources = [aws_lambda_function.send_destroy.arn, aws_lambda_function.poll_run_status.arn, aws_lambda_function.notify_run_result.arn, aws_lambda_function.parameter_parser.arn]
+    resources = [local.send_destroy_lambda_arn, local.poll_run_status_lambda_arn, local.notify_run_result_lambda_arn, aws_lambda_function.parameter_parser.arn]
 
   }
 
@@ -61,6 +61,7 @@ data "aws_iam_policy_document" "terminate_state_machine" {
 
 resource "aws_cloudwatch_log_group" "terminate_state_machine" {
   name = "ServiceCatalogTFCTerminateOperationStateMachine"
+  retention_in_days = var.cloudwatch_log_retention_in_days
 }
 
 resource "aws_sfn_state_machine" "terminate_state_machine" {
@@ -95,14 +96,15 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
       "Type": "Pass",
       "Comment": "Set default values for state so that future steps do not error on missing parameters",
       "Parameters": {
-        "terraformRunId": ""
+        "terraformRunId": "",
+        "terraformOrganization.$": "$.terraformOrganization",
       },
       "ResultPath": "$.sendDestroyResult",
       "Next": "Send destroy"
     },
     "Send destroy": {
       "Type": "Task",
-      "Resource": "${aws_lambda_function.send_destroy.arn}",
+      "Resource": "${local.send_destroy_lambda_arn}",
       "Parameters": {
         "awsAccountId.$": "$.identity.awsAccountId",
         "terraformOrganization.$": "$.terraformOrganization",
@@ -128,7 +130,7 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
     },
     "Poll destroy status": {
       "Type": "Task",
-      "Resource": "${aws_lambda_function.poll_run_status.arn}",
+      "Resource": "${local.poll_run_status_lambda_arn}",
       "Parameters": {
         "terraformRunId.$": "$.sendDestroyResult.terraformRunId"
       },
@@ -179,7 +181,7 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
           "Next": "Notify destroy result"
         }
       ],
-      "Default": "Convert poll destroy status error""
+      "Default": "Convert poll destroy status error"
     },
     "Convert poll destroy status error": {
         "Type": "Pass",
@@ -194,7 +196,7 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
     },
     "Notify destroy result": {
       "Type": "Task",
-      "Resource": "${aws_lambda_function.notify_run_result.arn}",
+      "Resource": "${local.notify_run_result_lambda_arn}",
       "Parameters": {
         "terraformRunId.$": "$.sendDestroyResult.terraformRunId",
         "workflowToken.$": "$.token",
@@ -209,7 +211,7 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
     },
     "Notify destroy result failure": {
       "Type": "Task",
-      "Resource": "${aws_lambda_function.notify_run_result.arn}",
+      "Resource": "${local.notify_run_result_lambda_arn}",
       "Parameters": {
         "terraformRunId.$": "$.sendDestroyResult.terraformRunId",
         "workflowToken.$": "$.token",
