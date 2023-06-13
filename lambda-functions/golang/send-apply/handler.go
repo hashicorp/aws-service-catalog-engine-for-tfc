@@ -102,36 +102,65 @@ func (h *SendApplyHandler) HandleRequest(ctx context.Context, request SendApplyR
 }
 
 func (h *SendApplyHandler) FindOrCreateProject(ctx context.Context, organizationName string, name string) (*tfe.Project, error) {
-	// Check if the Project already exists...
+	// Check if the project already exists...
+	project, err := h.FindProjectByName(ctx, organizationName, name, 0)
+	if project != nil || err != nil {
+		return project, err
+	}
+
+	// Otherwise, create the project
+	return h.tfeClient.Projects.Create(ctx, organizationName, tfe.ProjectCreateOptions{
+		Name: name,
+	})
+}
+
+func (h *SendApplyHandler) FindProjectByName(ctx context.Context, organizationName string, projectName string, pageNumber int) (*tfe.Project, error) {
+	// Check if the project already exists...
 	projects, err := h.tfeClient.Projects.List(ctx, organizationName, &tfe.ProjectListOptions{
 		ListOptions: tfe.ListOptions{
-			PageNumber: 0,
+			PageNumber: pageNumber,
 			PageSize:   100,
 		},
-		Name: name,
+		Name: projectName,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	for _, project := range projects.Items {
-		// Check for exact name match, because the search we made is a partial search
-		if project.Name == name {
+		// Check for exact name match, because the search we made is a "contains" search
+		if project.Name == projectName {
 			return project, nil
 		}
 	}
 
-	// Otherwise, create the Project
-	return h.tfeClient.Projects.Create(ctx, organizationName, tfe.ProjectCreateOptions{
-		Name: name,
-	})
+	// If more projects exists, fetch them and check them as well
+	if projects.TotalCount > ((pageNumber + 1) * 100) {
+		return h.FindProjectByName(ctx, organizationName, projectName, pageNumber+1)
+	}
+
+	return nil, nil
 }
 
 func (h *SendApplyHandler) FindOrCreateWorkspace(ctx context.Context, organizationName string, project *tfe.Project, workspaceName string) (*tfe.Workspace, error) {
 	// Check if the workspace already exists...
+	workspace, err := h.FindWorkspaceByName(ctx, organizationName, workspaceName, 0)
+	if workspace != nil || err != nil {
+		return workspace, err
+	}
+
+	// Otherwise, create the Workspace
+	return h.tfeClient.Workspaces.Create(ctx, organizationName, tfe.WorkspaceCreateOptions{
+		Name:    tfe.String(workspaceName),
+		Project: project,
+	})
+}
+
+func (h *SendApplyHandler) FindWorkspaceByName(ctx context.Context, organizationName string, workspaceName string, pageNumber int) (*tfe.Workspace, error) {
+	// Check if the workspace already exists...
 	workspaces, err := h.tfeClient.Workspaces.List(ctx, organizationName, &tfe.WorkspaceListOptions{
 		ListOptions: tfe.ListOptions{
-			PageNumber: 0,
+			PageNumber: pageNumber,
 			PageSize:   100,
 		},
 		Search: workspaceName,
@@ -141,17 +170,18 @@ func (h *SendApplyHandler) FindOrCreateWorkspace(ctx context.Context, organizati
 	}
 
 	for _, workspace := range workspaces.Items {
-		// Check for exact name match, because the search we made is a partial search
+		// Check for exact name match, because the search we made is a "contains" search
 		if workspace.Name == workspaceName {
 			return workspace, nil
 		}
 	}
 
-	// Otherwise, create the Workspace
-	return h.tfeClient.Workspaces.Create(ctx, organizationName, tfe.WorkspaceCreateOptions{
-		Name:    tfe.String(workspaceName),
-		Project: project,
-	})
+	// If more workspaces exists, fetch them and check them as well
+	if workspaces.TotalCount > ((pageNumber + 1) * 100) {
+		return h.FindWorkspaceByName(ctx, organizationName, workspaceName, pageNumber+1)
+	}
+
+	return nil, nil
 }
 
 func (h *SendApplyHandler) UpdateWorkspaceVariables(ctx context.Context, w *tfe.Workspace, launchRoleArn string) error {
@@ -166,23 +196,9 @@ func (h *SendApplyHandler) UpdateWorkspaceVariables(ctx context.Context, w *tfe.
 }
 
 func (h *SendApplyHandler) FindOrCreateVariable(ctx context.Context, w *tfe.Workspace, key string, value string, description string) error {
-	// TODO: Update to support workspaces that contain more than 100 variables
-	variables, err := h.tfeClient.Variables.List(ctx, w.ID, &tfe.VariableListOptions{
-		ListOptions: tfe.ListOptions{
-			PageNumber: 0,
-			PageSize:   100,
-		},
-	})
+	variableToUpdate, err := h.FindVariableByKey(ctx, w, key, 0)
 	if err != nil {
 		return err
-	}
-
-	var variableToUpdate *tfe.Variable
-	for _, v := range variables.Items {
-		if v.Key == key {
-			variableToUpdate = v
-			break
-		}
 	}
 
 	if variableToUpdate != nil {
@@ -207,6 +223,31 @@ func (h *SendApplyHandler) FindOrCreateVariable(ctx context.Context, w *tfe.Work
 		Sensitive:   tfe.Bool(false),
 	})
 	return err
+}
+
+func (h *SendApplyHandler) FindVariableByKey(ctx context.Context, w *tfe.Workspace, key string, pageNumber int) (*tfe.Variable, error) {
+	variables, err := h.tfeClient.Variables.List(ctx, w.ID, &tfe.VariableListOptions{
+		ListOptions: tfe.ListOptions{
+			PageNumber: pageNumber,
+			PageSize:   100,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, variable := range variables.Items {
+		if variable.Key == key {
+			return variable, nil
+		}
+	}
+
+	// If more variables exists, fetch them and check them as well
+	if variables.TotalCount > ((pageNumber + 1) * 100) {
+		return h.FindVariableByKey(ctx, w, key, pageNumber+1)
+	}
+
+	return nil, nil
 }
 
 // Resolves artifactPath to bucket and key

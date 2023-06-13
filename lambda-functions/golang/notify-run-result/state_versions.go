@@ -117,10 +117,10 @@ func GetCurrentStateVersionForApply(ctx context.Context, client *tfe.Client, app
 	return currentStateVersion, nil
 }
 
-func GetAllStateVersionOutputs(ctx context.Context, client *tfe.Client, stateVersionID string, NumberPage int) ([]*tfe.StateVersionOutput, error) {
+func GetAllStateVersionOutputs(ctx context.Context, client *tfe.Client, stateVersionID string, pageNumber int) ([]*tfe.StateVersionOutput, error) {
 	stateVersionOutputs, err := client.StateVersions.ListOutputs(ctx, stateVersionID, &tfe.StateVersionOutputsListOptions{
 		ListOptions: tfe.ListOptions{
-			PageNumber: NumberPage,
+			PageNumber: pageNumber,
 			PageSize:   100,
 		},
 	})
@@ -129,8 +129,8 @@ func GetAllStateVersionOutputs(ctx context.Context, client *tfe.Client, stateVer
 	}
 
 	// If more state version outputs exists, fetch them and return them as well
-	if stateVersionOutputs.TotalCount > ((NumberPage + 1) * 100) {
-		outputs, err := GetAllStateVersionOutputs(ctx, client, stateVersionID, NumberPage+1)
+	if stateVersionOutputs.TotalCount > ((pageNumber + 1) * 100) {
+		outputs, err := GetAllStateVersionOutputs(ctx, client, stateVersionID, pageNumber+1)
 		if err != nil {
 			return nil, err
 		}

@@ -173,6 +173,9 @@ func (srv *MockTFC) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "PUT":
 		srv.handlePUT(w, r)
 
+	case "PATCH":
+		srv.handlePUT(w, r)
+
 	case "DELETE":
 		srv.handleDELETE(w, r)
 
@@ -238,6 +241,9 @@ func (srv *MockTFC) handleGET(w http.ResponseWriter, r *http.Request) {
 
 func (srv *MockTFC) handlePUT(w http.ResponseWriter, r *http.Request) {
 	if srv.HandleConfigurationVersionsUploads(w, r) {
+		return
+	}
+	if srv.HandleVarsPatchRequests(w, r) {
 		return
 	}
 

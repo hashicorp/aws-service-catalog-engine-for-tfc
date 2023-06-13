@@ -13,6 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"encoding/json"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/testtfc"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/identifiers"
+	"github.com/hashicorp/go-tfe"
+	"fmt"
 )
 
 func TestSendApplyHandler_Success(t *testing.T) {
@@ -92,6 +95,99 @@ func TestSendApplyHandler_Success(t *testing.T) {
 	}
 
 	assert.True(t, checkedProviderOverrides, "provider_override.tf.json file should be present in the uploaded artifact")
+}
+
+func TestSendApplyHandler_Success_UpdatingExistingWorkspace(t *testing.T) {
+	// Create mock TFC instance
+	tfcServer := testtfc.NewMockTFC()
+	defer tfcServer.Stop()
+
+	// Create tfe client that will send requests to the mock TFC instance
+	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
+	if err != nil {
+		t.Error(err)
+	}
+
+	tfcServer.AddProject("id-4-number-1-best-product", testtfc.ProjectFactoryParameters{
+		Name: "id-4-number-1-best-product",
+	})
+
+	workspaceName := identifiers.GetWorkspaceName("123456789042", "amazingly-great-product-instance")
+	testWorkspace := tfcServer.AddWorkspace("ws-4329432942", testtfc.WorkspaceFactoryParameters{
+		Name: workspaceName,
+	})
+
+	// Add a large amount of variables to the workspace to force the handler to have to paginate through them to find
+	// the ones it needs to update
+	numberOfVarsToCreate := 250
+	for varNumber := 0; varNumber < numberOfVarsToCreate; varNumber++ {
+		tfcServer.AddVar(&tfe.Variable{
+			Key:       fmt.Sprintf("VAR_%d", varNumber),
+			Value:     "yo",
+			Category:  tfe.CategoryEnv,
+			HCL:       false,
+			Sensitive: false,
+			Workspace: testWorkspace,
+		})
+	}
+	// add the actual variables the handler needs to update
+	providerAuthVar := tfcServer.AddVar(&tfe.Variable{
+		Key:       "TFC_AWS_PROVIDER_AUTH",
+		Value:     "false",
+		Category:  tfe.CategoryEnv,
+		HCL:       false,
+		Sensitive: false,
+		Workspace: testWorkspace,
+	})
+	runRoleArnVar := tfcServer.AddVar(&tfe.Variable{
+		Key:       "TFC_AWS_RUN_ROLE_ARN",
+		Category:  tfe.CategoryEnv,
+		HCL:       false,
+		Sensitive: false,
+		Workspace: testWorkspace,
+	})
+
+	// Create mock S3 downloader
+	const MockArtifactPath = "../../../example-product/product.tar.gz"
+	mockDownloader := s3.MockDownloader{
+		MockArtifactPath: MockArtifactPath,
+	}
+
+	// Create a test instance of the Lambda function
+	testHandler := &SendApplyHandler{
+		tfeClient:    tfeClient,
+		s3Downloader: mockDownloader,
+		region:       "narnia-west-2",
+	}
+
+	// Create test request
+	testRequest := SendApplyRequest{
+		AwsAccountId:          "123456789042",
+		TerraformOrganization: tfcServer.OrganizationName,
+		ProvisionedProductId:  "amazingly-great-product-instance",
+		Artifact: Artifact{
+			Path: "s3://wowzers-this-is-some/fake/artifact/path",
+			Type: "beeg-test",
+		},
+		LaunchRoleArn: "arn:::some/fake/role/arn",
+		ProductId:     "id-4-number-1-best-product",
+		Tags:          make([]AWSTag, 0),
+		TracerTag: tracertag.TracerTag{
+			TracerTagKey:   "test-tracer-tag-key",
+			TracerTagValue: "test-trace-tag-value",
+		},
+	}
+
+	// Send the test request
+	_, err = testHandler.HandleRequest(context.Background(), testRequest)
+	// Verify no errors were returned
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Check Variables were updated
+	assert.Equal(t, "true", providerAuthVar.Value)
+	assert.Equal(t, "arn:::some/fake/role/arn", runRoleArnVar.Value)
 }
 
 func TestSendApplyHandler_Success_ProjectAlreadyExists(t *testing.T) {
