@@ -19,6 +19,8 @@ Copy `terraform.tfvars.example` to `terraform.tfvars` and set the organization n
 
 Run `terraform plan` to verify your setup, and then run `terraform apply`.
 
-#### Configure the Portfolio
+#### Test the Engine
 
 Once you've applied the configuration, you should see a newly created AWS Service Catalog portfolio in [your AWS Service Catalog dashboard](https://console.aws.amazon.com/servicecatalog/home). 
+
+To test your newly provisioned Service Catalog Engine for Terraform Cloud, follow [the guide to granting access to portfolios](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/catalogs_portfolios_users.html). Navigate to the newly provisioned "TFC Example Portfolio" and grant access to a user of your choosing. Instruct the newly assigned user to attempt to provision the included example product that this engine creates (it is already assigned to the "TFC Example Portfolio").    
