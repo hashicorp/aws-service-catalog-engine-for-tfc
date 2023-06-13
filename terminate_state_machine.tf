@@ -96,8 +96,7 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
       "Type": "Pass",
       "Comment": "Set default values for state so that future steps do not error on missing parameters",
       "Parameters": {
-        "terraformRunId": "",
-        "terraformOrganization.$": "$.terraformOrganization",
+        "terraformRunId": ""
       },
       "ResultPath": "$.sendDestroyResult",
       "Next": "Send destroy"

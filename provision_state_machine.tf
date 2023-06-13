@@ -215,7 +215,7 @@ resource "aws_sfn_state_machine" "provision_state_machine" {
     },
     "Notify run result failure": {
       "Type": "Task",
-      "Resource": "${aws_lambda_function.notify_run_result.arn}",
+      "Resource": "${local.notify_run_result_lambda_arn}",
       "Parameters": {
         "terraformRunId.$": "$.sendApplyResult.terraformRunId",
         "workflowToken.$": "$.token",

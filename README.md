@@ -21,4 +21,4 @@ Run `terraform plan` to verify your setup, and then run `terraform apply`.
 
 #### Configure the Portfolio
 
-Once you've applied the configuration, you should see an Example 
+Once you've applied the configuration, you should see a newly created AWS Service Catalog portfolio in [your AWS Service Catalog dashboard](https://console.aws.amazon.com/servicecatalog/home). 

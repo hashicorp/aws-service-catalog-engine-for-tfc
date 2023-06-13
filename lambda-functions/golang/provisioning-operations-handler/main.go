@@ -20,10 +20,12 @@ type Record struct {
 type StateMachinePayload struct {
 	Token                  string `json:"token"`
 	Operation              string `json:"operation"`
+	ProductId              string `json:"productId"`
 	ProvisionedProductId   string `json:"provisionedProductId"`
 	ProvisionedProductName string `json:"provisionedProductName"`
 	RecordId               string `json:"recordId"`
 	LaunchRoleArn          string `json:"launchRoleArn"`
+	TerraformOrganization  string `json:"terraformOrganization"`
 	Identity               struct {
 		Principal      string `json:"principal"`
 		AwsAccountId   string `json:"awsAccountId"`
@@ -33,7 +35,14 @@ type StateMachinePayload struct {
 		Key   string `json:"token"`
 		Value string `json:"operation"`
 	} `json:"tracerTag"`
-	TerraformOrganization string `json:"terraformOrganization"`
+	Artifact struct {
+		Path string `json:"path"`
+		Type string `json:"type"`
+	} `json:"artifact"`
+	Tags []struct {
+		Key   string `json:"key"`
+		Value string `json:"value"`
+	} `json:"tags"`
 }
 
 type ProvisioningOperationsHandlerResponse struct {

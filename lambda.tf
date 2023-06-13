@@ -85,6 +85,7 @@ resource "aws_lambda_function" "provision_handler" {
 
   environment {
     variables = {
+      TERRAFORM_ORGANIZATION = var.tfc_organization
       STATE_MACHINE_ARN = aws_sfn_state_machine.provision_state_machine.arn
     }
   }
@@ -112,6 +113,7 @@ resource "aws_lambda_function" "terminate_handler" {
 
   environment {
     variables = {
+      TERRAFORM_ORGANIZATION = var.tfc_organization
       STATE_MACHINE_ARN = aws_sfn_state_machine.terminate_state_machine.arn
     }
   }
