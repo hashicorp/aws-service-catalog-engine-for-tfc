@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"encoding/json"
 	"strings"
+	"strconv"
 )
 
 func (srv *MockTFC) AddStateVersion(workspaceId string, stateVersion *tfe.StateVersion) *tfe.StateVersion {
@@ -55,7 +56,15 @@ func (srv *MockTFC) HandleStateVersionsGetRequests(w http.ResponseWriter, r *htt
 			return true
 		}
 
-		body, err := json.Marshal(MakeGetStateVersionOutputsResponse(stateVersionOutputs))
+		page, err := strconv.Atoi(r.URL.Query().Get("page[number]"))
+		if err != nil {
+			page = 0
+		}
+		size, err := strconv.Atoi(r.URL.Query().Get("page[size]"))
+		if err != nil {
+			size = 20
+		}
+		body, err := json.Marshal(MakeGetStateVersionOutputsResponse(stateVersionOutputs, page, size))
 		if err != nil {
 			w.WriteHeader(500)
 			return true
@@ -88,10 +97,17 @@ func MakeGetStateVersionResponse(stateVersion tfe.StateVersion) map[string]inter
 	}
 }
 
-func MakeGetStateVersionOutputsResponse(stateVersionOutputs []*tfe.StateVersionOutput) map[string]interface{} {
+func MakeGetStateVersionOutputsResponse(stateVersionOutputs []*tfe.StateVersionOutput, page int, size int) map[string]interface{} {
 	data := make([]map[string]interface{}, 0)
 
-	for _, output := range stateVersionOutputs {
+	startIndex := page * size
+	endIndex := startIndex + size
+	if endIndex > len(stateVersionOutputs) {
+		endIndex = len(stateVersionOutputs)
+	}
+	paginatedData := stateVersionOutputs[startIndex:endIndex]
+
+	for _, output := range paginatedData {
 		selfLink := fmt.Sprintf("/api/v2/state-version-outputs/%s", output.ID)
 		datum := map[string]interface{}{
 			"id":   output.ID,
@@ -112,5 +128,15 @@ func MakeGetStateVersionOutputsResponse(stateVersionOutputs []*tfe.StateVersionO
 
 	return map[string]interface{}{
 		"data": data,
+		"meta": map[string]interface{}{
+			"pagination": map[string]interface{}{
+				"current-page": page,
+				"page-size":    size,
+				"prev-page":    nil,
+				"next-page":    nil,
+				"total-pages":  (len(stateVersionOutputs) / size) + 1,
+				"total-count":  len(stateVersionOutputs),
+			},
+		},
 	}
 }

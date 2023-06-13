@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/go-tfe"
 	"github.com/aws/aws-sdk-go-v2/service/servicecatalog/types"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/testtfc"
+	"fmt"
 )
 
 func TestNotifyRunResultHandler_Terminating_Success(t *testing.T) {
@@ -222,6 +223,103 @@ func TestNotifyRunResultHandler_Provisioning_Success(t *testing.T) {
 		assert.Equal(t, testStateVersionOutput.Value, *actualOutput.OutputValue)
 		assert.Nil(t, actualOutput.Description)
 	}
+
+	// Verify workflow token
+	assert.Equal(t, testRequest.WorkflowToken, *mockServiceCatalog.NotifyProvisionProductEngineWorkflowResultInput.WorkflowToken)
+}
+
+func TestNotifyRunResultHandler_Provisioning_Success_WithMoreThan100StateVersionOutputs(t *testing.T) {
+	// Create mock TFC instance
+	tfcServer := testtfc.NewMockTFC()
+	defer tfcServer.Stop()
+
+	// Add a workspace to the TFC instance
+	testWorkspace := tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "yolo"})
+
+	// Add a Run
+	tfcServer.AddRun("run-forrest-run", testtfc.RunFactoryParameters{
+		RunStatus: tfe.RunApplied,
+		Apply: &tfe.Apply{
+			ID: "apply-ran-ed",
+		},
+	})
+
+	// Add an Apply
+	tfcServer.AddApply("apply-ran-ed", &tfe.Apply{
+		ID:                   "apply-ran-ed",
+		LogReadURL:           "some-log-read-url",
+		ResourceAdditions:    1337,
+		ResourceChanges:      42,
+		ResourceDestructions: 21,
+		Status:               tfe.ApplyFinished,
+		StatusTimestamps:     nil,
+	})
+
+	// Create a state version with a large number of outputs
+	var stateVersionOutputs []*tfe.StateVersionOutput
+	numberOfOutputsToCreate := 250
+	for outputNumber := 0; outputNumber < numberOfOutputsToCreate; outputNumber++ {
+		testStateVersionOutput := &tfe.StateVersionOutput{
+			Name:      fmt.Sprintf("super_valuable_information_about_your_infra_%d", outputNumber),
+			Sensitive: true,
+			Type:      "string",
+			Value:     fmt.Sprintf("the-number-%d", outputNumber),
+		}
+		stateVersionOutputs = append(stateVersionOutputs, testStateVersionOutput)
+	}
+
+	tfcServer.AddStateVersion(testWorkspace.ID, &tfe.StateVersion{
+		Outputs: stateVersionOutputs,
+	})
+
+	// Create tfe client that will send requests to the mock TFC instance
+	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Create mock ServiceCatalog
+	mockServiceCatalog := servicecatalog.MockServiceCatalog{}
+
+	// Create a test instance of the Lambda function
+	testHandler := &NotifyRunResultHandler{
+		serviceCatalog: &mockServiceCatalog,
+		tfeClient:      tfeClient,
+	}
+
+	// Create test request
+	testRequest := NotifyRunResultRequest{
+		TerraformRunId: "run-forrest-run",
+		WorkflowToken:  "whistle-while-you-work",
+		RecordId:       "record-this-id",
+		TracerTag: tracertag.TracerTag{
+			TracerTagKey:   "test-tracer-tag-key",
+			TracerTagValue: "test-trace-tag-value",
+		},
+		ServiceCatalogOperation: Provisioning,
+		AwsAccountId:            "123456789042",
+		TerraformOrganization:   tfcServer.OrganizationName,
+		ProvisionedProductId:    "amazingly-great-product-instance",
+		Error:                   "",
+		ErrorMessage:            "",
+	}
+
+	// Send the test request
+	_, err = testHandler.HandleRequest(context.Background(), testRequest)
+	// Verify no errors were returned
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Verify the TFC workspace was not deleted (like in the terminating workflow)
+	assert.Equal(t, 1, len(tfcServer.Workspaces), "The TFC workspace should have been deleted")
+
+	// Verify the workflow was successfully reported as a success
+	assert.Equal(t, types.EngineWorkflowStatusSucceeded, mockServiceCatalog.NotifyProvisionProductEngineWorkflowResultInput.Status)
+
+	// Verify the outputs were published correctly
+	actualOutputs := mockServiceCatalog.NotifyProvisionProductEngineWorkflowResultInput.Outputs
+	assert.Equal(t, 250, len(actualOutputs))
 
 	// Verify workflow token
 	assert.Equal(t, testRequest.WorkflowToken, *mockServiceCatalog.NotifyProvisionProductEngineWorkflowResultInput.WorkflowToken)

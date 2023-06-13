@@ -33,7 +33,7 @@ func FetchRunOutputs(ctx context.Context, client *tfe.Client, request NotifyRunR
 	}
 
 	// Get state version outputs
-	stateVersionOutputs, err := GetAllStateVersionOutputs(ctx, client, stateVersion.ID)
+	stateVersionOutputs, err := GetAllStateVersionOutputs(ctx, client, stateVersion.ID, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -117,11 +117,10 @@ func GetCurrentStateVersionForApply(ctx context.Context, client *tfe.Client, app
 	return currentStateVersion, nil
 }
 
-func GetAllStateVersionOutputs(ctx context.Context, client *tfe.Client, stateVersionID string) ([]*tfe.StateVersionOutput, error) {
-	//TODO: Paginate through state version outputs to make sure we don't miss any
+func GetAllStateVersionOutputs(ctx context.Context, client *tfe.Client, stateVersionID string, NumberPage int) ([]*tfe.StateVersionOutput, error) {
 	stateVersionOutputs, err := client.StateVersions.ListOutputs(ctx, stateVersionID, &tfe.StateVersionOutputsListOptions{
 		ListOptions: tfe.ListOptions{
-			PageNumber: 0,
+			PageNumber: NumberPage,
 			PageSize:   100,
 		},
 	})
@@ -129,7 +128,16 @@ func GetAllStateVersionOutputs(ctx context.Context, client *tfe.Client, stateVer
 		return nil, err
 	}
 
-	return stateVersionOutputs.Items, err
+	// If more state version outputs exists, fetch them and return them as well
+	if stateVersionOutputs.TotalCount > ((NumberPage + 1) * 100) {
+		outputs, err := GetAllStateVersionOutputs(ctx, client, stateVersionID, NumberPage+1)
+		if err != nil {
+			return nil, err
+		}
+		return append(stateVersionOutputs.Items, outputs...), err
+	} else {
+		return stateVersionOutputs.Items, err
+	}
 }
 
 // validStringID checks if the given string pointer is non-nil and
