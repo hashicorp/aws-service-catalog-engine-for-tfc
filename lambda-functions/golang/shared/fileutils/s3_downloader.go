@@ -6,18 +6,43 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"os"
 	"context"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/awsconfig"
 )
 
 type S3Downloader interface {
-	Download(ctx context.Context, tmp *os.File, bucket string, key string) (n int64, err error)
+	Download(ctx context.Context, launchRoleArn string, tmp *os.File, bucket string, key string) (n int64, err error)
 }
 
 type S3ManagerDownloader struct {
-	S3Client *s3.Client
+	S3ClientProvider S3ClientProvider
 }
 
-func (downloader S3ManagerDownloader) Download(ctx context.Context, tmp *os.File, bucket string, objectKey string) (n int64, err error) {
-	downloadManager := manager.NewDownloader(downloader.S3Client)
+type S3ClientProvider func(launchRoleArn string) (*s3.Client, error)
+
+// NewS3DownloaderWithAssumedRole creates a new S3 Downloader that will assume the provided launch role to make requests to fetch files from S3
+func NewS3DownloaderWithAssumedRole(ctx context.Context, sdkConfig aws.Config) S3ManagerDownloader {
+
+	// Create the S3 Client with the provided IAM launch role
+	return S3ManagerDownloader{
+		S3ClientProvider: func(launchRoleArn string) (*s3.Client, error) {
+			// Assume the provided IAM launch role
+			assumedRoleConfig, err := awsconfig.GetSdkConfigWithRoleArn(ctx, sdkConfig, launchRoleArn)
+			if err != nil {
+				return nil, err
+			}
+
+			return s3.NewFromConfig(assumedRoleConfig), nil
+		},
+	}
+}
+
+func (downloader S3ManagerDownloader) Download(ctx context.Context, launchRoleArn string, tmp *os.File, bucket string, objectKey string) (n int64, err error) {
+	s3Client, err := downloader.S3ClientProvider(launchRoleArn)
+	if err != nil {
+		return 0, err
+	}
+
+	downloadManager := manager.NewDownloader(s3Client)
 
 	return downloadManager.Download(ctx, tmp, &s3.GetObjectInput{
 		Bucket: aws.String(bucket),

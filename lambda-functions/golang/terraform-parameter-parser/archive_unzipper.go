@@ -16,10 +16,8 @@ const SubDirectoryDelimiter = "/"
 const TfFileSuffix = ".tf"
 
 // UnzipArchive - Unzips a .tar.gz archive to a map where key is the file name and value is the file content
-func UnzipArchive(zipFile []byte) (map[string]string, error) {
-	bytesReader := bytes.NewReader(zipFile)
-
-	gzipReader, err := getGzipReader(bytesReader)
+func UnzipArchive(zipFile io.Reader) (map[string]string, error) {
+	gzipReader, err := getGzipReader(zipFile)
 	if err != nil {
 		return map[string]string{}, err
 	}
@@ -57,7 +55,7 @@ func getFileMapFromGzip(gzipReader io.Reader) (map[string]string, error) {
 		// File extension names within the zipped file will have to end with .tf
 		// Hence header name will need to be at least 4 chars
 		if len(hdr.Name) < 4 {
-			log.Printf("Skipping non tf file %s",  hdr.Name)
+			log.Printf("Skipping non tf file %s", hdr.Name)
 			continue
 		}
 

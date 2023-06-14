@@ -31,7 +31,7 @@ func TestSendApplyHandler_Success(t *testing.T) {
 
 	// Create mock S3 downloader
 	const MockArtifactPath = "../../../example-product/product.tar.gz"
-	mockDownloader := s3.MockDownloader{
+	mockDownloader := &s3.MockDownloader{
 		MockArtifactPath: MockArtifactPath,
 	}
 
@@ -95,6 +95,9 @@ func TestSendApplyHandler_Success(t *testing.T) {
 	}
 
 	assert.True(t, checkedProviderOverrides, "provider_override.tf.json file should be present in the uploaded artifact")
+
+	// Check to make sure correct launch role arn was assumed to download s3 files
+	assert.Equal(t, testRequest.LaunchRoleArn, mockDownloader.AssumedRole, "correct launch role arn should have been assumed to download s3 files")
 }
 
 func TestSendApplyHandler_Success_UpdatingExistingWorkspace(t *testing.T) {
@@ -149,7 +152,7 @@ func TestSendApplyHandler_Success_UpdatingExistingWorkspace(t *testing.T) {
 
 	// Create mock S3 downloader
 	const MockArtifactPath = "../../../example-product/product.tar.gz"
-	mockDownloader := s3.MockDownloader{
+	mockDownloader := &s3.MockDownloader{
 		MockArtifactPath: MockArtifactPath,
 	}
 
@@ -207,7 +210,7 @@ func TestSendApplyHandler_Success_ProjectAlreadyExists(t *testing.T) {
 
 	// Create mock S3 downloader
 	const MockArtifactPath = "../../../example-product/product.tar.gz"
-	mockDownloader := s3.MockDownloader{
+	mockDownloader := &s3.MockDownloader{
 		MockArtifactPath: MockArtifactPath,
 	}
 

@@ -5,6 +5,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"log"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 )
 
 func GetSdkConfig(ctx context.Context) aws.Config {
@@ -20,4 +22,18 @@ func GetSdkConfig(ctx context.Context) aws.Config {
 	}
 
 	return configuration
+}
+
+func GetSdkConfigWithRoleArn(ctx context.Context, initialConfig aws.Config, launchRoleArn string) (aws.Config, error) {
+	// Create an STS client with the initial config
+	stsClient := sts.NewFromConfig(initialConfig)
+
+	// Create a new credential provider that will assume the IAM Role provided by the launchRoleArn parameter
+	assumeRoleProvider := stscreds.NewAssumeRoleProvider(stsClient, launchRoleArn)
+
+	// Create a new configuration with the assume role credential provider
+	return config.LoadDefaultConfig(
+		ctx,
+		config.WithCredentialsProvider(assumeRoleProvider),
+	)
 }

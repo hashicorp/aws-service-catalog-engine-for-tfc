@@ -2,6 +2,9 @@ package main
 
 import (
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/fileutils"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/awsconfig"
+	"context"
 )
 
 type TerraformOpenSourceParameterParserInput struct {
@@ -14,20 +17,28 @@ type TerraformOpenSourceParameterParserResponse struct {
 }
 
 func main() {
-	lambda.Start(HandleRequest)
+	// Create temporary context to initialize the handler with
+	initContext := context.TODO()
+
+	// Initialize the TFE client
+	sdkConfig := awsconfig.GetSdkConfig(initContext)
+
+	// Initialize the s3 downloader
+	s3Downloader := fileutils.NewS3DownloaderWithAssumedRole(initContext, sdkConfig)
+
+	h := &TerraformParameterParserHandler{
+		s3Downloader: s3Downloader,
+	}
+
+	lambda.Start(h.HandleRequest)
 }
 
-func HandleRequest(event TerraformOpenSourceParameterParserInput) (TerraformOpenSourceParameterParserResponse, error) {
+func (h *TerraformParameterParserHandler) HandleRequest(ctx context.Context, event TerraformOpenSourceParameterParserInput) (TerraformOpenSourceParameterParserResponse, error) {
 	if err := ValidateInput(event); err != nil {
 		return TerraformOpenSourceParameterParserResponse{}, err
 	}
 
-	configFetcher, configFetcherErr := NewConfigFetcher(event.LaunchRoleArn)
-	if configFetcherErr != nil {
-		return TerraformOpenSourceParameterParserResponse{}, configFetcherErr
-	}
-
-	fileMap, fileMapErr := configFetcher.fetch(event)
+	fileMap, fileMapErr := h.fetchArtifact(ctx, event)
 	if fileMapErr != nil {
 		return TerraformOpenSourceParameterParserResponse{}, fileMapErr
 	}

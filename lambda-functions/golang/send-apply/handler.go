@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/identifiers"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/fileutils"
 	"log"
-	"strings"
 )
 
 type SendApplyHandler struct {
@@ -50,8 +49,7 @@ func (h *SendApplyHandler) HandleRequest(ctx context.Context, request SendApplyR
 	}
 
 	// Download product configuration files
-	bucket, key := resolveArtifactPath(request.Artifact.Path)
-	sourceProductConfig, err := fileutils.DownloadS3File(ctx, h.s3Downloader, key, bucket)
+	sourceProductConfig, err := fileutils.DownloadS3File(ctx, h.s3Downloader, request.LaunchRoleArn, request.Artifact.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -248,11 +246,4 @@ func (h *SendApplyHandler) FindVariableByKey(ctx context.Context, w *tfe.Workspa
 	}
 
 	return nil, nil
-}
-
-// Resolves artifactPath to bucket and key
-func resolveArtifactPath(artifactPath string) (string, string) {
-	bucket := strings.Split(artifactPath, "/")[2]
-	key := strings.SplitN(artifactPath, "/", 4)[3]
-	return bucket, key
 }

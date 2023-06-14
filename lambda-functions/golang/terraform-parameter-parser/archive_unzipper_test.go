@@ -12,7 +12,7 @@ func TestUnzipArchiveHappy(t *testing.T) {
 	expectedFileMap := make(map[string]string)
 	expectedFileMap["main.tf"] = "main-contents"
 
-	zipFile, err := os.ReadFile(MockArtifactPath)
+	zipFile, err := os.Open(MockArtifactPath)
 	if err != nil {
 		t.Errorf("Error opening test artifact %s", MockArtifactPath)
 	}
@@ -32,7 +32,7 @@ func TestUnzipArchiveHappyWithDotSlashRootModuleFiles(t *testing.T) {
 	expectedFileMap := make(map[string]string)
 	expectedFileMap["./main.tf"] = "main-contents"
 
-	zipFile, err := os.ReadFile(MockArtifactPath)
+	zipFile, err := os.Open(MockArtifactPath)
 	if err != nil {
 		t.Errorf("Error opening test artifact %s", MockArtifactPath)
 	}

@@ -9,4 +9,4 @@ bin:
 	GOOS=linux GOARCH=amd64 go build -o "provisioning-operations-handler/main" ./provisioning-operations-handler
 	GOOS=linux GOARCH=amd64 go build -o "send-apply/main" ./send-apply
 	GOOS=linux GOARCH=amd64 go build -o "send-destroy/main" ./send-destroy
-	#GOOS=linux GOARCH=amd64 go build -o "terraform-parameter-parser/main" ./terraform-parameter-parser
+	GOOS=linux GOARCH=amd64 go build -o "terraform-parameter-parser/main" ./terraform-parameter-parser

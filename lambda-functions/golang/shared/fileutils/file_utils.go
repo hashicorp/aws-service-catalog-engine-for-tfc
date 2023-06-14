@@ -15,7 +15,10 @@ import (
 	"time"
 )
 
-func DownloadS3File(ctx context.Context, s3Downloader S3Downloader, objectKey string, bucket string) (*os.File, error) {
+func DownloadS3File(ctx context.Context, s3Downloader S3Downloader, launchRoleArn string, s3Path string) (*os.File, error) {
+	log.Default().Printf("parsing s3 Path: %s", s3Path)
+	bucket, objectKey := resolveArtifactPath(s3Path)
+
 	log.Default().Print("downloading product terraform configuration from s3")
 
 	tmp, err := os.CreateTemp("", "artifact-")
@@ -23,7 +26,7 @@ func DownloadS3File(ctx context.Context, s3Downloader S3Downloader, objectKey st
 		panic(err)
 	}
 
-	numBytes, err := s3Downloader.Download(ctx, tmp, bucket, objectKey)
+	numBytes, err := s3Downloader.Download(ctx, launchRoleArn, tmp, bucket, objectKey)
 
 	if err != nil {
 		return nil, err
@@ -197,4 +200,11 @@ func AddEntryToTar(source *os.File, entryName string, entryContents string) erro
 	}
 
 	return nil
+}
+
+// Resolves artifactPath to bucket and key
+func resolveArtifactPath(artifactPath string) (string, string) {
+	bucket := strings.Split(artifactPath, "/")[2]
+	key := strings.SplitN(artifactPath, "/", 4)[3]
+	return bucket, key
 }
