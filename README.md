@@ -1,6 +1,6 @@
 # AWS Service Catalog Engine for Terraform Cloud
 
-This repository contains everything you need to install a AWS Service Catalog Engine for Terraform Cloud into your AWS account. It provides you with:
+This repository contains everything you need to install an AWS Service Catalog Engine for Terraform Cloud into your AWS account. It provides you with:
 1. Pre-configured AWS Resources that enable AWS Service Catalog to manage products in AWS via Terraform Cloud
 2. An AWS IAM OIDC Provider that Terraform Cloud can use to authenticate securely and automatically with AWS using [Dynamic Credentials](https://developer.hashicorp.com/terraform/tutorials/cloud/dynamic-credentials)
 3. [An example AWS Service Catalog Product](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/tree/main/example-product) that you can use as a template for your own Terraform configurations
