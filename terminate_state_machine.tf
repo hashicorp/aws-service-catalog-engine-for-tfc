@@ -57,6 +57,21 @@ data "aws_iam_policy_document" "terminate_state_machine" {
     resources = ["*"]
 
   }
+
+  statement {
+    sid = "XRayLogging"
+
+    effect = "Allow"
+
+    actions = [
+      "xray:PutTraceSegments",
+      "xray:PutTelemetryRecords",
+      "xray:GetSamplingRules",
+      "xray:GetSamplingTargets"
+    ]
+
+    resources = ["*"]
+  }
 }
 
 resource "aws_cloudwatch_log_group" "terminate_state_machine" {
@@ -67,6 +82,7 @@ resource "aws_cloudwatch_log_group" "terminate_state_machine" {
 resource "aws_sfn_state_machine" "terminate_state_machine" {
   name     = "ServiceCatalogTFCTerminateOperationStateMachine"
   role_arn = aws_iam_role.terminate_state_machine.arn
+
   logging_configuration {
     level                  = "ALL"
     include_execution_data = true
@@ -74,7 +90,7 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
   }
 
   tracing_configuration {
-    enabled = true
+    enabled = var.enable_xray_tracing
   }
 
   definition = <<EOF
@@ -124,7 +140,7 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
     },
     "Wait for destroy to complete": {
       "Type": "Wait",
-      "Seconds": 1,
+      "Seconds": 10,
       "Next": "Poll destroy status"
     },
     "Poll destroy status": {

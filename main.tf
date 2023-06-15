@@ -66,8 +66,9 @@ module "example_product" {
   artifact_bucket_name = aws_s3_object.object.bucket
   artifact_object_key = aws_s3_object.object.id
 
-  # Arn of the parameter parser
+  # Arns of Lambda functions that need to assume the IAM Launch Role
   parameter_parser_role_arn = aws_iam_role.parameter_parser.arn
+  send_apply_lambda_role_arn = local.send_apply_lambda_role_arn
 
   # AWS Service Catalog portfolio you would like to add this product to
   service_catalog_portfolio_ids = [aws_servicecatalog_portfolio.portfolio.id]
@@ -76,4 +77,5 @@ module "example_product" {
   tfc_hostname = var.tfc_hostname
   tfc_organization = var.tfc_organization
   tfc_provider_arn = aws_iam_openid_connect_provider.tfc_provider.arn
+
 }

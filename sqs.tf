@@ -34,7 +34,6 @@ data "aws_iam_policy_document" "queue_key_policy" {
       identifiers = ["servicecatalog.amazonaws.com"]
     }
 
-    # TODO: Maybe cut down on this a bit
     resources = ["*"]
   }
 }

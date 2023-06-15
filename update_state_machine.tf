@@ -56,6 +56,21 @@ data "aws_iam_policy_document" "update_state_machine" {
     resources = ["*"]
 
   }
+
+  statement {
+    sid = "XRayLogging"
+
+    effect = "Allow"
+
+    actions = [
+      "xray:PutTraceSegments",
+      "xray:PutTelemetryRecords",
+      "xray:GetSamplingRules",
+      "xray:GetSamplingTargets"
+    ]
+
+    resources = ["*"]
+  }
 }
 
 resource "aws_cloudwatch_log_group" "update_state_machine" {
@@ -66,6 +81,7 @@ resource "aws_cloudwatch_log_group" "update_state_machine" {
 resource "aws_sfn_state_machine" "update_state_machine" {
   name     = "ServiceCatalogTFCUpdateOperationStateMachine"
   role_arn = aws_iam_role.update_state_machine.arn
+
   logging_configuration {
     level                  = "ALL"
     include_execution_data = true
@@ -73,7 +89,7 @@ resource "aws_sfn_state_machine" "update_state_machine" {
   }
 
   tracing_configuration {
-    enabled = true
+    enabled = var.enable_xray_tracing
   }
 
   definition = <<EOF
@@ -128,7 +144,7 @@ resource "aws_sfn_state_machine" "update_state_machine" {
     },
     "Wait for update to complete": {
       "Type": "Wait",
-      "Seconds": 1,
+      "Seconds": 10,
       "Next": "Poll update status"
     },
     "Poll update status": {

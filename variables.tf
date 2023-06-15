@@ -9,6 +9,12 @@ variable "tfc_team" {
   default = "aws-service-catalog"
 }
 
+variable "enable_xray_tracing" {
+  type = bool
+  description = "When set to true, AWS X-Ray tracing is enabled"
+  default = true
+}
+
 variable "tfc_hostname" {
   type = string
   description = "TFC hostname (defaults to TFC: app.terraform.io)"

@@ -85,6 +85,7 @@ resource "aws_iam_role" "example_product_launch_role" {
         Condition = {
           StringLike = {
             "aws:PrincipalArn" = [
+              "${var.send_apply_lambda_role_arn}*",
               "${var.parameter_parser_role_arn}*"
             ]
           }
@@ -101,8 +102,7 @@ resource "aws_iam_role" "example_product_launch_role" {
             "${var.tfc_hostname}:aud" = one(data.aws_iam_openid_connect_provider.tfc_provider.client_id_list)
           },
           StringLike = {
-            // TODO: Make sure to narrow workspace and project values down
-            "${var.tfc_hostname}:sub" = "organization:${var.tfc_organization}:project:*:workspace:*:run_phase:*"
+            "${var.tfc_hostname}:sub" = "organization:${var.tfc_organization}:project:${aws_servicecatalog_product.example.id}:workspace:*:run_phase:*"
           }
         }
       }
@@ -126,16 +126,37 @@ data "aws_iam_policy_document" "example_product_launch_constraint_policy" {
   version = "2012-10-17"
 
   statement {
-    sid = "S3Access"
+    sid = "S3AccessToProvisioningObjects"
 
     effect = "Allow"
 
     actions = [
-      "s3:*",
+      "s3:GetObject",
     ]
 
     resources = ["*"]
 
+    condition {
+      test     = "StringEquals"
+      variable = "s3:ExistingObjectTag/servicecatalog:provisioning"
+      values   = ["true"]
+    }
+  }
+
+  statement {
+    sid = "AllowCreationOfBucketsToDistributeProvisioningArtifact"
+
+    effect = "Allow"
+
+    actions = [
+      "s3:CreateBucket*",
+      "s3:DeleteBucket*",
+      "s3:Get*",
+      "s3:List*",
+      "s3:PutBucketTagging"
+    ]
+
+    resources = ["arn:aws:s3:::*"]
   }
 
   statement {

@@ -54,3 +54,8 @@ variable "parameter_parser_role_arn" {
   type = string
   description = "ARN of the IAM Role that the Terraform Parameter Parser Lambda Function uses to parse parameters"
 }
+
+variable "send_apply_lambda_role_arn" {
+  type = string
+  description = "ARN of the IAM Role that the Send Apply Lambda Function uses to trigger applies in Terraform Cloud"
+}
