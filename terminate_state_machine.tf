@@ -203,8 +203,8 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
         "Comment": "Restructures error from the poll destroy status task to a format the notify run result task understands",
         "Parameters": {
             "Error": "Error applying run in TFC",
-            "Cause.$": "$.pollRunStatus.errorMessage",
-            "isWrapperError": true
+            "Cause.$": "$.pollRunResult.errorMessage",
+            "isWrapperError": tru
         },
         "ResultPath": "$.errorInfo",
         "Next": "Notify destroy result failure"

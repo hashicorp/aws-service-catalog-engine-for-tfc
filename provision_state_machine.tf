@@ -208,7 +208,7 @@ resource "aws_sfn_state_machine" "provision_state_machine" {
         "Comment": "Restructures error from the poll run status task to a format the notify run result task understands",
         "Parameters": {
             "Error": "Error applying run in TFC",
-            "Cause.$": "$.pollRunStatus.errorMessage",
+            "Cause.$": "$.pollRunResult.errorMessage",
             "isWrapperError": true
         },
         "ResultPath": "$.errorInfo",
