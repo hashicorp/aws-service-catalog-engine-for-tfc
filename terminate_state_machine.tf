@@ -204,7 +204,7 @@ resource "aws_sfn_state_machine" "terminate_state_machine" {
         "Parameters": {
             "Error": "Error applying run in TFC",
             "Cause.$": "$.pollRunResult.errorMessage",
-            "isWrapperError": tru
+            "isWrapperError": true
         },
         "ResultPath": "$.errorInfo",
         "Next": "Notify destroy result failure"
