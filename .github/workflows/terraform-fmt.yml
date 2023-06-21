@@ -1,4 +1,4 @@
-name: terraform-fmt
+name: Format Terraform
 on:
   push:
     branches: [main]
