@@ -75,7 +75,7 @@ data "aws_iam_policy_document" "terminate_state_machine" {
 }
 
 resource "aws_cloudwatch_log_group" "terminate_state_machine" {
-  name = "ServiceCatalogTFCTerminateOperationStateMachine"
+  name              = "ServiceCatalogTFCTerminateOperationStateMachine"
   retention_in_days = var.cloudwatch_log_retention_in_days
 }
 

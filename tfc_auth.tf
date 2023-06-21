@@ -2,7 +2,7 @@ resource "tfe_team" "provisioning_team" {
   name         = var.tfc_team
   organization = var.tfc_organization
   organization_access {
-    manage_projects = true
+    manage_projects   = true
     manage_workspaces = true
   }
 }
@@ -16,10 +16,10 @@ resource "aws_secretsmanager_secret" "team_token_values" {
 }
 
 resource "aws_secretsmanager_secret_version" "tfc_credentials" {
-  secret_id     = aws_secretsmanager_secret.team_token_values.id
+  secret_id = aws_secretsmanager_secret.team_token_values.id
   secret_string = jsonencode({
     hostname = var.tfc_hostname
-    id = tfe_team.provisioning_team.id
-    token = tfe_team_token.test_team_token.token
+    id       = tfe_team.provisioning_team.id
+    token    = tfe_team_token.test_team_token.token
   })
 }

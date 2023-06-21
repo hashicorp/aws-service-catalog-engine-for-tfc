@@ -1,24 +1,24 @@
 variable "tfc_organization" {
-  type = string
+  type        = string
   description = "Name of the organization to manage infrastructure with in TFC"
 }
 
 variable "tfc_team" {
-  type = string
+  type        = string
   description = "Name of the TFC team to use to provision infrastructure with in TFC"
-  default = "aws-service-catalog"
+  default     = "aws-service-catalog"
 }
 
 variable "enable_xray_tracing" {
-  type = bool
+  type        = bool
   description = "When set to true, AWS X-Ray tracing is enabled"
-  default = true
+  default     = true
 }
 
 variable "tfc_hostname" {
-  type = string
+  type        = string
   description = "TFC hostname (defaults to TFC: app.terraform.io)"
-  default = "app.terraform.io"
+  default     = "app.terraform.io"
 }
 
 variable "tfc_aws_audience" {
@@ -28,7 +28,7 @@ variable "tfc_aws_audience" {
 }
 
 variable "cloudwatch_log_retention_in_days" {
-  type = number
-  default = 90
+  type        = number
+  default     = 90
   description = "Number of days you wish retain Cloudwatch logs for all the AWS resources in this configuration. These logs are invaluable for Terraform Cloud support staff in helping to diagnose any issues you may run into!"
 }
