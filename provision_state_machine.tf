@@ -75,7 +75,7 @@ data "aws_iam_policy_document" "policy_for_manage_provisioned_product" {
 }
 
 resource "aws_cloudwatch_log_group" "provision_state_machine" {
-  name = "ServiceCatalogTFCProvisionOperationStateMachine"
+  name              = "ServiceCatalogTFCProvisionOperationStateMachine"
   retention_in_days = var.cloudwatch_log_retention_in_days
 }
 

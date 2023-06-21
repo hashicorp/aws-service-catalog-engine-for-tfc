@@ -33,12 +33,12 @@ resource "aws_servicecatalog_product" "example" {
 
   tags = {
     ServiceCatalogProduct = var.product_name
-    ManagedBy = "tfc"
+    ManagedBy             = "tfc"
   }
 }
 
 resource "aws_servicecatalog_product_portfolio_association" "example" {
-  for_each = local.unique_portfolio_ids
+  for_each     = local.unique_portfolio_ids
   portfolio_id = each.value
   product_id   = aws_servicecatalog_product.example.id
 }
@@ -47,7 +47,7 @@ resource "aws_servicecatalog_constraint" "example" {
   # need to wait a bit after the role is created as service catalog will immediately try to assume the role to test it.
   depends_on = [time_sleep.wait_for_launch_constraint_role_to_be_assumable]
 
-  for_each = local.unique_portfolio_ids
+  for_each     = local.unique_portfolio_ids
   description  = "Launch constraint for the ${var.product_name} product."
   portfolio_id = each.value
   product_id   = aws_servicecatalog_product.example.id
