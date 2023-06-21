@@ -10,7 +10,7 @@ import (
 
 func TestUnzipFile(t *testing.T) {
 	// Load test fixtures for later assertions
-	const MockArtifactContentsPath = "../../../../example-product/main.tf"
+	const MockArtifactContentsPath = "../../../../example-product/product/main.tf"
 	contents, err := os.ReadFile(MockArtifactContentsPath)
 	if err != nil {
 		t.Errorf("Error opening test artifact %s", MockArtifactContentsPath)
