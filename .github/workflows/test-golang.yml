@@ -10,9 +10,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # Checkout code
       - name: Checkout code
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
 
+      # Install dependencies and set up Go
       - name: Set up Go
         uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 # v4.0.0
         with:
@@ -20,10 +22,7 @@ jobs:
           go-version-file: lambda-functions/golang/go.mod
           cache: true
 
-      - name: Build
-        working-directory: lambda-functions/golang
-        run: go build -v ./...
-
+      # Run all the tests
       - name: Test
         working-directory: lambda-functions/golang
         run: go test -v ./...
