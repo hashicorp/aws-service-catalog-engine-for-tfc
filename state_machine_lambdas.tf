@@ -99,7 +99,7 @@ locals {
       policy_document = data.aws_iam_policy_document.send_apply.json
       source_file     = "lambda-functions/golang/send-apply/main"
       timeout         = 120
-      memory_size = 1024
+      memory_size     = 1024
     }
     (local.send_destroy_lambda_name) : {
       policy_document = data.aws_iam_policy_document.send_destroy.json

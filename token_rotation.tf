@@ -74,9 +74,9 @@ resource "aws_lambda_function" "rotate_token_handler" {
   environment {
     variables = {
       PROVISIONING_STATE_MACHINE_ARN = aws_sfn_state_machine.provision_state_machine.arn,
-      UPDATING_STATE_MACHINE_ARN = aws_sfn_state_machine.update_state_machine.arn,
-      TERMINATING_STATE_MACHINE_ARN = aws_sfn_state_machine.terminate_state_machine.arn,
-      TEAM_ID = tfe_team.provisioning_team.id
+      UPDATING_STATE_MACHINE_ARN     = aws_sfn_state_machine.update_state_machine.arn,
+      TERMINATING_STATE_MACHINE_ARN  = aws_sfn_state_machine.terminate_state_machine.arn,
+      TEAM_ID                        = tfe_team.provisioning_team.id
     }
   }
 }
