@@ -47,16 +47,16 @@ data "aws_iam_policy_document" "policy_for_provision_handler" {
 
   }
 
-    statement {
-      sid = "AllowStepFunction"
+  statement {
+    sid = "AllowStepFunction"
 
-      effect = "Allow"
+    effect = "Allow"
 
-      actions = ["states:StartExecution"]
+    actions = ["states:StartExecution"]
 
-      resources = [aws_sfn_state_machine.provision_state_machine.arn, aws_sfn_state_machine.update_state_machine.arn, aws_sfn_state_machine.terminate_state_machine.arn]
+    resources = [aws_sfn_state_machine.provision_state_machine.arn, aws_sfn_state_machine.update_state_machine.arn, aws_sfn_state_machine.terminate_state_machine.arn]
 
-    }
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "provision_handler_lambda_execution" {
@@ -68,7 +68,7 @@ resource "aws_iam_role_policy_attachment" "provision_handler_lambda_execution" {
 data "archive_file" "provision_handler" {
   type        = "zip"
   output_path = "dist/provisioning_operations_handler.zip"
-  source_file  = "lambda-functions/golang/provisioning-operations-handler/main"
+  source_file = "lambda-functions/golang/provisioning-operations-handler/main"
 }
 
 # Lambda for provisioning products
@@ -86,7 +86,7 @@ resource "aws_lambda_function" "provision_handler" {
   environment {
     variables = {
       TERRAFORM_ORGANIZATION = var.tfc_organization
-      STATE_MACHINE_ARN = aws_sfn_state_machine.provision_state_machine.arn
+      STATE_MACHINE_ARN      = aws_sfn_state_machine.provision_state_machine.arn
     }
   }
 }
@@ -114,7 +114,7 @@ resource "aws_lambda_function" "terminate_handler" {
   environment {
     variables = {
       TERRAFORM_ORGANIZATION = var.tfc_organization
-      STATE_MACHINE_ARN = aws_sfn_state_machine.terminate_state_machine.arn
+      STATE_MACHINE_ARN      = aws_sfn_state_machine.terminate_state_machine.arn
     }
   }
 }
@@ -142,7 +142,7 @@ resource "aws_lambda_function" "update_handler" {
   environment {
     variables = {
       TERRAFORM_ORGANIZATION = var.tfc_organization
-      STATE_MACHINE_ARN = aws_sfn_state_machine.update_state_machine.arn
+      STATE_MACHINE_ARN      = aws_sfn_state_machine.update_state_machine.arn
     }
   }
 }

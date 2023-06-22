@@ -86,35 +86,35 @@ data "aws_iam_policy_document" "notify_run_result" {
 # Lambda Functions
 
 locals {
-  default_lambda_function_timeout = 60
+  default_lambda_function_timeout     = 60
   default_lambda_function_memory_size = 128
 
-  send_apply_lambda_name = "ServiceCatalogEngineForTerraformCloudSendApply"
-  send_destroy_lambda_name = "ServiceCatalogEngineForTerraformCloudSendDestroy"
-  poll_run_status_lambda_name = "ServiceCatalogEngineForTerraformCloudPollRunStatus"
+  send_apply_lambda_name        = "ServiceCatalogEngineForTerraformCloudSendApply"
+  send_destroy_lambda_name      = "ServiceCatalogEngineForTerraformCloudSendDestroy"
+  poll_run_status_lambda_name   = "ServiceCatalogEngineForTerraformCloudPollRunStatus"
   notify_run_result_lambda_name = "ServiceCatalogEngineForTerraformCloudNotifyRunResult"
 
   lambda_functions = {
-    (local.send_apply_lambda_name): {
+    (local.send_apply_lambda_name) : {
       policy_document = data.aws_iam_policy_document.send_apply.json
-      source_file = "lambda-functions/golang/send-apply/main"
-      timeout = 120
+      source_file     = "lambda-functions/golang/send-apply/main"
+      timeout         = 120
       # TODO: Play with this memory size and see how the lambda duration changes
       memory_size = 1024
     }
-    (local.send_destroy_lambda_name): {
+    (local.send_destroy_lambda_name) : {
       policy_document = data.aws_iam_policy_document.send_destroy.json
-      source_file = "lambda-functions/golang/send-destroy/main"
+      source_file     = "lambda-functions/golang/send-destroy/main"
 
     }
-    (local.poll_run_status_lambda_name): {
+    (local.poll_run_status_lambda_name) : {
       policy_document = data.aws_iam_policy_document.poll_run_status.json
-      source_file = "lambda-functions/golang/poll-run-status/main"
-      timeout = 30
+      source_file     = "lambda-functions/golang/poll-run-status/main"
+      timeout         = 30
     }
-    (local.notify_run_result_lambda_name): {
+    (local.notify_run_result_lambda_name) : {
       policy_document = data.aws_iam_policy_document.notify_run_result.json
-      source_file = "lambda-functions/golang/notify-run-result/main"
+      source_file     = "lambda-functions/golang/notify-run-result/main"
     }
   }
 }
@@ -141,14 +141,14 @@ resource "aws_iam_role" "state_machine_lambda" {
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
-  for_each   = local.lambda_functions
+  for_each = local.lambda_functions
 
   role       = aws_iam_role.state_machine_lambda[each.key].name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_xray_write_only_access" {
-  for_each   = local.lambda_functions
+  for_each = local.lambda_functions
 
   role       = aws_iam_role.state_machine_lambda[each.key].name
   policy_arn = "arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess"
@@ -157,8 +157,8 @@ resource "aws_iam_role_policy_attachment" "lambda_xray_write_only_access" {
 resource "aws_iam_role_policy" "state_machine_lambda_policy" {
   for_each = local.lambda_functions
 
-  name               = "${each.key}RolePolicy"
-  role       = aws_iam_role.state_machine_lambda[each.key].name
+  name   = "${each.key}RolePolicy"
+  role   = aws_iam_role.state_machine_lambda[each.key].name
   policy = each.value.policy_document
 }
 
@@ -185,12 +185,12 @@ resource "aws_lambda_function" "state_machine_lambda" {
   filename      = data.archive_file.state_machine_lambda_executable[each.key].output_path
   role          = aws_iam_role.state_machine_lambda[each.key].arn
   handler       = "main"
-  timeout = lookup(local.lambda_functions[each.key], "timeout", local.default_lambda_function_timeout)
-  memory_size = lookup(local.lambda_functions[each.key], "memory_size", local.default_lambda_function_memory_size)
+  timeout       = lookup(local.lambda_functions[each.key], "timeout", local.default_lambda_function_timeout)
+  memory_size   = lookup(local.lambda_functions[each.key], "memory_size", local.default_lambda_function_memory_size)
 
   environment {
     variables = {
-      TFE_CREDENTIALS_SECRET_ID = aws_secretsmanager_secret_version.tfc_credentials.arn
+      TFE_CREDENTIALS_SECRET_ID         = aws_secretsmanager_secret_version.tfc_credentials.arn
       TFE_CREDENTIALS_SECRET_VERSION_ID = aws_secretsmanager_secret_version.tfc_credentials.version_id
     }
   }
@@ -206,11 +206,11 @@ resource "aws_lambda_function" "state_machine_lambda" {
 
 locals {
   # ARNs for each of the Lambda Functions created in this file (for resources in other files to reference easily)
-  send_apply_lambda_arn = lookup(aws_lambda_function.state_machine_lambda, local.send_apply_lambda_name, {arn: ""}).arn
-  send_destroy_lambda_arn = lookup(aws_lambda_function.state_machine_lambda, local.send_destroy_lambda_name, {arn: ""}).arn
-  poll_run_status_lambda_arn = lookup(aws_lambda_function.state_machine_lambda, local.poll_run_status_lambda_name, {arn: ""}).arn
-  notify_run_result_lambda_arn = lookup(aws_lambda_function.state_machine_lambda, local.notify_run_result_lambda_name, {arn: ""}).arn
+  send_apply_lambda_arn        = lookup(aws_lambda_function.state_machine_lambda, local.send_apply_lambda_name, { arn : "" }).arn
+  send_destroy_lambda_arn      = lookup(aws_lambda_function.state_machine_lambda, local.send_destroy_lambda_name, { arn : "" }).arn
+  poll_run_status_lambda_arn   = lookup(aws_lambda_function.state_machine_lambda, local.poll_run_status_lambda_name, { arn : "" }).arn
+  notify_run_result_lambda_arn = lookup(aws_lambda_function.state_machine_lambda, local.notify_run_result_lambda_name, { arn : "" }).arn
 
   # ARNs of the IAM Roles for some of the Lambda Functions created in this file (for resources in other files to reference easily)
-  send_apply_lambda_role_arn = lookup(aws_iam_role.state_machine_lambda, local.send_apply_lambda_name, {arn: ""}).arn
+  send_apply_lambda_role_arn = lookup(aws_iam_role.state_machine_lambda, local.send_apply_lambda_name, { arn : "" }).arn
 }

@@ -9,7 +9,7 @@ terraform {
       version = "3.5.1"
     }
     tfe = {
-      source = "hashicorp/tfe"
+      source  = "hashicorp/tfe"
       version = "0.45.0"
     }
   }
@@ -62,19 +62,19 @@ module "example_product" {
   source = "./service-catalog-product"
 
   # Variables for the product name and configuration files (most likely, you'll want to modify these after you've tested things out)
-  product_name = "service-catalog-example-product-${random_string.random.result}"
+  product_name         = "service-catalog-example-product-${random_string.random.result}"
   artifact_bucket_name = aws_s3_object.object.bucket
-  artifact_object_key = aws_s3_object.object.id
+  artifact_object_key  = aws_s3_object.object.id
 
   # Arns of Lambda functions that need to assume the IAM Launch Role
-  parameter_parser_role_arn = aws_iam_role.parameter_parser.arn
+  parameter_parser_role_arn  = aws_iam_role.parameter_parser.arn
   send_apply_lambda_role_arn = local.send_apply_lambda_role_arn
 
   # AWS Service Catalog portfolio you would like to add this product to
   service_catalog_portfolio_ids = [aws_servicecatalog_portfolio.portfolio.id]
 
   # Variables for authentication to AWS via Dynamic Credentials
-  tfc_hostname = var.tfc_hostname
+  tfc_hostname     = var.tfc_hostname
   tfc_organization = var.tfc_organization
   tfc_provider_arn = aws_iam_openid_connect_provider.tfc_provider.arn
 

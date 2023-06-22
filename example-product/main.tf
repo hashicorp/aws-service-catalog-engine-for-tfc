@@ -19,7 +19,7 @@ provider "aws" {
 resource "random_string" "random" {
   length  = 16
   special = false
-  upper = false
+  upper   = false
 }
 
 resource "aws_s3_bucket" "my-bucket" {

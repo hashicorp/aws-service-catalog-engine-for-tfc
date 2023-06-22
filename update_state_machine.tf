@@ -74,7 +74,7 @@ data "aws_iam_policy_document" "update_state_machine" {
 }
 
 resource "aws_cloudwatch_log_group" "update_state_machine" {
-  name = "ServiceCatalogTFCUpdateOperationStateMachine"
+  name              = "ServiceCatalogTFCUpdateOperationStateMachine"
   retention_in_days = var.cloudwatch_log_retention_in_days
 }
 
