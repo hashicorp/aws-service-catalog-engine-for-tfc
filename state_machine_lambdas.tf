@@ -99,7 +99,6 @@ locals {
       policy_document = data.aws_iam_policy_document.send_apply.json
       source_file     = "lambda-functions/golang/send-apply/main"
       timeout         = 120
-      # TODO: Play with this memory size and see how the lambda duration changes
       memory_size = 1024
     }
     (local.send_destroy_lambda_name) : {
@@ -201,8 +200,6 @@ resource "aws_lambda_function" "state_machine_lambda" {
 
   depends_on = [aws_cloudwatch_log_group.lambda_cloudwatch_log_group]
 }
-
-
 
 locals {
   # ARNs for each of the Lambda Functions created in this file (for resources in other files to reference easily)

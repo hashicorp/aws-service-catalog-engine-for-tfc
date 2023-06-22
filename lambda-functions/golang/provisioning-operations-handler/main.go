@@ -1,10 +1,11 @@
 package main
 
 import (
+	"context"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/sfn"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/awsconfig"
-	"context"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/stepfunctions"
 	"os"
 )
 
@@ -69,7 +70,7 @@ func main() {
 
 	handler := ProvisioningOperationsHandler{
 		terraformOrganization: terraformOrganization,
-		stepFunctions:         SF{Client: sfnClient},
+		stepFunctions:         stepfunctions.SF{Client: sfnClient},
 		stateMachineArn:       stateMachineArn,
 	}
 

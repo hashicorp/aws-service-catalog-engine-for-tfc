@@ -11,7 +11,7 @@ This repository contains everything you need to install an AWS Service Catalog E
 
 You'll need the Terraform CLI installed, and you'll need to set the `TFE_TOKEN` environment variable to a Terraform Cloud user token with permission to create workspaces within your organization.
 
-You'll also need to authenticate the AWS provider as you would normally using one of the methods mentioned in the AWS provider documentation [here](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication-and-configuration).
+You'll also need to authenticate the AWS provider as you would normally, using one of the methods mentioned in the AWS provider documentation [here](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication-and-configuration).
 
 1. Copy `terraform.tfvars.example` to `terraform.tfvars` and set the organization name to your TFC organization's name.
 1. Run `terraform plan` to verify your setup, and then run `terraform apply`.

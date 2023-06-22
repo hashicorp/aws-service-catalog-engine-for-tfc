@@ -1,12 +1,12 @@
 package main
 
 import (
-	"github.com/hashicorp/go-tfe"
-	"time"
 	"context"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/identifiers"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/fileutils"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/identifiers"
+	"github.com/hashicorp/go-tfe"
 	"log"
+	"time"
 )
 
 type SendApplyHandler struct {
@@ -190,7 +190,7 @@ func (h *SendApplyHandler) UpdateWorkspaceVariables(ctx context.Context, w *tfe.
 	}
 
 	log.Default().Print("Updating variable TFC_AWS_RUN_ROLE_ARN")
-	return h.FindOrCreateVariable(ctx, w, "TFC_AWS_RUN_ROLE_ARN", launchRoleArn, "The AWS role arn runs will use to authenticate.")
+	return h.FindOrCreateVariable(ctx, w, "TFC_AWS_RUN_ROLE_ARN", launchRoleArn, "The AWS role ARN runs will use to authenticate.")
 }
 
 func (h *SendApplyHandler) FindOrCreateVariable(ctx context.Context, w *tfe.Workspace, key string, value string, description string) error {

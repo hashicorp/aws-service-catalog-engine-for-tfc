@@ -1,17 +1,18 @@
 package main
 
 import (
-	"github.com/aws/aws-sdk-go-v2/service/sfn"
 	"context"
-	"log"
-	"fmt"
 	"encoding/json"
+	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/sfn"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/stepfunctions"
+	"log"
 )
 
 type ProvisioningOperationsHandler struct {
 	terraformOrganization string
-	stepFunctions         StepFunctions
+	stepFunctions         stepfunctions.StepFunctions
 	stateMachineArn       string
 }
 

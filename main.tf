@@ -66,7 +66,7 @@ module "example_product" {
   artifact_bucket_name = aws_s3_object.object.bucket
   artifact_object_key  = aws_s3_object.object.id
 
-  # Arns of Lambda functions that need to assume the IAM Launch Role
+  # ARNs of Lambda functions that need to assume the IAM Launch Role
   parameter_parser_role_arn  = aws_iam_role.parameter_parser.arn
   send_apply_lambda_role_arn = local.send_apply_lambda_role_arn
 
