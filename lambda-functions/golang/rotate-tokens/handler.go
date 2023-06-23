@@ -12,7 +12,6 @@ import (
 
 type RotateTeamTokensHandler struct {
 	tfeClient                   *tfe.Client
-	region                      string
 	provisioningStateMachineArn string
 	updatingStateMachineArn     string
 	terminatingStateMachineArn  string
@@ -46,7 +45,7 @@ func (h *RotateTeamTokensHandler) HandleRequest(ctx context.Context, request Rot
 		}
 		return &RotateTeamTokensResponse{StateMachineExecutionCount: count}, err
 	case request.Operation == Rotating:
-		err := h.RotateToken(ctx, teamID)
+		err := h.RotateToken(ctx, h.teamID)
 		if err != nil {
 			log.Default().Printf("error polling state machine executions: %v", err)
 		}

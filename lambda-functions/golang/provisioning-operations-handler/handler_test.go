@@ -120,8 +120,16 @@ func (stepFunctions *MockStepFunctionsWithSuccessfulResponse) StartExecution(ctx
 	}, nil
 }
 
+func (stepfunctions MockStepFunctionsWithSuccessfulResponse) GetStateMachineExecutionCount(ctx context.Context, stateMachineArn string) (int, error) {
+	return 0, errors.New("wrong function called")
+}
+
 type MockStepFunctionsWithErrorResponse struct{}
 
 func (stepFunctions MockStepFunctionsWithErrorResponse) StartExecution(ctx context.Context, input *sfn.StartExecutionInput) (*sfn.StartExecutionOutput, error) {
 	return nil, errors.New("whoopsies")
+}
+
+func (stepfunctions MockStepFunctionsWithErrorResponse) GetStateMachineExecutionCount(ctx context.Context, stateMachineArn string) (int, error) {
+	return 0, errors.New("wrong function called")
 }

@@ -3,11 +3,19 @@ package secretsmanager
 import (
 	"context"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"encoding/json"
 )
 
 type SecretsManager interface {
-	GetSecretValue(ctx context.Context) (string, error)
+	GetSecretValue(ctx context.Context) (*TFECredentialsSecret, error)
 	UpdateSecretValue(ctx context.Context, secretValue string) error
+}
+
+type TFECredentialsSecret struct {
+	Hostname string `json:"hostname"`
+	TeamId   string `json:"id"`
+	Token    string `json:"token"`
 }
 
 type SM struct {
@@ -17,24 +25,42 @@ type SM struct {
 	TeamID   string
 }
 
-func (secretsManager *SM) GetSecretValue(ctx context.Context) (string, error) {
-	// Get the secret version
-	secret, err := secretsManager.Client.DescribeSecret(ctx)
+// CurrentVersionStage is AWS' hardcoded label that always indicates the "current" stage version
+const CurrentVersionStage = "AWSCURRENT"
+
+func (sm *SM) GetSecretValue(ctx context.Context) (*TFECredentialsSecret, error) {
+	tfeCredentialsSecretJson, err := sm.Client.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{
+		SecretId:     aws.String(sm.SecretID),
+		VersionStage: aws.String(CurrentVersionStage),
+	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	secret.VersionIdsToStages
-	// Get version ID
-	// Fetch the ID via version ID fetch
+	// Decode the response from AWS Secrets Manager
+	tfeCredentialsSecret := &TFECredentialsSecret{}
+	err = json.Unmarshal([]byte(*tfeCredentialsSecretJson.SecretString), tfeCredentialsSecret)
 
-	// Potential: Grab the currently tagged version
+	return tfeCredentialsSecret, err
 }
 
-func (secretsManager *SM) UpdateSecretValue(ctx context.Context, secretValue string) error {
-	// Update the secret version
-	secret, err := secretsManager.Client.UpdateSecret(ctx, secretValue)
-	if err != nil {
-		return "", err
+func (sm *SM) UpdateTFEToken(ctx context.Context, token string) error {
+	secretValue := &TFECredentialsSecret{
+		Hostname: sm.Hostname,
+		TeamId:   sm.TeamID,
+		Token:    token,
 	}
+
+	// Serialize the new secret value
+	serializedSecretValue, err := json.Marshal(secretValue)
+	if err != nil {
+		return err
+	}
+
+	// Update the secret version
+	_, err = sm.Client.UpdateSecret(ctx, &secretsmanager.UpdateSecretInput{
+		SecretId:     aws.String(sm.SecretID),
+		SecretString: aws.String(string(serializedSecretValue)),
+	})
+	return err
 }

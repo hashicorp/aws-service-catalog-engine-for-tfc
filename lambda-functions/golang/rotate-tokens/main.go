@@ -68,7 +68,6 @@ func main() {
 
 	handler := RotateTeamTokensHandler{
 		tfeClient:                   client,
-		region:                      sdkConfig.Region,
 		stepFunctions:               stepfunctions.SF{Client: sfnClient},
 		provisioningStateMachineArn: provisioningStateMachineArn,
 		updatingStateMachineArn:     updatingStateMachineArn,
