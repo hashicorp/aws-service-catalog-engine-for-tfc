@@ -26,6 +26,21 @@ data "aws_iam_policy_document" "policy_for_rotate_team_token_handler" {
   version = "2012-10-17"
 
   statement {
+    sid = "tfeTokenRotation"
+
+    effect = "Allow"
+
+    actions = [
+      "secretsmanager:GetSecretValue",
+      "secretsmanager:DescribeSecret",
+      "secretsmanager:PutSecretValue",
+      "secretsmanager:UpdateSecretVersionStage"
+    ]
+
+    resources = ["${aws_secretsmanager_secret.team_token_values.arn}*"]
+  }
+
+  statement {
     sid = "AllowStepFunction"
 
     effect = "Allow"
@@ -35,17 +50,8 @@ data "aws_iam_policy_document" "policy_for_rotate_team_token_handler" {
     resources = [aws_sfn_state_machine.provision_state_machine.arn, aws_sfn_state_machine.update_state_machine.arn, aws_sfn_state_machine.terminate_state_machine.arn]
 
   }
-
-  statement {
-    sid = "tfeCredentialsAccess"
-
-    effect = "Allow"
-
-    actions = ["secretsmanager:GetSecretValue"]
-
-    resources = ["*"]
-  }
 }
+
 
 resource "aws_iam_role_policy_attachment" "rotate_token_handler_lambda_execution" {
   for_each   = toset(["arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess", "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"])
@@ -55,8 +61,8 @@ resource "aws_iam_role_policy_attachment" "rotate_token_handler_lambda_execution
 
 data "archive_file" "rotate_token_handler" {
   type        = "zip"
-  output_path = "dist/rotate_token_handler.zip"
-  source_dir  = "lambda-functions/golang/rotate_token_handler/main"
+  output_path = "dist/token_rotation_handler.zip"
+  source_file  = "lambda-functions/golang/token-rotation/main"
 }
 
 # Lambda for rotating team tokens
@@ -79,14 +85,6 @@ resource "aws_lambda_function" "rotate_token_handler" {
       TEAM_ID                        = tfe_team.provisioning_team.id
     }
   }
-}
-
-resource "aws_lambda_event_source_mapping" "rotate_token_handler_provision_queue" {
-  event_source_arn        = aws_sqs_queue.terraform_engine_provision_operation_queue.arn
-  function_name           = aws_lambda_function.rotate_token_handler.arn
-  batch_size              = 10
-  enabled                 = true
-  function_response_types = ["ReportBatchItemFailures"]
 }
 
 data "aws_iam_policy_document" "rotate_team_token" {

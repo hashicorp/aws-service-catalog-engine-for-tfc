@@ -21,7 +21,7 @@ data "aws_iam_policy_document" "send_apply" {
 
     actions = ["secretsmanager:GetSecretValue"]
 
-    resources = [aws_secretsmanager_secret_version.tfc_credentials.arn]
+    resources = [aws_secretsmanager_secret.team_token_values.arn]
   }
 }
 
@@ -35,7 +35,7 @@ data "aws_iam_policy_document" "send_destroy" {
 
     actions = ["secretsmanager:GetSecretValue"]
 
-    resources = [aws_secretsmanager_secret_version.tfc_credentials.arn]
+    resources = [aws_secretsmanager_secret.team_token_values.arn]
   }
 }
 
@@ -49,7 +49,7 @@ data "aws_iam_policy_document" "poll_run_status" {
 
     actions = ["secretsmanager:GetSecretValue"]
 
-    resources = [aws_secretsmanager_secret_version.tfc_credentials.arn]
+    resources = [aws_secretsmanager_secret.team_token_values.arn]
   }
 }
 
@@ -78,10 +78,9 @@ data "aws_iam_policy_document" "notify_run_result" {
 
     actions = ["secretsmanager:GetSecretValue"]
 
-    resources = [aws_secretsmanager_secret_version.tfc_credentials.arn]
+    resources = [aws_secretsmanager_secret.team_token_values.arn]
   }
 }
-
 
 # Lambda Functions
 
@@ -189,8 +188,7 @@ resource "aws_lambda_function" "state_machine_lambda" {
 
   environment {
     variables = {
-      TFE_CREDENTIALS_SECRET_ID         = aws_secretsmanager_secret_version.tfc_credentials.arn
-      TFE_CREDENTIALS_SECRET_VERSION_ID = aws_secretsmanager_secret_version.tfc_credentials.version_id
+      TFE_CREDENTIALS_SECRET_ID         = aws_secretsmanager_secret.team_token_values.arn
     }
   }
 

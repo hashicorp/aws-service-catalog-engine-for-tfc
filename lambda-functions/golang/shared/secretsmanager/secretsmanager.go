@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"encoding/json"
+	"os"
 )
 
 type SecretsManager interface {
@@ -23,6 +24,31 @@ type SM struct {
 	SecretID string
 	Hostname string
 	TeamID   string
+}
+
+// NewWithConfig create a new secrets manager client and initialize it with values from the ENV and the secret
+func NewWithConfig(ctx context.Context, sdkConfig aws.Config) (*SM, error) {
+	// Create the underlying AWS SecretsManager client
+	client := secretsmanager.NewFromConfig(sdkConfig)
+	secretId := os.Getenv("TFE_CREDENTIALS_SECRET_ID")
+
+	// Create an initial SM to facilitate the fetching of the secret
+	sm := &SM{
+		Client:   client,
+		SecretID: secretId,
+		Hostname: "",
+		TeamID:   "",
+	}
+
+	// Get the latest version of the secret and use the values to finish initializing the SM
+	latestSecret, err := sm.GetSecretValue(ctx)
+	if err != nil {
+		return nil, err
+	}
+	sm.Hostname = latestSecret.Hostname
+	sm.TeamID = latestSecret.TeamId
+
+	return sm, err
 }
 
 // CurrentVersionStage is AWS' hardcoded label that always indicates the "current" stage version

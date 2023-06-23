@@ -22,11 +22,10 @@ func GetTFEClient(ctx context.Context, sdkConfig aws.Config) (*tfe.Client, error
 
 	// Fetch the TFE credentials/config from AWS Secrets Manager
 	secretId := os.Getenv("TFE_CREDENTIALS_SECRET_ID")
-	versionId := os.Getenv("TFE_CREDENTIALS_SECRET_VERSION_ID")
 
 	tfeCredentialsSecretJson, err := secretsManagerClient.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{
-		SecretId:  aws.String(secretId),
-		VersionId: aws.String(versionId),
+		SecretId:     aws.String(secretId),
+		VersionStage: aws.String("AWSCURRENT"),
 	})
 	if err != nil {
 		return nil, err
