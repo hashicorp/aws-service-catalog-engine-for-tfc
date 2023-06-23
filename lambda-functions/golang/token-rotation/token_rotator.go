@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"log"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
 )
 
 type FunctionNameUuidTuple struct {
@@ -88,11 +89,12 @@ func (h *RotateTeamTokensHandler) RotateToken(ctx context.Context, teamID string
 	}
 
 	// Reinitialize the client (???) with the new team token
-	// TODO: Reinitialize the client (???) with the new team token
+	tfeClient, err := tfc.GetTFEClientFromSecretsManager(ctx, h.secretsManager)
+	if err != nil {
+		return err
+	}
+	h.tfeClient = tfeClient
 
 	// Store team token in secrets manager
 	return h.secretsManager.UpdateSecretValue(ctx, tt.Token)
-
-	// Return any error
-	//return tt, err
 }
