@@ -188,7 +188,7 @@ resource "aws_lambda_function" "state_machine_lambda" {
 
   environment {
     variables = {
-      TFE_CREDENTIALS_SECRET_ID         = aws_secretsmanager_secret.team_token_values.arn
+      TFE_CREDENTIALS_SECRET_ID = aws_secretsmanager_secret.team_token_values.arn
     }
   }
 
