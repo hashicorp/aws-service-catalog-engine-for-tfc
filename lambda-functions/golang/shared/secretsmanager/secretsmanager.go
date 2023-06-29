@@ -54,7 +54,7 @@ func NewWithConfig(ctx context.Context, sdkConfig aws.Config) (*SM, error) {
 // CurrentVersionStage is AWS' hardcoded label that always indicates the "current" stage version
 const CurrentVersionStage = "AWSCURRENT"
 
-func (sm *SM) GetSecretValue(ctx context.Context) (*TFECredentialsSecret, error) {
+func (sm SM) GetSecretValue(ctx context.Context) (*TFECredentialsSecret, error) {
 	tfeCredentialsSecretJson, err := sm.Client.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{
 		SecretId:     aws.String(sm.SecretID),
 		VersionStage: aws.String(CurrentVersionStage),
@@ -70,7 +70,7 @@ func (sm *SM) GetSecretValue(ctx context.Context) (*TFECredentialsSecret, error)
 	return tfeCredentialsSecret, err
 }
 
-func (sm *SM) UpdateTFEToken(ctx context.Context, token string) error {
+func (sm SM) UpdateTFEToken(ctx context.Context, token string) error {
 	secretValue := &TFECredentialsSecret{
 		Hostname: sm.Hostname,
 		TeamId:   sm.TeamID,

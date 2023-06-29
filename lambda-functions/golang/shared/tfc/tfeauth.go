@@ -4,12 +4,9 @@ import (
 	"fmt"
 	"github.com/hashicorp/go-tfe"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"os"
 	"context"
-	"encoding/json"
 	"github.com/hashicorp/go-retryablehttp"
 	sm "github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/secretsmanager"
-	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 )
 
 type TFECredentialsSecret struct {
@@ -29,22 +26,14 @@ func GetTFEClientFromSecretsManager(ctx context.Context, sm sm.SecretsManager) (
 
 func GetTFEClient(ctx context.Context, sdkConfig aws.Config) (*tfe.Client, error) {
 	// Create secrets client SDK to fetch TFE credentials
-	secretsManagerClient := secretsmanager.NewFromConfig(sdkConfig)
-
-	// Fetch the TFE credentials/config from AWS Secrets Manager
-	secretId := os.Getenv("TFE_CREDENTIALS_SECRET_ID")
-
-	tfeCredentialsSecretJson, err := secretsManagerClient.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{
-		SecretId:     aws.String(secretId),
-		VersionStage: aws.String("AWSCURRENT"),
-	})
+	secretsManager, err := sm.NewWithConfig(ctx, sdkConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	// Decode the response from AWS Secrets Manager
-	var tfeCredentialsSecret TFECredentialsSecret
-	if err = json.Unmarshal([]byte(*tfeCredentialsSecretJson.SecretString), &tfeCredentialsSecret); err != nil {
+	// Fetch the TFE credentials/config from AWS Secrets Manager
+	tfeCredentialsSecret, err := secretsManager.GetSecretValue(ctx)
+	if err != nil {
 		return nil, err
 	}
 

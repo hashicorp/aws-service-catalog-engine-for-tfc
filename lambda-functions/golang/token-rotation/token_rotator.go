@@ -2,60 +2,31 @@ package main
 
 import (
 	"context"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"log"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/token-rotation/lambda"
 )
 
-type FunctionNameUuidTuple struct {
-	FunctionName       string
-	EventSourceMapping string
-}
-
-func (h *RotateTeamTokensHandler) GetEventSourceMappingUuidTuples(ctx context.Context) ([]FunctionNameUuidTuple, error) {
-	var functionNameUuidTuples []FunctionNameUuidTuple
+func (h *RotateTeamTokensHandler) GetEventSourceMappingUuidTuples(ctx context.Context) ([]lambda.FunctionNameUuidTuple, error) {
 	functionNames := []string{h.provisioningFunctionName, h.updatingFunctionName, h.terminatingFunctionName}
 
-	for _, functionName := range functionNames {
-		log.Default().Printf("getting event source mappings for function %s", functionName)
-		// Get the event source mapping UUIDs and disable the SQS queues
-		eventSourceMappings, err := h.lambdaClient.ListEventSourceMappings(ctx, &lambda.ListEventSourceMappingsInput{
-			FunctionName: aws.String(functionName),
-		})
-
-		if err != nil {
-			return nil, err
-		}
-
-		for _, eventSourceMapping := range eventSourceMappings.EventSourceMappings {
-			functionNameUuidTuples = append(functionNameUuidTuples, FunctionNameUuidTuple{
-				FunctionName:       functionName,
-				EventSourceMapping: *eventSourceMapping.UUID,
-			})
-		}
-	}
-
-	return functionNameUuidTuples, nil
+	return h.lambda.GetEventSourceMappingUuidTuples(ctx, functionNames)
 }
 
-// Need another way to call this outside of Lambda -- it's costly to call this within a lambda
-//func AwaitEventSourceMappingState() {
-//	// Wait for the event source mapping state
-//
-//}
-
-func (h *RotateTeamTokensHandler) UpdateEventSourceMappings(ctx context.Context, tuples []FunctionNameUuidTuple, enabled bool) error {
+func (h *RotateTeamTokensHandler) UpdateEventSourceMappings(ctx context.Context, tuples []lambda.FunctionNameUuidTuple, enabled bool) error {
 	// Update the event source mappings asynchronously and restart the SQS queues.
 	// The update is an asynchronous operation, so await its completion.
 	for _, tuple := range tuples {
-		log.Default().Printf("Updating enabled setting of event source mapping of %s:%s to %t", tuple.FunctionName, tuple.EventSourceMapping, enabled)
+		var err error
 
-		_, err := h.lambdaClient.UpdateEventSourceMapping(ctx, &lambda.UpdateEventSourceMappingInput{
-			FunctionName: aws.String(tuple.FunctionName),
-			UUID:         aws.String(tuple.EventSourceMapping),
-			Enabled:      aws.Bool(enabled),
-		})
+		// Update the event mapping based on the "enabled" parameter
+		if enabled {
+			err = h.lambda.EnableEventSourceMapping(ctx, tuple.FunctionName, tuple.EventSourceMapping)
+		} else {
+			err = h.lambda.DisableEventSourceMapping(ctx, tuple.FunctionName, tuple.EventSourceMapping)
+		}
+
+		// return an error if one is encountered
 		if err != nil {
 			return err
 		}

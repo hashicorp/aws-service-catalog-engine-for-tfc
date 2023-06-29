@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"errors"
-	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/token-rotation/lambda"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/secretsmanager"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/stepfunctions"
 	"github.com/hashicorp/go-tfe"
@@ -20,7 +20,7 @@ type RotateTeamTokensHandler struct {
 	terminatingFunctionName     string
 	teamID                      string
 	stepFunctions               stepfunctions.StepFunctions
-	lambdaClient                lambda.Client
+	lambda                      lambda.Lambda
 	secretsManager              secretsmanager.SecretsManager
 }
 

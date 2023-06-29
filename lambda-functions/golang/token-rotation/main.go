@@ -2,17 +2,14 @@ package main
 
 import (
 	"context"
-	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go-v2/service/sfn"
+	lambdacore "github.com/aws/aws-lambda-go/lambda"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/awsconfig"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/stepfunctions"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
 	"log"
 	"os"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/token-rotation/lambda"
 )
-
-const AwaitInSeconds = 10
-const AwsRegionKey = "AwsRegion"
 
 type RotateTeamTokensRequest struct {
 	Token       string    `json:"token"`
@@ -40,13 +37,10 @@ func main() {
 
 	// Initialize the TFE client
 	sdkConfig := awsconfig.GetSdkConfig(initContext)
-	client, err := tfc.GetTFEClient(initContext, sdkConfig)
+	tfeClient, err := tfc.GetTFEClient(initContext, sdkConfig)
 	if err != nil {
 		log.Fatalf("failed to initialize TFE client: %s", err)
 	}
-
-	// Create the step functions client
-	sfnClient := sfn.NewFromConfig(sdkConfig)
 
 	// Get provisioning state machine ARN
 	provisioningStateMachineArn := os.Getenv("PROVISIONING_STATE_MACHINE_ARN")
@@ -67,8 +61,9 @@ func main() {
 	terminatingFunctionName := os.Getenv("TERMINATING_FUNCTION_NAME")
 
 	handler := RotateTeamTokensHandler{
-		tfeClient:                   client,
-		stepFunctions:               stepfunctions.SF{Client: sfnClient},
+		tfeClient:                   tfeClient,
+		stepFunctions:               stepfunctions.NewFromConfig(sdkConfig),
+		lambda:                      lambda.NewFromConfig(sdkConfig),
 		provisioningStateMachineArn: provisioningStateMachineArn,
 		updatingStateMachineArn:     updatingStateMachineArn,
 		terminatingStateMachineArn:  terminatingStateMachineArn,
@@ -77,5 +72,5 @@ func main() {
 		terminatingFunctionName:     terminatingFunctionName,
 	}
 
-	lambda.Start(handler.HandleRequest)
+	lambdacore.Start(handler.HandleRequest)
 }

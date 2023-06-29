@@ -70,7 +70,7 @@ func main() {
 
 	handler := ProvisioningOperationsHandler{
 		terraformOrganization: terraformOrganization,
-		stepFunctions:         stepfunctions.SF{Client: sfnClient},
+		stepFunctions:         stepfunctions.SFN{Client: sfnClient},
 		stateMachineArn:       stateMachineArn,
 	}
 

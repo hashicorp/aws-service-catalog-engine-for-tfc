@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/aws/aws-sdk-go-v2/service/sfn"
 	"github.com/aws/aws-sdk-go-v2/service/sfn/types"
+	"github.com/aws/aws-sdk-go-v2/aws"
 )
 
 type StepFunctions interface {
@@ -11,15 +12,24 @@ type StepFunctions interface {
 	GetStateMachineExecutionCount(ctx context.Context, stateMachineArn string) (int, error)
 }
 
-type SF struct {
+type SFN struct {
 	Client *sfn.Client
 }
 
-func (stepFunctions SF) StartExecution(ctx context.Context, input *sfn.StartExecutionInput) (*sfn.StartExecutionOutput, error) {
+// NewFromConfig creates a new aws StepFunctions client
+func NewFromConfig(sdkConfig aws.Config) *SFN {
+	innerClient := sfn.NewFromConfig(sdkConfig)
+
+	return &SFN{
+		Client: innerClient,
+	}
+}
+
+func (stepFunctions SFN) StartExecution(ctx context.Context, input *sfn.StartExecutionInput) (*sfn.StartExecutionOutput, error) {
 	return stepFunctions.Client.StartExecution(ctx, input)
 }
 
-func (stepFunctions SF) GetStateMachineExecutionCount(ctx context.Context, stateMachineArn string) (int, error) {
+func (stepFunctions SFN) GetStateMachineExecutionCount(ctx context.Context, stateMachineArn string) (int, error) {
 	stateMachineExecutionsList, err := stepFunctions.Client.ListExecutions(ctx, &sfn.ListExecutionsInput{
 		StateMachineArn: &stateMachineArn,
 		StatusFilter:    types.ExecutionStatusRunning,
