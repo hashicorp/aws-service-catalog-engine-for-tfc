@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
-	"github.com/hashicorp/go-tfe"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/secretsmanager"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
+	"github.com/hashicorp/go-tfe"
+	"log"
 )
 
 type PollRunStatusHandler struct {
-	tfeClient *tfe.Client
+	secretsManager secretsmanager.SecretsManager
 }
 
 type PollRunStatus struct {
@@ -21,8 +23,14 @@ type PollRunStatusResponse struct {
 }
 
 func (h *PollRunStatusHandler) HandleRequest(ctx context.Context, request PollRunStatus) (*PollRunStatusResponse, error) {
+	// Get TFE Client
+	tfeClient, err := tfc.GetTFEClient(ctx, h.secretsManager)
+	if err != nil {
+		log.Fatalf("failed to initialize TFE client: %s", err)
+	}
+
 	// Fetch the latest status of the run
-	run, err := h.tfeClient.Runs.Read(ctx, request.TerraformRunId)
+	run, err := tfeClient.Runs.Read(ctx, request.TerraformRunId)
 	if err != nil {
 		return nil, tfc.MapErrorAfterRequest(err)
 	}

@@ -4,11 +4,11 @@ import (
 	"context"
 	lambdacore "github.com/aws/aws-lambda-go/lambda"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/awsconfig"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/secretsmanager"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/stepfunctions"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/token-rotation/lambda"
 	"log"
 	"os"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/token-rotation/lambda"
 )
 
 type RotateTeamTokensRequest struct {
@@ -37,9 +37,11 @@ func main() {
 
 	// Initialize the TFE client
 	sdkConfig := awsconfig.GetSdkConfig(initContext)
-	tfeClient, err := tfc.GetTFEClient(initContext, sdkConfig)
+
+	// Create secrets client SDK to fetch TFE credentials
+	secretsManager, err := secretsmanager.NewWithConfig(initContext, sdkConfig)
 	if err != nil {
-		log.Fatalf("failed to initialize TFE client: %s", err)
+		log.Fatalf("failed to initialize secrets manager client: %s", err)
 	}
 
 	// Get provisioning state machine ARN
@@ -60,10 +62,14 @@ func main() {
 	// Get terminating function name
 	terminatingFunctionName := os.Getenv("TERMINATING_FUNCTION_NAME")
 
+	// Get team id for team token to rotate
+	teamId := os.Getenv("TEAM_ID")
+
 	handler := RotateTeamTokensHandler{
-		tfeClient:                   tfeClient,
+		secretsManager:              secretsManager,
 		stepFunctions:               stepfunctions.NewFromConfig(sdkConfig),
 		lambda:                      lambda.NewFromConfig(sdkConfig),
+		teamID:                      teamId,
 		provisioningStateMachineArn: provisioningStateMachineArn,
 		updatingStateMachineArn:     updatingStateMachineArn,
 		terminatingStateMachineArn:  terminatingStateMachineArn,

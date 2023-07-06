@@ -1,16 +1,16 @@
 package main
 
 import (
-	"testing"
 	"context"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tracertag"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/servicecatalog"
-	"github.com/stretchr/testify/assert"
-	"github.com/hashicorp/go-tfe"
-	"github.com/aws/aws-sdk-go-v2/service/servicecatalog/types"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/testtfc"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/service/servicecatalog/types"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/secretsmanager"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/servicecatalog"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/testtfc"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tracertag"
+	"github.com/hashicorp/go-tfe"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestNotifyRunResultHandler_Terminating_Success(t *testing.T) {
@@ -23,9 +23,10 @@ func TestNotifyRunResultHandler_Terminating_Success(t *testing.T) {
 	assert.Equal(t, 1, len(tfcServer.Workspaces), "Make sure the TFC instance has only 1 workspace")
 
 	// Create tfe client that will send requests to the mock TFC instance
-	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
-	if err != nil {
-		t.Error(err)
+	mockSecretsManager := &secretsmanager.MockSecretsManager{
+		Hostname: tfcServer.Address,
+		TeamId:   "team-4123nlol",
+		Token:    "supers3cret",
 	}
 
 	// Create mock ServiceCatalog
@@ -34,7 +35,7 @@ func TestNotifyRunResultHandler_Terminating_Success(t *testing.T) {
 	// Create a test instance of the Lambda function
 	testHandler := &NotifyRunResultHandler{
 		serviceCatalog: &mockServiceCatalog,
-		tfeClient:      tfeClient,
+		secretsManager: mockSecretsManager,
 	}
 
 	// Create test request
@@ -55,7 +56,7 @@ func TestNotifyRunResultHandler_Terminating_Success(t *testing.T) {
 	}
 
 	// Send the test request
-	_, err = testHandler.HandleRequest(context.Background(), testRequest)
+	_, err := testHandler.HandleRequest(context.Background(), testRequest)
 	// Verify no errors were returned
 	if err != nil {
 		t.Error(err)
@@ -81,9 +82,10 @@ func TestNotifyRunResultHandler_Terminating_WithError(t *testing.T) {
 	assert.Equal(t, 1, len(tfcServer.Workspaces), "Make sure the TFC instance has only 1 workspace")
 
 	// Create tfe client that will send requests to the mock TFC instance
-	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
-	if err != nil {
-		t.Error(err)
+	mockSecretsManager := &secretsmanager.MockSecretsManager{
+		Hostname: tfcServer.Address,
+		TeamId:   "team-4123nlol",
+		Token:    "supers3cret",
 	}
 
 	// Create mock ServiceCatalog
@@ -92,7 +94,7 @@ func TestNotifyRunResultHandler_Terminating_WithError(t *testing.T) {
 	// Create a test instance of the Lambda function
 	testHandler := &NotifyRunResultHandler{
 		serviceCatalog: &mockServiceCatalog,
-		tfeClient:      tfeClient,
+		secretsManager: mockSecretsManager,
 	}
 
 	// Create test request
@@ -113,7 +115,7 @@ func TestNotifyRunResultHandler_Terminating_WithError(t *testing.T) {
 	}
 
 	// Send the test request
-	_, err = testHandler.HandleRequest(context.Background(), testRequest)
+	_, err := testHandler.HandleRequest(context.Background(), testRequest)
 	// Verify no errors were returned
 	if err != nil {
 		t.Error(err)
@@ -171,9 +173,10 @@ func TestNotifyRunResultHandler_Provisioning_Success(t *testing.T) {
 	})
 
 	// Create tfe client that will send requests to the mock TFC instance
-	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
-	if err != nil {
-		t.Error(err)
+	mockSecretsManager := &secretsmanager.MockSecretsManager{
+		Hostname: tfcServer.Address,
+		TeamId:   "team-4123nlol",
+		Token:    "supers3cret",
 	}
 
 	// Create mock ServiceCatalog
@@ -182,7 +185,7 @@ func TestNotifyRunResultHandler_Provisioning_Success(t *testing.T) {
 	// Create a test instance of the Lambda function
 	testHandler := &NotifyRunResultHandler{
 		serviceCatalog: &mockServiceCatalog,
-		tfeClient:      tfeClient,
+		secretsManager: mockSecretsManager,
 	}
 
 	// Create test request
@@ -203,7 +206,7 @@ func TestNotifyRunResultHandler_Provisioning_Success(t *testing.T) {
 	}
 
 	// Send the test request
-	_, err = testHandler.HandleRequest(context.Background(), testRequest)
+	_, err := testHandler.HandleRequest(context.Background(), testRequest)
 	// Verify no errors were returned
 	if err != nil {
 		t.Error(err)
@@ -273,9 +276,10 @@ func TestNotifyRunResultHandler_Provisioning_Success_WithMoreThan100StateVersion
 	})
 
 	// Create tfe client that will send requests to the mock TFC instance
-	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
-	if err != nil {
-		t.Error(err)
+	mockSecretsManager := &secretsmanager.MockSecretsManager{
+		Hostname: tfcServer.Address,
+		TeamId:   "team-4123nlol",
+		Token:    "supers3cret",
 	}
 
 	// Create mock ServiceCatalog
@@ -284,7 +288,7 @@ func TestNotifyRunResultHandler_Provisioning_Success_WithMoreThan100StateVersion
 	// Create a test instance of the Lambda function
 	testHandler := &NotifyRunResultHandler{
 		serviceCatalog: &mockServiceCatalog,
-		tfeClient:      tfeClient,
+		secretsManager: mockSecretsManager,
 	}
 
 	// Create test request
@@ -305,7 +309,7 @@ func TestNotifyRunResultHandler_Provisioning_Success_WithMoreThan100StateVersion
 	}
 
 	// Send the test request
-	_, err = testHandler.HandleRequest(context.Background(), testRequest)
+	_, err := testHandler.HandleRequest(context.Background(), testRequest)
 	// Verify no errors were returned
 	if err != nil {
 		t.Error(err)
@@ -339,9 +343,10 @@ func TestNotifyRunResultHandler_Provisioning_MissingApply(t *testing.T) {
 	})
 
 	// Create tfe client that will send requests to the mock TFC instance
-	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
-	if err != nil {
-		t.Error(err)
+	mockSecretsManager := &secretsmanager.MockSecretsManager{
+		Hostname: tfcServer.Address,
+		TeamId:   "team-4123nlol",
+		Token:    "supers3cret",
 	}
 
 	// Create mock ServiceCatalog
@@ -350,7 +355,7 @@ func TestNotifyRunResultHandler_Provisioning_MissingApply(t *testing.T) {
 	// Create a test instance of the Lambda function
 	testHandler := &NotifyRunResultHandler{
 		serviceCatalog: &mockServiceCatalog,
-		tfeClient:      tfeClient,
+		secretsManager: mockSecretsManager,
 	}
 
 	// Create test request
@@ -371,7 +376,7 @@ func TestNotifyRunResultHandler_Provisioning_MissingApply(t *testing.T) {
 	}
 
 	// Send the test request
-	_, err = testHandler.HandleRequest(context.Background(), testRequest)
+	_, err := testHandler.HandleRequest(context.Background(), testRequest)
 	// Verify that an error was returned so that the lambda can be retried
 	assert.NotNil(t, err, "Error should have been returned by the Lambda")
 
@@ -421,9 +426,10 @@ func TestNotifyRunResultHandler_Updating_Success(t *testing.T) {
 	})
 
 	// Create tfe client that will send requests to the mock TFC instance
-	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
-	if err != nil {
-		t.Error(err)
+	mockSecretsManager := &secretsmanager.MockSecretsManager{
+		Hostname: tfcServer.Address,
+		TeamId:   "team-4123nlol",
+		Token:    "supers3cret",
 	}
 
 	// Create mock ServiceCatalog
@@ -432,7 +438,7 @@ func TestNotifyRunResultHandler_Updating_Success(t *testing.T) {
 	// Create a test instance of the Lambda function
 	testHandler := &NotifyRunResultHandler{
 		serviceCatalog: &mockServiceCatalog,
-		tfeClient:      tfeClient,
+		secretsManager: mockSecretsManager,
 	}
 
 	// Create test request
@@ -453,7 +459,7 @@ func TestNotifyRunResultHandler_Updating_Success(t *testing.T) {
 	}
 
 	// Send the test request
-	_, err = testHandler.HandleRequest(context.Background(), testRequest)
+	_, err := testHandler.HandleRequest(context.Background(), testRequest)
 	// Verify no errors were returned
 	if err != nil {
 		t.Error(err)

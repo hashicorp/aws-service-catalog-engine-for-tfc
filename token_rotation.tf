@@ -66,7 +66,6 @@ data "archive_file" "rotate_token_handler" {
 }
 
 # Lambda for rotating team tokens
-
 resource "aws_lambda_function" "rotate_token_handler" {
   filename      = data.archive_file.rotate_token_handler.output_path
   function_name = "TerraformEngineRotateTokenHandlerLambda"
@@ -146,6 +145,26 @@ data "aws_iam_policy_document" "policy_for_rotate_team_token" {
     resources = ["*"]
 
   }
+}
+
+# Resources for rotating the team token every 30 days
+resource "aws_cloudwatch_event_rule" "rotate_token_schedule" {
+  name = "TerraformEngineRotateToken"
+  description = "Schedule for Token Rotation"
+  schedule_expression = "rate(30 days)"
+}
+
+resource "aws_cloudwatch_event_target" "token_rotation" {
+  rule = aws_cloudwatch_event_rule.rotate_token_schedule.name
+  target_id = "rotate_token"
+  arn = aws_lambda_function.rotate_token_handler.arn
+}
+
+resource "aws_lambda_permission" "allow_events_bridge_to_run_lambda" {
+  statement_id = "AllowExecutionFromCloudWatch"
+  action = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.rotate_token_handler.function_name
+  principal = "events.amazonaws.com"
 }
 
 resource "aws_cloudwatch_log_group" "rotate_token_state_machine" {

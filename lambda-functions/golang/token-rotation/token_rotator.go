@@ -2,10 +2,9 @@ package main
 
 import (
 	"context"
-	"log"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/token-rotation/lambda"
-	"fmt"
+	"log"
 )
 
 func (h *RotateTeamTokensHandler) GetEventSourceMappingUuidTuples(ctx context.Context) ([]lambda.FunctionNameUuidTuple, error) {
@@ -15,8 +14,8 @@ func (h *RotateTeamTokensHandler) GetEventSourceMappingUuidTuples(ctx context.Co
 }
 
 func (h *RotateTeamTokensHandler) UpdateEventSourceMappings(ctx context.Context, tuples []lambda.FunctionNameUuidTuple, enabled bool) error {
-	// Update the event source mappings asynchronously and restart the SQS queues.
-	// The update is an asynchronous operation, so await its completion.
+	// Update the event source mappings asynchronously and restart the SQS queues
+	// The update is an asynchronous operation, so await its completion
 	for _, tuple := range tuples {
 		var err error
 
@@ -27,7 +26,7 @@ func (h *RotateTeamTokensHandler) UpdateEventSourceMappings(ctx context.Context,
 			err = h.lambda.DisableEventSourceMapping(ctx, tuple.FunctionName, tuple.EventSourceMapping)
 		}
 
-		// return an error if one is encountered
+		// Return an error if one is encountered
 		if err != nil {
 			return err
 		}
@@ -54,27 +53,18 @@ func (h *RotateTeamTokensHandler) StateMachineExecutions(ctx context.Context) (i
 }
 
 func (h *RotateTeamTokensHandler) RotateToken(ctx context.Context, teamID string) error {
+	// Get TFE Client
+	tfeClient, err := tfc.GetTFEClient(ctx, h.secretsManager)
+	if err != nil {
+		log.Fatalf("failed to initialize TFE client: %s", err)
+	}
+
 	// Creates a new team token, replacing any existing token once all the state machine executions have finished
-	tt, err := h.tfeClient.TeamTokens.Create(ctx, teamID)
+	tt, err := tfeClient.TeamTokens.Create(ctx, teamID)
 	if err != nil {
 		return err
 	}
 
-	// Re-initialize the client with the new team token
-	tfeCredentialsSecret, err := h.secretsManager.GetSecretValue(ctx)
-	if err != nil {
-		return err
-	}
-	tfeClient, err := tfc.ClientWithDefaultConfig(
-		fmt.Sprintf("https://%s", tfeCredentialsSecret.Hostname),
-		tt.Token,
-		make(map[string][]string),
-	)
-	if err != nil {
-		return err
-	}
-	h.tfeClient = tfeClient
-
-	// Store team token in secrets manager
+	// Store the team token in Secrets Manager
 	return h.secretsManager.UpdateSecretValue(ctx, tt.Token)
 }

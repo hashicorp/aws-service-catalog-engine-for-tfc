@@ -1,12 +1,12 @@
 package main
 
 import (
-	"testing"
-	"github.com/hashicorp/go-tfe"
 	"context"
-	"github.com/stretchr/testify/assert"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/secretsmanager"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/testtfc"
+	"github.com/hashicorp/go-tfe"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestPollRunStatusHandler_Success(t *testing.T) {
@@ -14,15 +14,16 @@ func TestPollRunStatusHandler_Success(t *testing.T) {
 	tfcServer := testtfc.NewMockTFC()
 	defer tfcServer.Stop()
 
-	// Create tfe client that will send requests to the mock TFC instance
-	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
-	if err != nil {
-		t.Error(err)
+	// Create the TFE client that will send requests to the mock TFC instance
+	mockSecretsManager := &secretsmanager.MockSecretsManager{
+		Hostname: tfcServer.Address,
+		TeamId:   "team-4123nlol",
+		Token:    "supers3cret",
 	}
 
 	// Create a test instance of the Lambda function
 	testHandler := &PollRunStatusHandler{
-		tfeClient: tfeClient,
+		secretsManager: mockSecretsManager,
 	}
 
 	t.Run("pending runs are evaluated as inProgress", func(t *testing.T) {
@@ -137,14 +138,15 @@ func TestPollRunStatusHandler_InvalidTFCToken(t *testing.T) {
 	defer tfcServer.Stop()
 
 	// Create tfe client that will send requests to the mock TFC instance
-	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
-	if err != nil {
-		t.Fatalf("failed to initialize TFE client: %v", err)
+	mockSecretsManager := &secretsmanager.MockSecretsManager{
+		Hostname: tfcServer.Address,
+		TeamId:   "team-4123nlol",
+		Token:    "supers3cret",
 	}
 
 	// Create a test instance of the Lambda function
 	testHandler := &PollRunStatusHandler{
-		tfeClient: tfeClient,
+		secretsManager: mockSecretsManager,
 	}
 
 	tfcServer.SetToken("a-different-secret")
@@ -158,7 +160,7 @@ func TestPollRunStatusHandler_InvalidTFCToken(t *testing.T) {
 	}
 
 	// Send the test request to the test instance
-	_, err = testHandler.HandleRequest(context.TODO(), testRequest)
+	_, err := testHandler.HandleRequest(context.TODO(), testRequest)
 
 	// Check the Lambda response
 	assert.ErrorContains(t, err, "authorization token for TFC was acquired, but invalid or lacks sufficient permissions")
@@ -171,9 +173,10 @@ func TestPollRunStatusHandler_CannotConnect(t *testing.T) {
 	tfcServer := testtfc.NewMockTFC()
 
 	// Create tfe client that will send requests to the mock TFC instance
-	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
-	if err != nil {
-		t.Fatalf("failed to initialize TFE client: %v", err)
+	mockSecretsManager := &secretsmanager.MockSecretsManager{
+		Hostname: tfcServer.Address,
+		TeamId:   "team-4123nlol",
+		Token:    "supers3cret",
 	}
 
 	// Add a mock Run to the mock TFC server
@@ -184,7 +187,7 @@ func TestPollRunStatusHandler_CannotConnect(t *testing.T) {
 
 	// Create a test instance of the Lambda function
 	testHandler := &PollRunStatusHandler{
-		tfeClient: tfeClient,
+		secretsManager: mockSecretsManager,
 	}
 
 	// Create a test request
@@ -193,7 +196,7 @@ func TestPollRunStatusHandler_CannotConnect(t *testing.T) {
 	}
 
 	// Send the test request to the test instance
-	_, err = testHandler.HandleRequest(context.TODO(), testRequest)
+	_, err := testHandler.HandleRequest(context.TODO(), testRequest)
 
 	// Check the Lambda response
 	assert.ErrorContains(t, err, "failed to connect to Terraform Cloud servers")
@@ -205,14 +208,15 @@ func TestPollRunStatusHandler_RetriesFailures(t *testing.T) {
 	tfcServer := testtfc.NewMockTFC()
 
 	// Create tfe client that will send requests to the mock TFC instance
-	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
-	if err != nil {
-		t.Fatalf("failed to initialize TFE client: %v", err)
+	mockSecretsManager := &secretsmanager.MockSecretsManager{
+		Hostname: tfcServer.Address,
+		TeamId:   "team-4123nlol",
+		Token:    "supers3cret",
 	}
 
 	// Create a test instance of the Lambda function
 	testHandler := &PollRunStatusHandler{
-		tfeClient: tfeClient,
+		secretsManager: mockSecretsManager,
 	}
 
 	// Add a mock Run to the mock TFC server

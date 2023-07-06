@@ -1,12 +1,12 @@
 package main
 
 import (
-	"testing"
 	"context"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
 	"fmt"
-	"github.com/stretchr/testify/assert"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/secretsmanager"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/testtfc"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestSendDestroyHandler_Success(t *testing.T) {
@@ -19,14 +19,15 @@ func TestSendDestroyHandler_Success(t *testing.T) {
 	})
 
 	// Create tfe client that will send requests to the mock TFC instance
-	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
-	if err != nil {
-		t.Error(err)
+	mockSecretsManager := &secretsmanager.MockSecretsManager{
+		Hostname: tfcServer.Address,
+		TeamId:   "team-4123nlol",
+		Token:    "supers3cret",
 	}
 
 	// Create a test instance of the Lambda function
 	testHandler := &SendDestroyHandler{
-		tfeClient: tfeClient,
+		secretsManager: mockSecretsManager,
 	}
 
 	// Create test request
@@ -56,15 +57,16 @@ func TestSendDestroyHandler_WorkspaceMissing(t *testing.T) {
 	tfcServer := testtfc.NewMockTFC()
 	defer tfcServer.Stop()
 
-	// Create tfe client that will send requests to the mock TFC instance
-	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
-	if err != nil {
-		t.Error(err)
+	// Create the TFE client that will send requests to the mock TFC instance
+	mockSecretsManager := &secretsmanager.MockSecretsManager{
+		Hostname: tfcServer.Address,
+		TeamId:   "team-4123nlol",
+		Token:    "supers3cret",
 	}
 
 	// Create a test instance of the Lambda function
 	testHandler := &SendDestroyHandler{
-		tfeClient: tfeClient,
+		secretsManager: mockSecretsManager,
 	}
 
 	// Create test request
@@ -75,7 +77,7 @@ func TestSendDestroyHandler_WorkspaceMissing(t *testing.T) {
 	}
 
 	// Send the test request
-	_, err = testHandler.HandleRequest(context.Background(), testRequest)
+	_, err := testHandler.HandleRequest(context.Background(), testRequest)
 	// Verify the handler returned an error
 	assert.Error(t, err, "Handler should have responded with an error")
 }

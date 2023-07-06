@@ -5,8 +5,8 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	sc "github.com/aws/aws-sdk-go-v2/service/servicecatalog"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/awsconfig"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/secretsmanager"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/servicecatalog"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tracertag"
 	"log"
 )
@@ -45,14 +45,15 @@ func main() {
 		Client: serviceCatalogClient,
 	}
 
-	tfeClient, err := tfc.GetTFEClient(initContext, sdkConfig)
+	// Create secrets client SDK to fetch TFE credentials
+	secretsManager, err := secretsmanager.NewWithConfig(initContext, sdkConfig)
 	if err != nil {
-		log.Fatalf("failed to initialize TFE client: %s", err)
+		log.Fatalf("failed to initialize secrets manager client: %s", err)
 	}
 
 	handler := NotifyRunResultHandler{
 		serviceCatalog: serviceCatalog,
-		tfeClient:      tfeClient,
+		secretsManager: secretsManager,
 	}
 
 	lambda.Start(handler.HandleRequest)

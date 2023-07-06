@@ -1,11 +1,11 @@
 package main
 
 import (
+	"context"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/awsconfig"
-	"context"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/secretsmanager"
 	"log"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
 )
 
 func main() {
@@ -14,13 +14,15 @@ func main() {
 
 	// Initialize the TFE client
 	sdkConfig := awsconfig.GetSdkConfig(initContext)
-	client, err := tfc.GetTFEClient(initContext, sdkConfig)
+
+	// Create secrets client SDK to fetch TFE credentials
+	secretsManager, err := secretsmanager.NewWithConfig(initContext, sdkConfig)
 	if err != nil {
-		log.Fatalf("failed to initialize TFE client: %s", err)
+		log.Fatalf("failed to initialize secrets manager client: %s", err)
 	}
 
 	// Create the handler
-	handler := &PollRunStatusHandler{tfeClient: client}
+	handler := &PollRunStatusHandler{secretsManager: secretsManager}
 
 	// Start the lambda using the handler
 	lambda.Start(handler.HandleRequest)

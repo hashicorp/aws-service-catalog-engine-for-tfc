@@ -1,21 +1,21 @@
 package main
 
 import (
-	"testing"
-	"context"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tracertag"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/s3"
-	"os"
-	"io"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/fileutils"
 	"archive/tar"
-	"github.com/stretchr/testify/assert"
+	"context"
 	"encoding/json"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/testtfc"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/identifiers"
-	"github.com/hashicorp/go-tfe"
 	"fmt"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/fileutils"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/identifiers"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/s3"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/secretsmanager"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/testtfc"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tracertag"
+	"github.com/hashicorp/go-tfe"
+	"github.com/stretchr/testify/assert"
+	"io"
+	"os"
+	"testing"
 )
 
 func TestSendApplyHandler_Success(t *testing.T) {
@@ -23,10 +23,10 @@ func TestSendApplyHandler_Success(t *testing.T) {
 	tfcServer := testtfc.NewMockTFC()
 	defer tfcServer.Stop()
 
-	// Create tfe client that will send requests to the mock TFC instance
-	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
-	if err != nil {
-		t.Error(err)
+	mockSecretsManager := &secretsmanager.MockSecretsManager{
+		Hostname: tfcServer.Address,
+		TeamId:   "team-4123nlol",
+		Token:    "supers3cret",
 	}
 
 	// Create mock S3 downloader
@@ -37,9 +37,9 @@ func TestSendApplyHandler_Success(t *testing.T) {
 
 	// Create a test instance of the Lambda function
 	testHandler := &SendApplyHandler{
-		tfeClient:    tfeClient,
-		s3Downloader: mockDownloader,
-		region:       "narnia-west-2",
+		secretsManager: mockSecretsManager,
+		s3Downloader:   mockDownloader,
+		region:         "narnia-west-2",
 	}
 
 	// Create test request
@@ -61,7 +61,7 @@ func TestSendApplyHandler_Success(t *testing.T) {
 	}
 
 	// Send the test request
-	_, err = testHandler.HandleRequest(context.Background(), testRequest)
+	_, err := testHandler.HandleRequest(context.Background(), testRequest)
 	// Verify no errors were returned
 	if err != nil {
 		t.Error(err)
@@ -105,10 +105,10 @@ func TestSendApplyHandler_Success_UpdatingExistingWorkspace(t *testing.T) {
 	tfcServer := testtfc.NewMockTFC()
 	defer tfcServer.Stop()
 
-	// Create tfe client that will send requests to the mock TFC instance
-	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
-	if err != nil {
-		t.Error(err)
+	mockSecretsManager := &secretsmanager.MockSecretsManager{
+		Hostname: tfcServer.Address,
+		TeamId:   "team-4123nlol",
+		Token:    "supers3cret",
 	}
 
 	tfcServer.AddProject("id-4-number-1-best-product", testtfc.ProjectFactoryParameters{
@@ -158,9 +158,9 @@ func TestSendApplyHandler_Success_UpdatingExistingWorkspace(t *testing.T) {
 
 	// Create a test instance of the Lambda function
 	testHandler := &SendApplyHandler{
-		tfeClient:    tfeClient,
-		s3Downloader: mockDownloader,
-		region:       "narnia-west-2",
+		secretsManager: mockSecretsManager,
+		s3Downloader:   mockDownloader,
+		region:         "narnia-west-2",
 	}
 
 	// Create test request
@@ -182,7 +182,7 @@ func TestSendApplyHandler_Success_UpdatingExistingWorkspace(t *testing.T) {
 	}
 
 	// Send the test request
-	_, err = testHandler.HandleRequest(context.Background(), testRequest)
+	_, err := testHandler.HandleRequest(context.Background(), testRequest)
 	// Verify no errors were returned
 	if err != nil {
 		t.Error(err)
@@ -198,10 +198,10 @@ func TestSendApplyHandler_Success_ProjectAlreadyExists(t *testing.T) {
 	tfcServer := testtfc.NewMockTFC()
 	defer tfcServer.Stop()
 
-	// Create tfe client that will send requests to the mock TFC instance
-	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
-	if err != nil {
-		t.Error(err)
+	mockSecretsManager := &secretsmanager.MockSecretsManager{
+		Hostname: tfcServer.Address,
+		TeamId:   "team-4123nlol",
+		Token:    "supers3cret",
 	}
 
 	tfcServer.AddProject("id-4-number-1-best-product", testtfc.ProjectFactoryParameters{
@@ -216,9 +216,9 @@ func TestSendApplyHandler_Success_ProjectAlreadyExists(t *testing.T) {
 
 	// Create a test instance of the Lambda function
 	testHandler := &SendApplyHandler{
-		tfeClient:    tfeClient,
-		s3Downloader: mockDownloader,
-		region:       "narnia-west-2",
+		secretsManager: mockSecretsManager,
+		s3Downloader:   mockDownloader,
+		region:         "narnia-west-2",
 	}
 
 	// Create test request
@@ -240,7 +240,7 @@ func TestSendApplyHandler_Success_ProjectAlreadyExists(t *testing.T) {
 	}
 
 	// Send the test request
-	_, err = testHandler.HandleRequest(context.Background(), testRequest)
+	_, err := testHandler.HandleRequest(context.Background(), testRequest)
 	// Verify no errors were returned
 	if err != nil {
 		t.Error(err)
@@ -252,10 +252,10 @@ func TestSendApplyHandler_ErrorFetchingArtifactFromS3(t *testing.T) {
 	tfcServer := testtfc.NewMockTFC()
 	defer tfcServer.Stop()
 
-	// Create tfe client that will send requests to the mock TFC instance
-	tfeClient, err := tfc.ClientWithDefaultConfig(tfcServer.Address, "supers3cret")
-	if err != nil {
-		t.Error(err)
+	mockSecretsManager := &secretsmanager.MockSecretsManager{
+		Hostname: tfcServer.Address,
+		TeamId:   "team-4123nlol",
+		Token:    "supers3cret",
 	}
 
 	tfcServer.AddProject("id-4-number-1-best-product", testtfc.ProjectFactoryParameters{
@@ -267,9 +267,9 @@ func TestSendApplyHandler_ErrorFetchingArtifactFromS3(t *testing.T) {
 
 	// Create a test instance of the Lambda function
 	testHandler := &SendApplyHandler{
-		tfeClient:    tfeClient,
-		s3Downloader: mockDownloader,
-		region:       "narnia-west-2",
+		secretsManager: mockSecretsManager,
+		s3Downloader:   mockDownloader,
+		region:         "narnia-west-2",
 	}
 
 	// Create test request
@@ -291,7 +291,7 @@ func TestSendApplyHandler_ErrorFetchingArtifactFromS3(t *testing.T) {
 	}
 
 	// Send the test request
-	_, err = testHandler.HandleRequest(context.Background(), testRequest)
+	_, err := testHandler.HandleRequest(context.Background(), testRequest)
 
 	// Verify an errors was returned
 	assert.Error(t, err, "Verify handler failed")

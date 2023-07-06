@@ -2,39 +2,47 @@ package main
 
 import (
 	"context"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/identifiers"
-	"github.com/hashicorp/go-tfe"
+	"errors"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"log"
+	sc "github.com/aws/aws-sdk-go-v2/service/servicecatalog"
 	"github.com/aws/aws-sdk-go-v2/service/servicecatalog/types"
 	"github.com/google/uuid"
-	"errors"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/identifiers"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/secretsmanager"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/servicecatalog"
-	sc "github.com/aws/aws-sdk-go-v2/service/servicecatalog"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
+	"github.com/hashicorp/go-tfe"
+	"log"
 )
 
 type NotifyRunResultHandler struct {
 	serviceCatalog servicecatalog.ServiceCatalog
-	tfeClient      *tfe.Client
+	secretsManager secretsmanager.SecretsManager
 }
 
 func (h NotifyRunResultHandler) HandleRequest(ctx context.Context, request NotifyRunResultRequest) (*NotifyRunResultResponse, error) {
+
+	tfeClient, err := tfc.GetTFEClient(ctx, h.secretsManager)
+	if err != nil {
+		log.Fatalf("failed to initialize TFE client: %s", err)
+	}
+
 	switch {
 	case request.ServiceCatalogOperation == Terminating:
-		return h.NotifyTerminateResult(ctx, request)
+		return h.NotifyTerminateResult(ctx, tfeClient, request)
 	case request.ServiceCatalogOperation == Provisioning:
-		return h.NotifyProvisioningResult(ctx, request)
+		return h.NotifyProvisioningResult(ctx, tfeClient, request)
 	case request.ServiceCatalogOperation == Updating:
-		return h.NotifyUpdatingResult(ctx, request)
+		return h.NotifyUpdatingResult(ctx, tfeClient, request)
 	default:
 		log.Printf("Unknown serviceCatalogOperation: %s\n", request.ServiceCatalogOperation)
 		return nil, errors.New("unknown serviceCatalogOperation")
 	}
 }
 
-func (h NotifyRunResultHandler) NotifyTerminateResult(ctx context.Context, request NotifyRunResultRequest) (*NotifyRunResultResponse, error) {
+func (h NotifyRunResultHandler) NotifyTerminateResult(ctx context.Context, tfeClient *tfe.Client, request NotifyRunResultRequest) (*NotifyRunResultResponse, error) {
 	// Delete the workspace
-	err := DeleteWorkspace(ctx, h.tfeClient, request)
+	err := DeleteWorkspace(ctx, tfeClient, request)
 	if err != nil {
 		log.Default().Printf("failed to delete workspace: %v", err)
 		request.ErrorMessage = err.Error()
@@ -66,7 +74,7 @@ func (h NotifyRunResultHandler) NotifyTerminateResult(ctx context.Context, reque
 	return nil, err
 }
 
-func (h NotifyRunResultHandler) NotifyProvisioningResult(ctx context.Context, request NotifyRunResultRequest) (*NotifyRunResultResponse, error) {
+func (h NotifyRunResultHandler) NotifyProvisioningResult(ctx context.Context, tfeClient *tfe.Client, request NotifyRunResultRequest) (*NotifyRunResultResponse, error) {
 	var outputs []types.RecordOutput
 	var err error
 
@@ -76,7 +84,7 @@ func (h NotifyRunResultHandler) NotifyProvisioningResult(ctx context.Context, re
 		failureReason = FormatError(request.Error, request.ErrorMessage)
 		status = types.EngineWorkflowStatusFailed
 	} else {
-		outputs, err = FetchRunOutputs(ctx, h.tfeClient, request)
+		outputs, err = FetchRunOutputs(ctx, tfeClient, request)
 		if err != nil {
 			log.Default().Printf("failed to fetch run outputs: %v", err)
 			return nil, err
@@ -109,7 +117,7 @@ func (h NotifyRunResultHandler) NotifyProvisioningResult(ctx context.Context, re
 	return nil, err
 }
 
-func (h NotifyRunResultHandler) NotifyUpdatingResult(ctx context.Context, request NotifyRunResultRequest) (*NotifyRunResultResponse, error) {
+func (h NotifyRunResultHandler) NotifyUpdatingResult(ctx context.Context, tfeClient *tfe.Client, request NotifyRunResultRequest) (*NotifyRunResultResponse, error) {
 	var outputs []types.RecordOutput
 	var err error
 
@@ -119,7 +127,7 @@ func (h NotifyRunResultHandler) NotifyUpdatingResult(ctx context.Context, reques
 		failureReason = FormatError(request.Error, request.ErrorMessage)
 		status = types.EngineWorkflowStatusFailed
 	} else {
-		outputs, err = FetchRunOutputs(ctx, h.tfeClient, request)
+		outputs, err = FetchRunOutputs(ctx, tfeClient, request)
 		if err != nil {
 			return nil, err
 		}

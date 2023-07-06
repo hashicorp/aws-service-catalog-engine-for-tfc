@@ -1,12 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/aws/aws-lambda-go/lambda"
-	"log"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/awsconfig"
-	"context"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/secretsmanager"
+	"log"
 )
 
 type SendDestroyRequest struct {
@@ -23,15 +23,17 @@ func main() {
 	// Create temporary context to initialize the handler with
 	initContext := context.TODO()
 
+	// Initialize the TFE client
 	sdkConfig := awsconfig.GetSdkConfig(initContext)
 
-	client, err := tfc.GetTFEClient(initContext, sdkConfig)
+	// Create secrets client SDK to fetch TFE credentials
+	secretsManager, err := secretsmanager.NewWithConfig(initContext, sdkConfig)
 	if err != nil {
-		log.Fatalf("failed to initialize TFE client: %s", err)
+		log.Fatalf("failed to initialize secrets manager client: %s", err)
 	}
 
 	handler := SendDestroyHandler{
-		tfeClient: client,
+		secretsManager: secretsManager,
 	}
 
 	lambda.Start(handler.HandleRequest)

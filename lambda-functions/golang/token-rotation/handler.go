@@ -3,25 +3,27 @@ package main
 import (
 	"context"
 	"errors"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/token-rotation/lambda"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/secretsmanager"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/stepfunctions"
-	"github.com/hashicorp/go-tfe"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/token-rotation/lambda"
 	"log"
 )
 
 type RotateTeamTokensHandler struct {
-	tfeClient                   *tfe.Client
+	// AWS service clients
+	stepFunctions  stepfunctions.StepFunctions
+	lambda         lambda.Lambda
+	secretsManager secretsmanager.SecretsManager
+	// ID of TFC Team that is used to rotate the team token
+	teamID string
+	// State machines to poll executions
 	provisioningStateMachineArn string
 	updatingStateMachineArn     string
 	terminatingStateMachineArn  string
-	provisioningFunctionName    string
-	updatingFunctionName        string
-	terminatingFunctionName     string
-	teamID                      string
-	stepFunctions               stepfunctions.StepFunctions
-	lambda                      lambda.Lambda
-	secretsManager              secretsmanager.SecretsManager
+	// Lambda functions to pause invocations of during rotation
+	provisioningFunctionName string
+	updatingFunctionName     string
+	terminatingFunctionName  string
 }
 
 func (h *RotateTeamTokensHandler) HandleRequest(ctx context.Context, request RotateTeamTokensRequest) (*RotateTeamTokensResponse, error) {

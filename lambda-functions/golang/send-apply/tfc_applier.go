@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/hashicorp/go-tfe"
 	"context"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
+	"github.com/hashicorp/go-tfe"
 	"log"
 	"net/http"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
 )
 
 type TFCApplier struct {
@@ -17,10 +17,10 @@ func (h *SendApplyHandler) NewTFCApplier(ctx context.Context, request SendApplyR
 
 	headers.Set("Tfp-Aws-Service-Catalog-Product-Id", request.ProductId)
 	headers.Set("Tfp-Aws-Service-Catalog-Prv-Product-Id", request.ProvisionedProductId)
-	//header.Set("Tfp-Aws-Service-Catalog-Portfolio-Id", request)
-	//header.Set("Tfp-Aws-Service-Catalog-Product-Ver", request)
+	//headers.Set("Tfp-Aws-Service-Catalog-Portfolio-Id", request)
+	//headers.Set("Tfp-Aws-Service-Catalog-Product-Ver", request)
 
-	tfeClient, err := tfc.GetTFEClientWithHeaders(ctx, *h.secretsManager, headers)
+	tfeClient, err := tfc.GetTFEClientWithHeaders(ctx, h.secretsManager, headers)
 	return &TFCApplier{tfeClient: tfeClient}, err
 }
 
