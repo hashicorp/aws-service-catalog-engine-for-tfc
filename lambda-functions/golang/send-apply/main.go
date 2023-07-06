@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tracertag"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/awsconfig"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/fileutils"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/secretsmanager"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tracertag"
+	"log"
 )
 
 type SendApplyRequest struct {
@@ -39,11 +41,21 @@ func main() {
 
 	sdkConfig := awsconfig.GetSdkConfig(initContext)
 
+	// Create secrets client SDK to fetch TFE credentials
+	secretsManager, err := secretsmanager.NewWithConfig(initContext, sdkConfig)
+	if err != nil {
+		log.Fatalf("failed to initialize secrets manager client: %s", err)
+	}
+
 	// Initialize the s3 downloader
 	s3Downloader := fileutils.NewS3DownloaderWithAssumedRole(initContext, sdkConfig)
 
 	// Create the handler
-	handler := &SendApplyHandler{s3Downloader: s3Downloader, region: sdkConfig.Region}
+	handler := &SendApplyHandler{
+		s3Downloader:   s3Downloader,
+		secretsManager: secretsManager,
+		region:         sdkConfig.Region,
+	}
 
 	// Start the lambda using the handler
 	lambda.Start(handler.HandleRequest)
