@@ -5,45 +5,45 @@ import (
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/fileutils"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/identifiers"
 	"github.com/hashicorp/go-tfe"
-	"log"
 	"time"
+	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/secretsmanager"
 )
 
 type SendApplyHandler struct {
-	tfeClient    *tfe.Client
-	s3Downloader fileutils.S3Downloader
-	region       string
+	secretsManager *secretsmanager.SecretsManager
+	s3Downloader   fileutils.S3Downloader
+	region         string
 }
 
 func (h *SendApplyHandler) HandleRequest(ctx context.Context, request SendApplyRequest) (*SendApplyResponse, error) {
+	// Create TFC Applier to ensure that metadata headers are supplied in requests
+	applier, err := h.NewTFCApplier(ctx, request)
+	if err != nil {
+		return nil, err
+	}
 
 	// Find or create the Project
 	projectName := request.ProductId
-	p, err := h.FindOrCreateProject(ctx, request.TerraformOrganization, projectName)
+	p, err := applier.FindOrCreateProject(ctx, request.TerraformOrganization, projectName)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create or find the Workspace
 	workspaceName := identifiers.GetWorkspaceName(request.AwsAccountId, request.ProvisionedProductId)
-	w, err := h.FindOrCreateWorkspace(ctx, request.TerraformOrganization, p, workspaceName)
+	w, err := applier.FindOrCreateWorkspace(ctx, request.TerraformOrganization, p, workspaceName)
 	if err != nil {
 		return nil, err
 	}
 
 	// Configure ENV variables for OIDC
-	err = h.UpdateWorkspaceVariables(ctx, w, request.LaunchRoleArn)
+	err = applier.UpdateWorkspaceVariables(ctx, w, request.LaunchRoleArn)
 	if err != nil {
 		return nil, err
 	}
 
-	cv, err := h.tfeClient.ConfigurationVersions.Create(ctx,
-		w.ID,
-		tfe.ConfigurationVersionCreateOptions{
-			// Disable auto queue runs, so we can create the run ourselves to get the runId
-			AutoQueueRuns: tfe.Bool(false),
-		},
-	)
+	// Create configuration version to acquire upload link for configuration files to be sent to
+	cv, err := applier.CreateConfigurationVersion(ctx, w.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -64,14 +64,14 @@ func (h *SendApplyHandler) HandleRequest(ctx context.Context, request SendApplyR
 	}
 
 	// Upload newly modified configuration to TFE
-	err = h.tfeClient.ConfigurationVersions.UploadTarGzip(ctx, cv.UploadURL, modifiedProductConfig)
+	err = applier.tfeClient.ConfigurationVersions.UploadTarGzip(ctx, cv.UploadURL, modifiedProductConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	uploadTimeoutInSeconds := 120
 	for i := 0; ; i++ {
-		refreshed, err := h.tfeClient.ConfigurationVersions.Read(ctx, cv.ID)
+		refreshed, err := applier.tfeClient.ConfigurationVersions.Read(ctx, cv.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -87,7 +87,7 @@ func (h *SendApplyHandler) HandleRequest(ctx context.Context, request SendApplyR
 		time.Sleep(1 * time.Second)
 	}
 
-	run, err := h.tfeClient.Runs.Create(ctx, tfe.RunCreateOptions{
+	run, err := applier.tfeClient.Runs.Create(ctx, tfe.RunCreateOptions{
 		Workspace:            w,
 		ConfigurationVersion: cv,
 		AutoApply:            tfe.Bool(true),
@@ -97,153 +97,4 @@ func (h *SendApplyHandler) HandleRequest(ctx context.Context, request SendApplyR
 	}
 
 	return &SendApplyResponse{TerraformRunId: run.ID}, err
-}
-
-func (h *SendApplyHandler) FindOrCreateProject(ctx context.Context, organizationName string, name string) (*tfe.Project, error) {
-	// Check if the project already exists...
-	project, err := h.FindProjectByName(ctx, organizationName, name, 0)
-	if project != nil || err != nil {
-		return project, err
-	}
-
-	// Otherwise, create the project
-	return h.tfeClient.Projects.Create(ctx, organizationName, tfe.ProjectCreateOptions{
-		Name: name,
-	})
-}
-
-func (h *SendApplyHandler) FindProjectByName(ctx context.Context, organizationName string, projectName string, pageNumber int) (*tfe.Project, error) {
-	// Check if the project already exists...
-	projects, err := h.tfeClient.Projects.List(ctx, organizationName, &tfe.ProjectListOptions{
-		ListOptions: tfe.ListOptions{
-			PageNumber: pageNumber,
-			PageSize:   100,
-		},
-		Name: projectName,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, project := range projects.Items {
-		// Check for exact name match, because the search we made is a "contains" search
-		if project.Name == projectName {
-			return project, nil
-		}
-	}
-
-	// If more projects exists, fetch them and check them as well
-	if projects.TotalCount > ((pageNumber + 1) * 100) {
-		return h.FindProjectByName(ctx, organizationName, projectName, pageNumber+1)
-	}
-
-	return nil, nil
-}
-
-func (h *SendApplyHandler) FindOrCreateWorkspace(ctx context.Context, organizationName string, project *tfe.Project, workspaceName string) (*tfe.Workspace, error) {
-	// Check if the workspace already exists...
-	workspace, err := h.FindWorkspaceByName(ctx, organizationName, workspaceName, 0)
-	if workspace != nil || err != nil {
-		return workspace, err
-	}
-
-	// Otherwise, create the Workspace
-	return h.tfeClient.Workspaces.Create(ctx, organizationName, tfe.WorkspaceCreateOptions{
-		Name:    tfe.String(workspaceName),
-		Project: project,
-	})
-}
-
-func (h *SendApplyHandler) FindWorkspaceByName(ctx context.Context, organizationName string, workspaceName string, pageNumber int) (*tfe.Workspace, error) {
-	// Check if the workspace already exists...
-	workspaces, err := h.tfeClient.Workspaces.List(ctx, organizationName, &tfe.WorkspaceListOptions{
-		ListOptions: tfe.ListOptions{
-			PageNumber: pageNumber,
-			PageSize:   100,
-		},
-		Search: workspaceName,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, workspace := range workspaces.Items {
-		// Check for exact name match, because the search we made is a "contains" search
-		if workspace.Name == workspaceName {
-			return workspace, nil
-		}
-	}
-
-	// If more workspaces exists, fetch them and check them as well
-	if workspaces.TotalCount > ((pageNumber + 1) * 100) {
-		return h.FindWorkspaceByName(ctx, organizationName, workspaceName, pageNumber+1)
-	}
-
-	return nil, nil
-}
-
-func (h *SendApplyHandler) UpdateWorkspaceVariables(ctx context.Context, w *tfe.Workspace, launchRoleArn string) error {
-	log.Default().Print("Updating variable TFC_AWS_PROVIDER_AUTH")
-	err := h.FindOrCreateVariable(ctx, w, "TFC_AWS_PROVIDER_AUTH", "true", "Enable the Workload Identity integration for AWS.")
-	if err != nil {
-		return err
-	}
-
-	log.Default().Print("Updating variable TFC_AWS_RUN_ROLE_ARN")
-	return h.FindOrCreateVariable(ctx, w, "TFC_AWS_RUN_ROLE_ARN", launchRoleArn, "The AWS role ARN runs will use to authenticate.")
-}
-
-func (h *SendApplyHandler) FindOrCreateVariable(ctx context.Context, w *tfe.Workspace, key string, value string, description string) error {
-	variableToUpdate, err := h.FindVariableByKey(ctx, w, key, 0)
-	if err != nil {
-		return err
-	}
-
-	if variableToUpdate != nil {
-		// Update the variables
-		log.Default().Printf("Updating variable with ID: %s", variableToUpdate.ID)
-		_, err = h.tfeClient.Variables.Update(ctx, w.ID, variableToUpdate.ID, tfe.VariableUpdateOptions{
-			Key:      tfe.String(key),
-			Value:    tfe.String(value),
-			Category: tfe.Category(tfe.CategoryEnv),
-			HCL:      tfe.Bool(false),
-		})
-		return err
-	}
-
-	// Create the variable as it does not currently exist
-	_, err = h.tfeClient.Variables.Create(ctx, w.ID, tfe.VariableCreateOptions{
-		Key:         tfe.String(key),
-		Value:       tfe.String(value),
-		Description: tfe.String(description),
-		Category:    tfe.Category(tfe.CategoryEnv),
-		HCL:         tfe.Bool(false),
-		Sensitive:   tfe.Bool(false),
-	})
-	return err
-}
-
-func (h *SendApplyHandler) FindVariableByKey(ctx context.Context, w *tfe.Workspace, key string, pageNumber int) (*tfe.Variable, error) {
-	variables, err := h.tfeClient.Variables.List(ctx, w.ID, &tfe.VariableListOptions{
-		ListOptions: tfe.ListOptions{
-			PageNumber: pageNumber,
-			PageSize:   100,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, variable := range variables.Items {
-		if variable.Key == key {
-			return variable, nil
-		}
-	}
-
-	// If more variables exists, fetch them and check them as well
-	if variables.TotalCount > ((pageNumber + 1) * 100) {
-		return h.FindVariableByKey(ctx, w, key, pageNumber+1)
-	}
-
-	return nil, nil
 }

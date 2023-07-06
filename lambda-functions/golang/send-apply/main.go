@@ -4,8 +4,6 @@ import (
 	"context"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tracertag"
-	"log"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/awsconfig"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/fileutils"
 )
@@ -39,18 +37,13 @@ func main() {
 	// Create temporary context to initialize the handler with
 	initContext := context.TODO()
 
-	// Initialize the TFE client
 	sdkConfig := awsconfig.GetSdkConfig(initContext)
-	client, err := tfc.GetTFEClient(initContext, sdkConfig)
-	if err != nil {
-		log.Fatalf("failed to initialize TFE client: %s", err)
-	}
 
 	// Initialize the s3 downloader
 	s3Downloader := fileutils.NewS3DownloaderWithAssumedRole(initContext, sdkConfig)
 
 	// Create the handler
-	handler := &SendApplyHandler{tfeClient: client, s3Downloader: s3Downloader, region: sdkConfig.Region}
+	handler := &SendApplyHandler{s3Downloader: s3Downloader, region: sdkConfig.Region}
 
 	// Start the lambda using the handler
 	lambda.Start(handler.HandleRequest)

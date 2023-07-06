@@ -70,7 +70,7 @@ func (sm SM) GetSecretValue(ctx context.Context) (*TFECredentialsSecret, error) 
 	return tfeCredentialsSecret, err
 }
 
-func (sm SM) UpdateTFEToken(ctx context.Context, token string) error {
+func (sm SM) UpdateSecretValue(ctx context.Context, token string) error {
 	secretValue := &TFECredentialsSecret{
 		Hostname: sm.Hostname,
 		TeamId:   sm.TeamID,

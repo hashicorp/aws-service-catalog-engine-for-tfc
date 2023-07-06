@@ -5,6 +5,7 @@ import (
 	"log"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tfc"
 	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/token-rotation/lambda"
+	"fmt"
 )
 
 func (h *RotateTeamTokensHandler) GetEventSourceMappingUuidTuples(ctx context.Context) ([]lambda.FunctionNameUuidTuple, error) {
@@ -59,8 +60,16 @@ func (h *RotateTeamTokensHandler) RotateToken(ctx context.Context, teamID string
 		return err
 	}
 
-	// Reinitialize the client (???) with the new team token
-	tfeClient, err := tfc.GetTFEClientFromSecretsManager(ctx, h.secretsManager)
+	// Re-initialize the client with the new team token
+	tfeCredentialsSecret, err := h.secretsManager.GetSecretValue(ctx)
+	if err != nil {
+		return err
+	}
+	tfeClient, err := tfc.ClientWithDefaultConfig(
+		fmt.Sprintf("https://%s", tfeCredentialsSecret.Hostname),
+		tt.Token,
+		make(map[string][]string),
+	)
 	if err != nil {
 		return err
 	}
