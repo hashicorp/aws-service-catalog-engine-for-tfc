@@ -8,7 +8,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/mocking"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/testutil/mocking"
 	"github.com/hashicorp/go-tfe"
 	"log"
 )

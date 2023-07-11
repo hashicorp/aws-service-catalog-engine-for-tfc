@@ -1,15 +1,15 @@
 package main
 
 import (
-	"testing"
-	"github.com/aws/aws-sdk-go-v2/service/sfn"
 	"context"
 	"encoding/json"
-	"github.com/stretchr/testify/assert"
-	"github.com/aws/smithy-go/middleware"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"time"
 	"errors"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/sfn"
+	"github.com/aws/smithy-go/middleware"
+	"github.com/stretchr/testify/assert"
+	"testing"
+	"time"
 )
 
 func TestProvisioningOperationsHandler_Success(t *testing.T) {
@@ -19,7 +19,7 @@ func TestProvisioningOperationsHandler_Success(t *testing.T) {
 
 	// Create a test instance of the Lambda function
 	testHandler := &ProvisioningOperationsHandler{
-		terraformOrganization: "yolo",
+		terraformOrganization: "the-best-org",
 		stepFunctions:         mockStepFunctions,
 		stateMachineArn:       "arn:::such-a-great-state-machine/like/wow",
 	}
@@ -27,8 +27,8 @@ func TestProvisioningOperationsHandler_Success(t *testing.T) {
 	// Create test request
 	testPayload := StateMachinePayload{
 		Token:                "tolkien",
-		ProvisionedProductId: "the-bestest-product-id",
-		RecordId:             "the-bestest-record-id",
+		ProvisionedProductId: "the-best-product-id",
+		RecordId:             "the-best-record-id",
 	}
 	testPayloadJson, err := json.Marshal(testPayload)
 	if err != nil {
@@ -37,7 +37,7 @@ func TestProvisioningOperationsHandler_Success(t *testing.T) {
 
 	testRequest := ProvisioningOperationsHandlerRequest{
 		Records: []Record{{
-			MessageId: "the-bestest-msg-id",
+			MessageId: "the-best-msg-id",
 			Body:      string(testPayloadJson),
 		}},
 	}
@@ -52,7 +52,7 @@ func TestProvisioningOperationsHandler_Success(t *testing.T) {
 	assert.Empty(t, response.BatchItemFailures, "No failures should be returned")
 
 	// Verify Terraform Organization was set
-	assert.Equal(t, "yolo", mockStepFunctions.stateMachinePayload.TerraformOrganization, "terraformOrganization was set")
+	assert.Equal(t, "the-best-org", mockStepFunctions.stateMachinePayload.TerraformOrganization, "terraformOrganization was set")
 }
 
 func TestProvisioningOperationsHandler_Failure(t *testing.T) {
@@ -68,8 +68,8 @@ func TestProvisioningOperationsHandler_Failure(t *testing.T) {
 	// Create test request
 	testPayload := StateMachinePayload{
 		Token:                "tolkien",
-		ProvisionedProductId: "the-bestest-product-id",
-		RecordId:             "the-bestest-record-id",
+		ProvisionedProductId: "the-best-product-id",
+		RecordId:             "the-best-record-id",
 	}
 	testPayloadJson, err := json.Marshal(testPayload)
 	if err != nil {
@@ -78,7 +78,7 @@ func TestProvisioningOperationsHandler_Failure(t *testing.T) {
 
 	testRequest := ProvisioningOperationsHandlerRequest{
 		Records: []Record{{
-			MessageId: "the-bestest-msg-id",
+			MessageId: "the-best-msg-id",
 			Body:      string(testPayloadJson),
 		}},
 	}
@@ -91,7 +91,7 @@ func TestProvisioningOperationsHandler_Failure(t *testing.T) {
 	}
 
 	expectedFailures := []BatchItemFailure{{
-		ItemIdentifier: "the-bestest-msg-id",
+		ItemIdentifier: "the-best-msg-id",
 	}}
 	assert.Equal(t, expectedFailures, response.BatchItemFailures, "Expected a failure")
 }
@@ -111,7 +111,7 @@ func (stepFunctions *MockStepFunctionsWithSuccessfulResponse) StartExecution(ctx
 
 	metadata := middleware.Metadata{}
 
-	metadata.Set("RequestId", "the-bestest-request")
+	metadata.Set("RequestId", "the-best-request")
 
 	return &sfn.StartExecutionOutput{
 		ExecutionArn:   aws.String("arn:::mostly-successful"),
@@ -120,7 +120,7 @@ func (stepFunctions *MockStepFunctionsWithSuccessfulResponse) StartExecution(ctx
 	}, nil
 }
 
-func (stepfunctions MockStepFunctionsWithSuccessfulResponse) GetStateMachineExecutionCount(ctx context.Context, stateMachineArn string) (int, error) {
+func (stepFunctions MockStepFunctionsWithSuccessfulResponse) GetStateMachineExecutionCount(ctx context.Context, stateMachineArn string) (int, error) {
 	return 0, errors.New("wrong function called")
 }
 
@@ -130,6 +130,6 @@ func (stepFunctions MockStepFunctionsWithErrorResponse) StartExecution(ctx conte
 	return nil, errors.New("whoopsies")
 }
 
-func (stepfunctions MockStepFunctionsWithErrorResponse) GetStateMachineExecutionCount(ctx context.Context, stateMachineArn string) (int, error) {
+func (stepFunctions MockStepFunctionsWithErrorResponse) GetStateMachineExecutionCount(ctx context.Context, stateMachineArn string) (int, error) {
 	return 0, errors.New("wrong function called")
 }

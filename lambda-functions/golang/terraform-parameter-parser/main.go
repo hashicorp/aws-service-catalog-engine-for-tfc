@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/fileutils"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/awsconfig"
 	"context"
+	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/awsconfig"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/fileutils"
 )
 
 type TerraformOpenSourceParameterParserInput struct {

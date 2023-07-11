@@ -5,12 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/fileutils"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/identifiers"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/s3"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/secretsmanager"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/testtfc"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tracertag"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/fileutils"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/identifiers"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/testutil/s3"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/testutil/secretsmanager"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/testutil/testtfc"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/tracertag"
 	"github.com/hashicorp/go-tfe"
 	"github.com/stretchr/testify/assert"
 	"io"
@@ -96,7 +96,7 @@ func TestSendApplyHandler_Success(t *testing.T) {
 
 	assert.True(t, checkedProviderOverrides, "provider_override.tf.json file should be present in the uploaded artifact")
 
-	// Check to make sure correct launch role arn was assumed to download s3 files
+	// Check to make sure correct launch role ARN was assumed to download S3 files
 	assert.Equal(t, testRequest.LaunchRoleArn, mockDownloader.AssumedRole, "correct launch role arn should have been assumed to download s3 files")
 }
 
@@ -133,7 +133,7 @@ func TestSendApplyHandler_Success_UpdatingExistingWorkspace(t *testing.T) {
 			Workspace: testWorkspace,
 		})
 	}
-	// add the actual variables the handler needs to update
+	// Add the actual variables the handler needs to update
 	providerAuthVar := tfcServer.AddVar(&tfe.Variable{
 		Key:       "TFC_AWS_PROVIDER_AUTH",
 		Value:     "false",
@@ -241,7 +241,7 @@ func TestSendApplyHandler_Success_ProjectAlreadyExists(t *testing.T) {
 
 	// Send the test request
 	_, err := testHandler.HandleRequest(context.Background(), testRequest)
-	// Verify no errors were returned
+	// Verify that no errors were returned
 	if err != nil {
 		t.Error(err)
 	}
@@ -293,7 +293,7 @@ func TestSendApplyHandler_ErrorFetchingArtifactFromS3(t *testing.T) {
 	// Send the test request
 	_, err := testHandler.HandleRequest(context.Background(), testRequest)
 
-	// Verify an errors was returned
+	// Verify that an error was returned
 	assert.Error(t, err, "Verify handler failed")
 }
 
@@ -318,7 +318,7 @@ func GetArtifactEntryNames(t *testing.T, uploadedArtifact []byte) []UploadedArti
 		t.Error(err)
 	}
 
-	// unzip the file
+	// Unzip the file
 	unzippedArchive, err := fileutils.UnzipFile(tmp)
 	if err != nil {
 		t.Error(err)

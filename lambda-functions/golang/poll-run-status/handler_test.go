@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/secretsmanager"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/testtfc"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/testutil/secretsmanager"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/testutil/testtfc"
 	"github.com/hashicorp/go-tfe"
 	"github.com/stretchr/testify/assert"
 	"testing"

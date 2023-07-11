@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/servicecatalog/types"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/identifiers"
 	"github.com/hashicorp/go-tfe"
 	"log"
 	"net/url"
 	"regexp"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/identifiers"
 )
 
 func FetchRunOutputs(ctx context.Context, client *tfe.Client, request NotifyRunResultRequest) ([]types.RecordOutput, error) {

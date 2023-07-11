@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/fileutils"
 	"context"
+	"fmt"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/fileutils"
 )
 
 const LaunchRoleAccessDeniedErrorMessage = "Access denied while assuming launch role %s: %s"

@@ -1,4 +1,4 @@
-module github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang
+module github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang
 
 go 1.19
 

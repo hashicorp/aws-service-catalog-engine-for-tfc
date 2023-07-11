@@ -2,7 +2,7 @@ package secretsmanager
 
 import (
 	"context"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/secretsmanager"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/secretsmanager"
 )
 
 type MockSecretsManager struct {

@@ -3,7 +3,7 @@ package tfc
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/secretsmanager"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/secretsmanager"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/hashicorp/go-tfe"
 	"net/http"

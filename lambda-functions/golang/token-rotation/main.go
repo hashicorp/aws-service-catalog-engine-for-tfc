@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	lambdacore "github.com/aws/aws-lambda-go/lambda"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/awsconfig"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/secretsmanager"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/stepfunctions"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/token-rotation/lambda"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/awsconfig"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/secretsmanager"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/stepfunctions"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/token-rotation/lambda"
 	"log"
 	"os"
 )

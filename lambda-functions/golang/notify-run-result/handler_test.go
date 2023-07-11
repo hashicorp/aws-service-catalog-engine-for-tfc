@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/service/servicecatalog/types"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/secretsmanager"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/servicecatalog"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/testutil/testtfc"
-	"github.com/hashicorp/aws-service-catalog-enginer-for-tfe/lambda-functions/golang/shared/tracertag"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/testutil/secretsmanager"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/testutil/servicecatalog"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/testutil/testtfc"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/tracertag"
 	"github.com/hashicorp/go-tfe"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -19,7 +19,7 @@ func TestNotifyRunResultHandler_Terminating_Success(t *testing.T) {
 	defer tfcServer.Stop()
 
 	// Add a workspace to the TFC instance
-	tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "yolo"})
+	tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "the-best-workspace"})
 	assert.Equal(t, 1, len(tfcServer.Workspaces), "Make sure the TFC instance has only 1 workspace")
 
 	// Create tfe client that will send requests to the mock TFC instance
@@ -78,7 +78,7 @@ func TestNotifyRunResultHandler_Terminating_WithError(t *testing.T) {
 	defer tfcServer.Stop()
 
 	// Add a workspace to the TFC instance
-	tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "yolo"})
+	tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "the-best-workspace"})
 	assert.Equal(t, 1, len(tfcServer.Workspaces), "Make sure the TFC instance has only 1 workspace")
 
 	// Create tfe client that will send requests to the mock TFC instance
@@ -140,7 +140,7 @@ func TestNotifyRunResultHandler_Provisioning_Success(t *testing.T) {
 	defer tfcServer.Stop()
 
 	// Add a workspace to the TFC instance
-	testWorkspace := tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "yolo"})
+	testWorkspace := tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "the-best-workspace"})
 
 	// Add a Run
 	tfcServer.AddRun("run-forrest-run", testtfc.RunFactoryParameters{
@@ -165,7 +165,7 @@ func TestNotifyRunResultHandler_Provisioning_Success(t *testing.T) {
 		Name:      "super_valuable_information_about_your_infra",
 		Sensitive: true,
 		Type:      "string",
-		Value:     "yourmomsayshi...JINX",
+		Value:     "supervaluableinfo",
 	}
 
 	tfcServer.AddStateVersion(testWorkspace.ID, &tfe.StateVersion{
@@ -237,7 +237,7 @@ func TestNotifyRunResultHandler_Provisioning_Success_WithMoreThan100StateVersion
 	defer tfcServer.Stop()
 
 	// Add a workspace to the TFC instance
-	testWorkspace := tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "yolo"})
+	testWorkspace := tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "the-best-workspace"})
 
 	// Add a Run
 	tfcServer.AddRun("run-forrest-run", testtfc.RunFactoryParameters{
@@ -335,7 +335,7 @@ func TestNotifyRunResultHandler_Provisioning_MissingApply(t *testing.T) {
 	defer tfcServer.Stop()
 
 	// Add a workspace to the TFC instance
-	tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "yolo"})
+	tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "the-best-workspace"})
 
 	// Add a Run
 	tfcServer.AddRun("run-forrest-run", testtfc.RunFactoryParameters{
@@ -393,7 +393,7 @@ func TestNotifyRunResultHandler_Updating_Success(t *testing.T) {
 	defer tfcServer.Stop()
 
 	// Add a workspace to the TFC instance
-	testWorkspace := tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "yolo"})
+	testWorkspace := tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "the-best-workspace"})
 
 	// Add a Run
 	tfcServer.AddRun("run-forrest-run", testtfc.RunFactoryParameters{
@@ -418,7 +418,7 @@ func TestNotifyRunResultHandler_Updating_Success(t *testing.T) {
 		Name:      "super_valuable_information_about_your_infra",
 		Sensitive: true,
 		Type:      "string",
-		Value:     "yourmomsayshi...JINX",
+		Value:     "supervaluableinfo",
 	}
 
 	tfcServer.AddStateVersion(testWorkspace.ID, &tfe.StateVersion{
