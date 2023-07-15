@@ -27,9 +27,9 @@ resource "aws_s3_bucket" "my-bucket" {
 }
 
 variable "random_string_length" {
-  type = number
+  type        = number
   description = "Length of the random string to append to the bucket name"
-  default = 16
+  default     = 16
 }
 
 output "bucket_name" {
