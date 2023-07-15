@@ -17,8 +17,14 @@ type SendApplyRequest struct {
 	Artifact              Artifact            `json:"artifact"`
 	LaunchRoleArn         string              `json:"launchRoleArn"`
 	ProductId             string              `json:"productId"`
+	Parameters            []Parameter         `json:"parameters"`
 	Tags                  []AWSTag            `json:"tags"`
 	TracerTag             tracertag.TracerTag `json:"tracerTag"`
+}
+
+type Parameter struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 type AWSTag struct {

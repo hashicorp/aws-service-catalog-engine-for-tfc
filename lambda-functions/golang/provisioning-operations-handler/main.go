@@ -44,6 +44,10 @@ type StateMachinePayload struct {
 		Key   string `json:"key"`
 		Value string `json:"value"`
 	} `json:"tags"`
+	Parameters []struct {
+		Key   string `json:"key"`
+		Value string `json:"value"`
+	} `json:"parameters"`
 }
 
 type ProvisioningOperationsHandlerResponse struct {

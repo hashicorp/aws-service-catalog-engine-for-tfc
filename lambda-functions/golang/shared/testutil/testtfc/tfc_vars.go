@@ -17,6 +17,8 @@ func (srv *MockTFC) AddVar(variable *tfe.Variable) *tfe.Variable {
 
 	// Get or create existing array of Variables for the workspace
 	vars := make([]*tfe.Variable, 0)
+	srv.requestLock.Lock()
+	defer srv.requestLock.Unlock()
 	if existingVars := srv.Vars[workspaceId]; existingVars != nil {
 		vars = existingVars
 	}
@@ -33,13 +35,17 @@ func (srv *MockTFC) HandleVarsPostRequests(w http.ResponseWriter, r *http.Reques
 	if urlPathParts[3] == "workspaces" && urlPathParts[5] == "vars" {
 		workspaceId := urlPathParts[4]
 
-		var variable *tfe.Variable
-		if err := json.NewDecoder(r.Body).Decode(&variable); err != nil {
+		variable := &tfe.Variable{}
+
+		reqVar := &VarUpdateOrCreateRequest{}
+		if err := json.NewDecoder(r.Body).Decode(&reqVar); err != nil {
 			w.WriteHeader(500)
 			return true
 		}
 
-		variable.Workspace = &tfe.Workspace{ID: workspaceId}
+		copyRequestToVariable(variable, reqVar)
+		workspace := &tfe.Workspace{ID: workspaceId}
+		variable.Workspace = workspace
 
 		variable = srv.AddVar(variable)
 
@@ -88,10 +94,7 @@ func (srv *MockTFC) HandleVarsPatchRequests(w http.ResponseWriter, r *http.Reque
 			return true
 		}
 
-		varToUpdate.Key = reqVar.Data.Attributes.Key
-		varToUpdate.Value = reqVar.Data.Attributes.Value
-		varToUpdate.Category = reqVar.Data.Attributes.Category
-		varToUpdate.HCL = reqVar.Data.Attributes.HCL
+		copyRequestToVariable(varToUpdate, reqVar)
 
 		body, err := json.Marshal(MakeVarResponse(varToUpdate))
 		if err != nil {
@@ -113,6 +116,9 @@ func (srv *MockTFC) HandleVarsPatchRequests(w http.ResponseWriter, r *http.Reque
 func (srv *MockTFC) HandleVarsGetRequests(w http.ResponseWriter, r *http.Request) bool {
 	// /api/v2/workspaces/ws-2jmj7l5rSw0yVb_v/vars => "", "api", "v2" "workspaces" "ws-2jmj7l5rSw0yVb_v" "vars"
 	urlPathParts := strings.Split(r.URL.Path, "/")
+
+	srv.requestLock.Lock()
+	defer srv.requestLock.Unlock()
 
 	if urlPathParts[3] == "workspaces" && urlPathParts[5] == "vars" {
 		workspaceId := urlPathParts[4]
@@ -145,8 +151,42 @@ func (srv *MockTFC) HandleVarsGetRequests(w http.ResponseWriter, r *http.Request
 	return false
 }
 
-func MakeListVarsResponse(vars []*tfe.Variable, page int, size int) map[string]interface{} {
+func (srv *MockTFC) HandleVarsDeleteRequests(w http.ResponseWriter, r *http.Request) bool {
+	// /api/v2/workspaces/ws-2jmj7l5rSw0yVb_v/vars/var-rOOv9Dd => "", "api", "v2" "workspaces" "ws-2jmj7l5rSw0yVb_v" "vars" "var-rOOv9Dd"
+	urlPathParts := strings.Split(r.URL.Path, "/")
 
+	srv.requestLock.Lock()
+	defer srv.requestLock.Unlock()
+
+	if urlPathParts[3] == "workspaces" && urlPathParts[5] == "vars" && urlPathParts[6] != "" {
+		varId := urlPathParts[6]
+		workspaceId := urlPathParts[4]
+		workspaceVars := srv.Vars[workspaceId]
+
+		found := false
+		newWorkspaceVars := make([]*tfe.Variable, 0)
+		for _, workspaceVar := range workspaceVars {
+			if workspaceVar.ID == varId {
+				found = true
+			} else {
+				newWorkspaceVars = append(newWorkspaceVars, workspaceVar)
+			}
+		}
+
+		if found == false {
+			w.WriteHeader(404)
+			return true
+		}
+
+		srv.Vars[workspaceId] = newWorkspaceVars
+		w.WriteHeader(204)
+		return true
+	}
+
+	return false
+}
+
+func MakeListVarsResponse(vars []*tfe.Variable, page int, size int) map[string]interface{} {
 	data := make([]map[string]interface{}, 0)
 
 	startIndex := page * size
@@ -201,6 +241,7 @@ func MakeVarResponse(variable *tfe.Variable) map[string]interface{} {
 			"attributes": map[string]interface{}{
 				"key":   variable.Key,
 				"value": variable.Value,
+				"hcl":   variable.HCL,
 			},
 		},
 		"relationships": map[string]interface{}{
@@ -213,6 +254,13 @@ func MakeVarResponse(variable *tfe.Variable) map[string]interface{} {
 			"self": selfLink,
 		},
 	}
+}
+
+func copyRequestToVariable(variable *tfe.Variable, reqVar *VarUpdateOrCreateRequest) {
+	variable.Key = reqVar.Data.Attributes.Key
+	variable.Value = reqVar.Data.Attributes.Value
+	variable.Category = reqVar.Data.Attributes.Category
+	variable.HCL = reqVar.Data.Attributes.HCL
 }
 
 type VarUpdateOrCreateRequest struct {

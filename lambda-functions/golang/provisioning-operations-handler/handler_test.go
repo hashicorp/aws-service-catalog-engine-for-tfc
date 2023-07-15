@@ -96,6 +96,47 @@ func TestProvisioningOperationsHandler_Failure(t *testing.T) {
 	assert.Equal(t, expectedFailures, response.BatchItemFailures, "Expected a failure")
 }
 
+func TestProvisioningOperationsHandler_StateMachinePayload(t *testing.T) {
+
+	// Create mock StepFunctions facade
+	mockStepFunctions := MockStepFunctionsWithErrorResponse{}
+
+	// Create a test instance of the Lambda function
+	testHandler := &ProvisioningOperationsHandler{
+		stepFunctions: mockStepFunctions,
+	}
+
+	// Create test request
+	testPayload := StateMachinePayload{
+		Token:                "tolkien",
+		ProvisionedProductId: "the-best-product-id",
+		RecordId:             "the-best-record-id",
+	}
+	testPayloadJson, err := json.Marshal(testPayload)
+	if err != nil {
+		t.Error(err)
+	}
+
+	testRequest := ProvisioningOperationsHandlerRequest{
+		Records: []Record{{
+			MessageId: "the-best-msg-id",
+			Body:      string(testPayloadJson),
+		}},
+	}
+
+	// Send the test request
+	response, err := testHandler.HandleRequest(context.Background(), testRequest)
+	// Verify no errors were returned
+	if err != nil {
+		t.Error(err)
+	}
+
+	expectedFailures := []BatchItemFailure{{
+		ItemIdentifier: "the-best-msg-id",
+	}}
+	assert.Equal(t, expectedFailures, response.BatchItemFailures, "Expected a failure")
+}
+
 type MockStepFunctionsWithSuccessfulResponse struct {
 	stateMachinePayload StateMachinePayload
 }

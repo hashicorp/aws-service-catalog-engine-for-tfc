@@ -58,6 +58,9 @@ type MockTFC struct {
 	mockLock     sync.Mutex
 	requestMocks mocking.RequestMocks
 
+	// General lock used by different mocked endpoints
+	requestLock sync.Mutex
+
 	fails int32
 
 	flashIndex int
@@ -252,6 +255,9 @@ func (srv *MockTFC) handlePUT(w http.ResponseWriter, r *http.Request) {
 
 func (srv *MockTFC) handleDELETE(w http.ResponseWriter, r *http.Request) {
 	if srv.HandleWorkspacesDeleteRequests(w, r) {
+		return
+	}
+	if srv.HandleVarsDeleteRequests(w, r) {
 		return
 	}
 

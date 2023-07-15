@@ -17,13 +17,19 @@ provider "aws" {
 }
 
 resource "random_string" "random" {
-  length  = 16
+  length  = var.random_string_length
   special = false
   upper   = false
 }
 
 resource "aws_s3_bucket" "my-bucket" {
   bucket = "aws-tfc-service-catalog-example-${random_string.random.result}"
+}
+
+variable "random_string_length" {
+  type = number
+  description = "Length of the random string to append to the bucket name"
+  default = 16
 }
 
 output "bucket_name" {

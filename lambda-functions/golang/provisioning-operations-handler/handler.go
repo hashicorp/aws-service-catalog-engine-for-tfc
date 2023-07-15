@@ -32,13 +32,14 @@ func (h *ProvisioningOperationsHandler) HandleRequest(ctx context.Context, reque
 }
 
 func (h *ProvisioningOperationsHandler) StartStateMachineExecution(ctx context.Context, record Record) error {
+	log.Default().Printf("Deserializing event from SQS: %s", record.Body)
+
 	stateMachinePayload := &StateMachinePayload{}
 	if err := json.Unmarshal([]byte(record.Body), stateMachinePayload); err != nil {
 		return err
 	}
 
 	stateMachinePayload.TerraformOrganization = h.terraformOrganization
-
 	modifiedPayload, err := json.Marshal(stateMachinePayload)
 	if err != nil {
 		return err

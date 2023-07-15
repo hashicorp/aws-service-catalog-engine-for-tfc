@@ -36,8 +36,20 @@ func (h *SendApplyHandler) HandleRequest(ctx context.Context, request SendApplyR
 		return nil, err
 	}
 
+	// Remove all non-recognized variables from the workspace. This helps ensure parity between Service Catalog and TFC
+	err = applier.PurgeVariables(ctx, w, request.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
 	// Configure ENV variables for OIDC
-	err = applier.UpdateWorkspaceVariables(ctx, w, request.LaunchRoleArn)
+	err = applier.UpdateWorkspaceOIDCVariables(ctx, w, request.LaunchRoleArn)
+	if err != nil {
+		return nil, err
+	}
+
+	// Configure Terraform variables provided via the product parameters from Service Catalog
+	err = applier.UpdateWorkspaceParameterVariables(ctx, w, request.Parameters)
 	if err != nil {
 		return nil, err
 	}

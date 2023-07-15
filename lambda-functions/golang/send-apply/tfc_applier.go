@@ -8,6 +8,9 @@ import (
 	"net/http"
 )
 
+const ProviderAuthVariableKey = "TFC_AWS_PROVIDER_AUTH"
+const RunRoleArnVariableKey = "TFC_AWS_RUN_ROLE_ARN"
+
 type TFCApplier struct {
 	tfeClient *tfe.Client
 }
@@ -107,15 +110,26 @@ func (applier *TFCApplier) FindWorkspaceByName(ctx context.Context, organization
 	return nil, nil
 }
 
-func (applier *TFCApplier) UpdateWorkspaceVariables(ctx context.Context, w *tfe.Workspace, launchRoleArn string) error {
-	log.Default().Print("Updating variable TFC_AWS_PROVIDER_AUTH")
-	err := applier.FindOrCreateVariable(ctx, w, "TFC_AWS_PROVIDER_AUTH", "true", "Enable the Workload Identity integration for AWS.")
+func (applier *TFCApplier) UpdateWorkspaceOIDCVariables(ctx context.Context, w *tfe.Workspace, launchRoleArn string) error {
+	log.Default().Printf("Updating OIDC variables")
+
+	err := applier.FindOrCreateENVVariable(ctx, w, ProviderAuthVariableKey, "true", "Enable the Workload Identity integration for AWS.")
 	if err != nil {
 		return err
 	}
 
-	log.Default().Print("Updating variable TFC_AWS_RUN_ROLE_ARN")
-	return applier.FindOrCreateVariable(ctx, w, "TFC_AWS_RUN_ROLE_ARN", launchRoleArn, "The AWS role ARN runs will use to authenticate.")
+	return applier.FindOrCreateENVVariable(ctx, w, RunRoleArnVariableKey, launchRoleArn, "The AWS role ARN runs will use to authenticate.")
+}
+
+func (applier *TFCApplier) UpdateWorkspaceParameterVariables(ctx context.Context, w *tfe.Workspace, parameters []Parameter) error {
+	for _, parameter := range parameters {
+		log.Default().Printf("Updating variable %s", parameter.Key)
+		err := applier.FindOrCreateTerraformVariable(ctx, w, parameter.Key, parameter.Value)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (applier *TFCApplier) CreateConfigurationVersion(ctx context.Context, workspaceId string) (*tfe.ConfigurationVersion, error) {
@@ -128,37 +142,46 @@ func (applier *TFCApplier) CreateConfigurationVersion(ctx context.Context, works
 	)
 }
 
-func (applier *TFCApplier) FindOrCreateVariable(ctx context.Context, w *tfe.Workspace, key string, value string, description string) error {
-	variableToUpdate, err := applier.FindVariableByKey(ctx, w, key, 0)
+func (applier *TFCApplier) FindOrCreateTerraformVariable(ctx context.Context, w *tfe.Workspace, key string, value string) error {
+	return applier.findOrCreateVariable(ctx, w, key, value, tfe.CategoryTerraform, "Provided via AWS Service Catalog")
+}
+
+func (applier *TFCApplier) FindOrCreateENVVariable(ctx context.Context, w *tfe.Workspace, key string, value string, description string) error {
+	return applier.findOrCreateVariable(ctx, w, key, value, tfe.CategoryEnv, description)
+}
+
+func (applier *TFCApplier) findOrCreateVariable(ctx context.Context, w *tfe.Workspace, key string, value string, category tfe.CategoryType, description string) error {
+	variableToUpdate, err := applier.findVariableByKey(ctx, w, key, 0)
 	if err != nil {
 		return err
 	}
 
 	if variableToUpdate != nil {
 		// Update the variables
-		log.Default().Printf("Updating variable with ID: %s", variableToUpdate.ID)
+		log.Default().Printf("Updating variable for %s with ID: %s", key, variableToUpdate.ID)
 		_, err = applier.tfeClient.Variables.Update(ctx, w.ID, variableToUpdate.ID, tfe.VariableUpdateOptions{
 			Key:      tfe.String(key),
 			Value:    tfe.String(value),
-			Category: tfe.Category(tfe.CategoryEnv),
+			Category: tfe.Category(category),
 			HCL:      tfe.Bool(false),
 		})
 		return err
 	}
 
 	// Create the variable as it does not currently exist
+	log.Default().Printf("Creating variable for %s", key)
 	_, err = applier.tfeClient.Variables.Create(ctx, w.ID, tfe.VariableCreateOptions{
 		Key:         tfe.String(key),
 		Value:       tfe.String(value),
 		Description: tfe.String(description),
-		Category:    tfe.Category(tfe.CategoryEnv),
+		Category:    tfe.Category(category),
 		HCL:         tfe.Bool(false),
 		Sensitive:   tfe.Bool(false),
 	})
 	return err
 }
 
-func (applier *TFCApplier) FindVariableByKey(ctx context.Context, w *tfe.Workspace, key string, pageNumber int) (*tfe.Variable, error) {
+func (applier *TFCApplier) findVariableByKey(ctx context.Context, w *tfe.Workspace, key string, pageNumber int) (*tfe.Variable, error) {
 	variables, err := applier.tfeClient.Variables.List(ctx, w.ID, &tfe.VariableListOptions{
 		ListOptions: tfe.ListOptions{
 			PageNumber: pageNumber,
@@ -177,8 +200,78 @@ func (applier *TFCApplier) FindVariableByKey(ctx context.Context, w *tfe.Workspa
 
 	// If more variables exists, fetch them and check them as well
 	if variables.TotalCount > ((pageNumber + 1) * 100) {
-		return applier.FindVariableByKey(ctx, w, key, pageNumber+1)
+		return applier.findVariableByKey(ctx, w, key, pageNumber+1)
 	}
 
 	return nil, nil
+}
+
+// PurgeVariables purges all non-recognized variables from the workspace. This helps ensure parity between Service Catalog and TFC
+func (applier *TFCApplier) PurgeVariables(ctx context.Context, w *tfe.Workspace, parameters []Parameter) error {
+	log.Default().Printf("building lookups for unrecognized variables in workspace")
+	allowedTerraformVarKeysMap := map[string]bool{}
+	for _, parameter := range parameters {
+		allowedTerraformVarKeysMap[parameter.Key] = true
+	}
+
+	allowedEnvVarKeysMap := map[string]struct{}{
+		ProviderAuthVariableKey: {},
+		RunRoleArnVariableKey:   {},
+	}
+
+	// Collect the entire list of variables that should be purged
+	log.Default().Printf("checking for unrecognized variables in workspace")
+	variablesToPurge, err := applier.checkVariablesForPurge(ctx, w, allowedTerraformVarKeysMap, allowedEnvVarKeysMap, []*tfe.Variable{}, 0)
+	if err != nil {
+		return err
+	}
+
+	// Purge the variables
+	for _, variablesToPurge := range variablesToPurge {
+		err := applier.tfeClient.Variables.Delete(ctx, w.ID, variablesToPurge.ID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (applier *TFCApplier) checkVariablesForPurge(ctx context.Context, w *tfe.Workspace, allowedTerraformVarKeysMap map[string]bool, allowedEnvVarKeysMap map[string]struct{}, variablesToPurge []*tfe.Variable, pageNumber int) ([]*tfe.Variable, error) {
+	variables, err := applier.tfeClient.Variables.List(ctx, w.ID, &tfe.VariableListOptions{
+		ListOptions: tfe.ListOptions{
+			PageNumber: pageNumber,
+			PageSize:   100,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, variable := range variables.Items {
+		// Check if the variable is in the appropriate allowlist
+		if variable.Category == tfe.CategoryTerraform {
+			_, found := allowedTerraformVarKeysMap[variable.Key]
+			if found {
+				continue
+			}
+			log.Default().Printf("Terraform variable %s is being removed from workspace since it is outside the parameters list", variable.Key)
+		} else if variable.Category == tfe.CategoryEnv {
+			_, found := allowedEnvVarKeysMap[variable.Key]
+			if found {
+				continue
+			}
+			log.Default().Printf("ENV variable %s is being removed from workspace because it is not recognized by the engine", variable.Key)
+		}
+
+		// collect the variable so it can be deleted later (after we have finished paginating through all variables)
+		variablesToPurge = append(variablesToPurge, variable)
+	}
+
+	// If more variables exists, check them as well
+	if variables.TotalCount > ((pageNumber + 1) * 100) {
+		return applier.checkVariablesForPurge(ctx, w, allowedTerraformVarKeysMap, allowedEnvVarKeysMap, variablesToPurge, pageNumber+1)
+	}
+
+	return variablesToPurge, nil
 }

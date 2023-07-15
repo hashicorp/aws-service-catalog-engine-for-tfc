@@ -127,6 +127,7 @@ resource "aws_sfn_state_machine" "update_state_machine" {
         "launchRoleArn.$": "$.launchRoleArn",
         "productId.$": "$.productId",
         "tracerTag.$": "$.tracerTag",
+        "parameters.$": "$.parameters",
         "tags.$": "$.tags"
       },
       "ResultSelector": {
