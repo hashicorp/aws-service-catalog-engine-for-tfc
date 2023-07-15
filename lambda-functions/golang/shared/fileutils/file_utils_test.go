@@ -41,13 +41,13 @@ func TestUnzipFile(t *testing.T) {
 
 func TestZipFile(t *testing.T) {
 	// Load test fixtures for later assertions
-	const MockArtifactContentsPath = "../../../../example-product/main.tf"
+	const MockArtifactContentsPath = "../../../../example-product/product/main.tf"
 	contents, err := os.ReadFile(MockArtifactContentsPath)
 	if err != nil {
 		t.Errorf("Error opening test artifact %s", MockArtifactContentsPath)
 	}
 	expectedContents := string(contents)
-	const MockArtifactPath = "../../../../example-product/main.tf"
+	const MockArtifactPath = "../../../../example-product/product/main.tf"
 	testSourceFile, err := os.OpenFile(MockArtifactPath, os.O_RDWR, os.ModePerm)
 	if err != nil {
 		t.Errorf("Error opening test artifact %s", MockArtifactPath)
