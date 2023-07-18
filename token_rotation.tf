@@ -183,7 +183,8 @@ resource "aws_iam_role_policy" "token_rotation_event_role_policy" {
     {
       "Effect": "Allow",
       "Action": [
-        "states:StartExecution"
+        "states:StartExecution",
+        "states:ListExecutions"
       ],
       "Resource": [
         "${aws_sfn_state_machine.rotate_token_state_machine.arn}"
