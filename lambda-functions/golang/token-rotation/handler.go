@@ -67,7 +67,6 @@ func (h *RotateTeamTokensHandler) HandleRequest(ctx context.Context, request Rot
 		}
 		return &RotateTeamTokensResponse{}, nil
 	case request.Operation == Erroring:
-		// TODO: Implement error handling here -- cloudwatch alarm???
 	default:
 		log.Printf("Unknown serviceCatalogOperation: %s\n", request.Operation)
 		return nil, errors.New("unknown operation")
