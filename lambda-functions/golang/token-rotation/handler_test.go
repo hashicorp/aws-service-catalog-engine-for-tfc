@@ -329,7 +329,7 @@ func TestTokenRotationHandler_ErrorRotatingToken(t *testing.T) {
 	tfcServer := testtfc.NewMockTFC()
 	defer tfcServer.Stop()
 
-	mockSecretsManager := &secretsmanager.MockSecretsManager{
+	mockSecretsManager := &secretsmanager.MockSecretsManagerWithoutUpdate{
 		Hostname: tfcServer.Address,
 		TeamId:   "team-4123nlol",
 		Token:    "supers3cret",
