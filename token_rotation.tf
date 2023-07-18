@@ -277,7 +277,7 @@ resource "aws_sfn_state_machine" "rotate_token_state_machine" {
     },
     "Wait for all state machine executions to finish": {
       "Type": "Wait",
-      "Seconds": 1,
+      "Seconds": 10,
       "Next": "Poll state machine executions"
     },
     "Poll state machine executions": {
