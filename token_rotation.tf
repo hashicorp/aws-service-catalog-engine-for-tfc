@@ -70,11 +70,11 @@ resource "aws_lambda_function" "rotate_token_handler" {
       PROVISIONING_STATE_MACHINE_ARN = aws_sfn_state_machine.provision_state_machine.arn,
       UPDATING_STATE_MACHINE_ARN     = aws_sfn_state_machine.update_state_machine.arn,
       TERMINATING_STATE_MACHINE_ARN  = aws_sfn_state_machine.terminate_state_machine.arn,
-      PROVISIONING_FUNCTION_NAME = aws_lambda_function.provision_handler.function_name,
-      UPDATING_FUNCTION_NAME = aws_lambda_function.update_handler.function_name,
-      TERMINATING_FUNCTION_NAME = aws_lambda_function.terminate_handler.function_name,
+      PROVISIONING_FUNCTION_NAME     = aws_lambda_function.provision_handler.function_name,
+      UPDATING_FUNCTION_NAME         = aws_lambda_function.update_handler.function_name,
+      TERMINATING_FUNCTION_NAME      = aws_lambda_function.terminate_handler.function_name,
       TEAM_ID                        = tfe_team.provisioning_team.id,
-      TFE_CREDENTIALS_SECRET_ID = aws_secretsmanager_secret.team_token_values.arn
+      TFE_CREDENTIALS_SECRET_ID      = aws_secretsmanager_secret.team_token_values.arn
     }
   }
 }
@@ -148,8 +148,8 @@ resource "aws_cloudwatch_event_rule" "rotate_token_schedule" {
 }
 
 resource "aws_cloudwatch_event_target" "token_rotation" {
-  rule      = aws_cloudwatch_event_rule.rotate_token_schedule.name
-  arn       = aws_sfn_state_machine.rotate_token_state_machine.id
+  rule     = aws_cloudwatch_event_rule.rotate_token_schedule.name
+  arn      = aws_sfn_state_machine.rotate_token_state_machine.id
   role_arn = aws_iam_role.token_rotation_event_role.arn
 }
 
