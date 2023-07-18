@@ -34,10 +34,61 @@ data "aws_iam_policy_document" "policy_for_rotate_team_token_handler" {
       "secretsmanager:GetSecretValue",
       "secretsmanager:DescribeSecret",
       "secretsmanager:PutSecretValue",
-      "secretsmanager:UpdateSecretVersionStage"
+      "secretsmanager:UpdateSecretVersionStage",
+      "secretsmanager:UpdateSecret"
     ]
 
     resources = ["${aws_secretsmanager_secret.team_token_values.arn}*"]
+  }
+
+  statement {
+    sid = "pauseStateMachines"
+
+    effect = "Allow"
+
+    actions = [
+      "lambda:UpdateEventSourceMapping"
+    ]
+
+    condition {
+      test     = "StringLike"
+      variable = "lambda:FunctionArn"
+      values = [
+        aws_lambda_function.provision_handler.arn,
+        aws_lambda_function.update_handler.arn,
+        aws_lambda_function.terminate_handler.arn
+      ]
+    }
+
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "listEventSourceMappings"
+
+    effect = "Allow"
+
+    actions = [
+      "lambda:ListEventSourceMappings"
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "pollStateMachines"
+
+    effect = "Allow"
+
+    actions = [
+      "states:ListExecutions"
+    ]
+
+    resources = [
+      aws_sfn_state_machine.provision_state_machine.arn,
+      aws_sfn_state_machine.update_state_machine.arn,
+      aws_sfn_state_machine.terminate_state_machine.arn
+    ]
   }
 }
 
@@ -97,14 +148,14 @@ resource "aws_iam_role" "rotate_token_state_machine" {
   assume_role_policy = data.aws_iam_policy_document.rotate_team_token.json
 }
 
-resource "aws_iam_role_policy" "rotate_team_token_role_policy" {
+resource "aws_iam_role_policy" "rotate_team_token_state_machine_role_policy" {
   name   = "ServiceCatalogTFCTokenRotationStateMachineRolePolicy"
   role   = aws_iam_role.rotate_token_state_machine.id
-  policy = data.aws_iam_policy_document.policy_for_rotate_team_token.json
+  policy = data.aws_iam_policy_document.policy_for_rotate_team_token_state_machine.json
 }
 
 
-data "aws_iam_policy_document" "policy_for_rotate_team_token" {
+data "aws_iam_policy_document" "policy_for_rotate_team_token_state_machine" {
   version = "2012-10-17"
 
   statement {
@@ -112,7 +163,7 @@ data "aws_iam_policy_document" "policy_for_rotate_team_token" {
 
     effect = "Allow"
 
-    actions = ["lambda:InvokeFunction", "lambda:ListEventSourceMappings", "lambda:UpdateEventSourceMapping"]
+    actions = ["lambda:InvokeFunction"]
 
     resources = [aws_lambda_function.rotate_token_handler.arn]
 
@@ -172,7 +223,7 @@ data "aws_iam_policy_document" "token_rotation_event_role_policy_document" {
   }
 }
 
-resource "aws_iam_role_policy" "token_rotation_event_role_policy" {
+resource "aws_iam_role_policy" "token_rotation_state_machine_event_role_policy" {
   name = "ServiceCatalogEngineForTerraformCloudRotationEventPolicy"
   role = aws_iam_role.token_rotation_event_role.id
 
@@ -183,8 +234,7 @@ resource "aws_iam_role_policy" "token_rotation_event_role_policy" {
     {
       "Effect": "Allow",
       "Action": [
-        "states:StartExecution",
-        "states:ListExecutions"
+        "states:StartExecution"
       ],
       "Resource": [
         "${aws_sfn_state_machine.rotate_token_state_machine.arn}"
@@ -268,7 +318,7 @@ resource "aws_sfn_state_machine" "rotate_token_state_machine" {
       "Comment": "Looks-up the current status of the command invocation and delegates accordingly to handle it",
       "Choices": [
         {
-          "Variable": "$.pollStateMachinesResult.stateMachinesExecutionCount",
+          "Variable": "$.pollStateMachinesResult.stateMachineExecutionCount",
           "NumericEquals": 0,
           "Next": "Rotate team token"
         }
