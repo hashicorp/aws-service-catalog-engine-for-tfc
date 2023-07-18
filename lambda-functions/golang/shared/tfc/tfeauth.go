@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/go-tfe"
 	"net/http"
 	"strings"
+	"log"
 )
 
 type TFECredentialsSecret struct {
@@ -21,16 +22,20 @@ func GetTFEClient(ctx context.Context, secretsManager secretsmanager.SecretsMana
 
 func GetTFEClientWithHeaders(ctx context.Context, secretsManager secretsmanager.SecretsManager, headers http.Header) (*tfe.Client, error) {
 	// Fetch the TFE credentials/config from AWS Secrets Manager
+	log.Default().Print("fetching TFC credentials from secretsmanager...")
 	tfeCredentialsSecret, err := secretsManager.GetSecretValue(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Use the credentials to create a TFE client
-	if strings.HasPrefix(tfeCredentialsSecret.Hostname, "https:") || strings.HasPrefix(tfeCredentialsSecret.Hostname, "http:") {
-		return ClientWithDefaultConfig(tfeCredentialsSecret.Hostname, tfeCredentialsSecret.Token, headers)
+	// Prepend protocol onto hostname if it does not yet have one specified
+	hostname := tfeCredentialsSecret.Hostname
+	if !(strings.HasPrefix(hostname, "https:") || strings.HasPrefix(hostname, "http:")) {
+		hostname = fmt.Sprintf("https://%s", tfeCredentialsSecret.Hostname)
 	}
-	return ClientWithDefaultConfig(fmt.Sprintf("https://%s", tfeCredentialsSecret.Hostname), tfeCredentialsSecret.Token, headers)
+
+	log.Default().Printf("creating TFE client with hostname: %s", hostname)
+	return ClientWithDefaultConfig(hostname, tfeCredentialsSecret.Token, headers)
 }
 
 func ClientWithDefaultConfig(address string, token string, headers http.Header) (*tfe.Client, error) {

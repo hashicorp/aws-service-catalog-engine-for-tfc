@@ -11,6 +11,10 @@ import (
 const ProviderAuthVariableKey = "TFC_AWS_PROVIDER_AUTH"
 const RunRoleArnVariableKey = "TFC_AWS_RUN_ROLE_ARN"
 
+const ProductIdMetadataHeaderKey = "Tfp-Aws-Service-Catalog-Product-Id"
+const ProvisionedProductIdMetadataHeaderKey = "Tfp-Aws-Service-Catalog-Prv-Product-Id"
+const ProductVersionMetadataHeaderKey = "Tfp-Aws-Service-Catalog-Product-Ver"
+
 type TFCApplier struct {
 	tfeClient *tfe.Client
 }
@@ -18,23 +22,28 @@ type TFCApplier struct {
 func (h *SendApplyHandler) NewTFCApplier(ctx context.Context, request SendApplyRequest) (*TFCApplier, error) {
 	headers := http.Header{}
 
-	headers.Set("Tfp-Aws-Service-Catalog-Product-Id", request.ProductId)
-	headers.Set("Tfp-Aws-Service-Catalog-Prv-Product-Id", request.ProvisionedProductId)
-	//headers.Set("Tfp-Aws-Service-Catalog-Portfolio-Id", request)
-	//headers.Set("Tfp-Aws-Service-Catalog-Product-Ver", request)
+	headers.Set(ProductIdMetadataHeaderKey, request.ProductId)
+	headers.Set(ProvisionedProductIdMetadataHeaderKey, request.ProvisionedProductId)
+	headers.Set(ProductVersionMetadataHeaderKey, request.ProvisionedArtifactId)
 
 	tfeClient, err := tfc.GetTFEClientWithHeaders(ctx, h.secretsManager, headers)
 	return &TFCApplier{tfeClient: tfeClient}, err
 }
 
 func (applier *TFCApplier) FindOrCreateProject(ctx context.Context, organizationName string, name string) (*tfe.Project, error) {
+	log.Default().Printf("finding or creating TFC project with name: %s", name)
+
 	// Check if the project already exists...
 	project, err := applier.FindProjectByName(ctx, organizationName, name, 0)
 	if project != nil || err != nil {
+		if err == nil {
+			log.Default().Printf("found existing project with id: %s", project.ID)
+		}
 		return project, err
 	}
 
 	// Otherwise, create the project
+	log.Default().Printf("no existing project found, creating new project...")
 	return applier.tfeClient.Projects.Create(ctx, organizationName, tfe.ProjectCreateOptions{
 		Name: name,
 	})
@@ -72,10 +81,14 @@ func (applier *TFCApplier) FindOrCreateWorkspace(ctx context.Context, organizati
 	// Check if the workspace already exists...
 	workspace, err := applier.FindWorkspaceByName(ctx, organizationName, workspaceName, 0)
 	if workspace != nil || err != nil {
+		if err == nil {
+			log.Default().Printf("found existing workspace with id: %s", workspace.ID)
+		}
 		return workspace, err
 	}
 
 	// Otherwise, create the Workspace
+	log.Default().Printf("no existing workspace found, creating new workspace...")
 	return applier.tfeClient.Workspaces.Create(ctx, organizationName, tfe.WorkspaceCreateOptions{
 		Name:    tfe.String(workspaceName),
 		Project: project,

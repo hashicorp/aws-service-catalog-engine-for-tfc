@@ -28,6 +28,9 @@ type MockTFC struct {
 	// Workspaces is a map of all the Workspaces the mock TFC contains, with their respective id as the keys
 	Workspaces map[string]*tfe.Workspace
 
+	// WorkspaceServiceCatalogMetadata is a map of all the aws service catalog metadata the mock TFC contains, with their respective workspace id as the keys
+	WorkspaceServiceCatalogMetadata map[string]*ServiceCatalogMetadata
+
 	// Runs is a map containing the all the Runs the mock TFC contains, the keys are the paths for the Runs
 	Runs map[string]*tfe.Run
 
@@ -68,15 +71,16 @@ type MockTFC struct {
 
 func NewMockTFC() *MockTFC {
 	mock := &MockTFC{
-		OrganizationName:          "team-rocket-blast-off",
-		Projects:                  map[string]*tfe.Project{},
-		Workspaces:                map[string]*tfe.Workspace{},
-		Runs:                      map[string]*tfe.Run{},
-		Vars:                      map[string][]*tfe.Variable{},
-		Applies:                   map[string]*tfe.Apply{},
-		StateVersions:             map[string]*tfe.StateVersion{},
-		StateVersionOutputs:       map[string][]*tfe.StateVersionOutput{},
-		configurationVersionsById: map[string]*tfe.ConfigurationVersion{},
+		OrganizationName:                "team-rocket-blast-off",
+		Projects:                        map[string]*tfe.Project{},
+		Workspaces:                      map[string]*tfe.Workspace{},
+		WorkspaceServiceCatalogMetadata: map[string]*ServiceCatalogMetadata{},
+		Runs:                            map[string]*tfe.Run{},
+		Vars:                            map[string][]*tfe.Variable{},
+		Applies:                         map[string]*tfe.Apply{},
+		StateVersions:                   map[string]*tfe.StateVersion{},
+		StateVersionOutputs:             map[string][]*tfe.StateVersionOutput{},
+		configurationVersionsById:       map[string]*tfe.ConfigurationVersion{},
 	}
 	mock.http = httptest.NewServer(mock)
 	mock.Address = mock.http.URL
@@ -295,4 +299,10 @@ func (srv *MockTFC) checkBaseRequest(r *http.Request) (int, []byte) {
 
 func (srv *MockTFC) Stop() {
 	srv.http.Close()
+}
+
+type ServiceCatalogMetadata struct {
+	ProductId            string
+	ProvisionedProductId string
+	ProductVersion       string
 }

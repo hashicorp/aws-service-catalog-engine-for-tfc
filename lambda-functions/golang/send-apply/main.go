@@ -14,6 +14,7 @@ type SendApplyRequest struct {
 	AwsAccountId          string              `json:"awsAccountId"`
 	TerraformOrganization string              `json:"terraformOrganization"`
 	ProvisionedProductId  string              `json:"provisionedProductId"`
+	ProvisionedArtifactId string              `json:"provisioningArtifactId"`
 	Artifact              Artifact            `json:"artifact"`
 	LaunchRoleArn         string              `json:"launchRoleArn"`
 	ProductId             string              `json:"productId"`

@@ -32,6 +32,10 @@ func (srv *MockTFC) AddWorkspace(id string, p WorkspaceFactoryParameters) *tfe.W
 	return workspace
 }
 
+const ProductIdMetadataHeaderKey = "Tfp-Aws-Service-Catalog-Product-Id"
+const ProvisionedProductIdMetadataHeaderKey = "Tfp-Aws-Service-Catalog-Prv-Product-Id"
+const ProductVersionMetadataHeaderKey = "Tfp-Aws-Service-Catalog-Product-Ver"
+
 func (srv *MockTFC) HandleWorkspacesPostRequests(w http.ResponseWriter, r *http.Request) bool {
 	if r.URL.Path == fmt.Sprintf("/api/v2/organizations/%s/workspaces", srv.OrganizationName) {
 		var workspace *tfe.Workspace
@@ -40,8 +44,17 @@ func (srv *MockTFC) HandleWorkspacesPostRequests(w http.ResponseWriter, r *http.
 			return true
 		}
 
+		// persist the workspace
 		id := WorkspaceId(workspace)
 		workspace = srv.AddWorkspace(id, WorkspaceFactoryParameters{Name: workspace.Name})
+
+		// persist metadata headers (if they were provided)
+		metadata := &ServiceCatalogMetadata{
+			ProductId:            r.Header.Get(ProductIdMetadataHeaderKey),
+			ProvisionedProductId: r.Header.Get(ProvisionedProductIdMetadataHeaderKey),
+			ProductVersion:       r.Header.Get(ProductVersionMetadataHeaderKey),
+		}
+		srv.WorkspaceServiceCatalogMetadata[id] = metadata
 
 		receipt := MakeWorkspaceResponse(workspace)
 		body, err := json.Marshal(receipt)

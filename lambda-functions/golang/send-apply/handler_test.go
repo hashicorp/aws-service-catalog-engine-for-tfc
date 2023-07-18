@@ -16,6 +16,7 @@ import (
 	"io"
 	"os"
 	"testing"
+	"reflect"
 )
 
 func TestSendApplyHandler_Success(t *testing.T) {
@@ -98,6 +99,17 @@ func TestSendApplyHandler_Success(t *testing.T) {
 
 	// Check to make sure correct launch role ARN was assumed to download S3 files
 	assert.Equal(t, testRequest.LaunchRoleArn, mockDownloader.AssumedRole, "correct launch role arn should have been assumed to download s3 files")
+
+	// The workspace was persisted
+	assert.Equal(t, 1, len(tfcServer.Workspaces), "correct number of workspaces was persisted")
+	keys := reflect.ValueOf(tfcServer.Workspaces).MapKeys()
+	workspaceId := keys[0].String()
+
+	// check that the metadata headers were set on the workspace in TFC
+	serviceCatalogMetadata := tfcServer.WorkspaceServiceCatalogMetadata[workspaceId]
+	assert.Equal(t, testRequest.ProductId, serviceCatalogMetadata.ProductId)
+	assert.Equal(t, testRequest.ProvisionedProductId, serviceCatalogMetadata.ProvisionedProductId)
+	assert.Equal(t, testRequest.ProvisionedArtifactId, serviceCatalogMetadata.ProductVersion)
 }
 
 func TestSendApplyHandler_Success_UpdatingExistingWorkspace(t *testing.T) {
