@@ -27,6 +27,10 @@ func GetTFEClientWithHeaders(ctx context.Context, secretsManager secretsmanager.
 	}
 
 	// Use the credentials to create a TFE client
+	return GetTFEClientWithCredentials(tfeCredentialsSecret, headers)
+}
+
+func GetTFEClientWithCredentials(tfeCredentialsSecret *secretsmanager.TFECredentialsSecret, headers http.Header) (*tfe.Client, error) {
 	if strings.HasPrefix(tfeCredentialsSecret.Hostname, "https:") || strings.HasPrefix(tfeCredentialsSecret.Hostname, "http:") {
 		return ClientWithDefaultConfig(tfeCredentialsSecret.Hostname, tfeCredentialsSecret.Token, headers)
 	}

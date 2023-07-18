@@ -39,17 +39,6 @@ data "aws_iam_policy_document" "policy_for_rotate_team_token_handler" {
 
     resources = ["${aws_secretsmanager_secret.team_token_values.arn}*"]
   }
-
-  statement {
-    sid = "AllowStepFunction"
-
-    effect = "Allow"
-
-    actions = ["states:StartExecution"]
-
-    resources = [aws_sfn_state_machine.provision_state_machine.arn, aws_sfn_state_machine.update_state_machine.arn, aws_sfn_state_machine.terminate_state_machine.arn]
-
-  }
 }
 
 
@@ -68,7 +57,7 @@ data "archive_file" "rotate_token_handler" {
 # Lambda for rotating team tokens
 resource "aws_lambda_function" "rotate_token_handler" {
   filename      = data.archive_file.rotate_token_handler.output_path
-  function_name = "TerraformEngineRotateTokenHandlerLambda"
+  function_name = "TerraformCloudEngineRotateTokenHandlerLambda"
   role          = aws_iam_role.rotate_token_handler_lambda_execution.arn
   handler       = "main"
 
@@ -81,7 +70,11 @@ resource "aws_lambda_function" "rotate_token_handler" {
       PROVISIONING_STATE_MACHINE_ARN = aws_sfn_state_machine.provision_state_machine.arn,
       UPDATING_STATE_MACHINE_ARN     = aws_sfn_state_machine.update_state_machine.arn,
       TERMINATING_STATE_MACHINE_ARN  = aws_sfn_state_machine.terminate_state_machine.arn,
-      TEAM_ID                        = tfe_team.provisioning_team.id
+      PROVISIONING_FUNCTION_NAME = aws_lambda_function.provision_handler.function_name,
+      UPDATING_FUNCTION_NAME = aws_lambda_function.update_handler.function_name,
+      TERMINATING_FUNCTION_NAME = aws_lambda_function.terminate_handler.function_name,
+      TEAM_ID                        = tfe_team.provisioning_team.id,
+      TFE_CREDENTIALS_SECRET_ID = aws_secretsmanager_secret.team_token_values.arn
     }
   }
 }
@@ -119,7 +112,7 @@ data "aws_iam_policy_document" "policy_for_rotate_team_token" {
 
     effect = "Allow"
 
-    actions = ["lambda:InvokeFunction"]
+    actions = ["lambda:InvokeFunction", "lambda:ListEventSourceMappings", "lambda:UpdateEventSourceMapping"]
 
     resources = [aws_lambda_function.rotate_token_handler.arn]
 
@@ -156,15 +149,49 @@ resource "aws_cloudwatch_event_rule" "rotate_token_schedule" {
 
 resource "aws_cloudwatch_event_target" "token_rotation" {
   rule      = aws_cloudwatch_event_rule.rotate_token_schedule.name
-  target_id = "rotate_token"
-  arn       = aws_lambda_function.rotate_token_handler.arn
+  arn       = aws_sfn_state_machine.rotate_token_state_machine.id
+  role_arn = aws_iam_role.token_rotation_event_role.arn
 }
 
-resource "aws_lambda_permission" "allow_events_bridge_to_run_lambda" {
-  statement_id  = "AllowExecutionFromCloudWatch"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.rotate_token_handler.function_name
-  principal     = "events.amazonaws.com"
+resource "aws_iam_role" "token_rotation_event_role" {
+  name               = "ServiceCatalogEngineForTerraformCloudTokenRotation"
+  assume_role_policy = data.aws_iam_policy_document.token_rotation_event_role_policy_document.json
+}
+data "aws_iam_policy_document" "token_rotation_event_role_policy_document" {
+  statement {
+    actions = [
+      "sts:AssumeRole"
+    ]
+
+    principals {
+      type = "Service"
+      identifiers = [
+        "events.amazonaws.com"
+      ]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "token_rotation_event_role_policy" {
+  name = "ServiceCatalogEngineForTerraformCloudRotationEventPolicy"
+  role = aws_iam_role.token_rotation_event_role.id
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "states:StartExecution"
+      ],
+      "Resource": [
+        "${aws_sfn_state_machine.rotate_token_state_machine.arn}"
+      ]
+    }
+  ]
+}
+EOF
 }
 
 resource "aws_cloudwatch_log_group" "rotate_token_state_machine" {
@@ -253,6 +280,19 @@ resource "aws_sfn_state_machine" "rotate_token_state_machine" {
       "Parameters": {
         "operation": "ROTATING"
       },
+        "Next": "Resume SQS processing"
+    },
+    "Resume SQS processing": {
+      "Type": "Task",
+      "Resource": "${aws_lambda_function.rotate_token_handler.arn}",
+      "Parameters": {
+        "operation": "RESUMING"
+      },
+        "Next": "Wait for all state machine executions to resume"
+    },
+    "Wait for all state machine executions to resume": {
+      "Type": "Wait",
+      "Seconds": 1,
       "End": true
     },
     "Notify team token rotation failure": {

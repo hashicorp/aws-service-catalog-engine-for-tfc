@@ -203,6 +203,9 @@ func (srv *MockTFC) handlePOST(w http.ResponseWriter, r *http.Request) {
 	if srv.HandleRunsPostRequests(w, r) {
 		return
 	}
+	if srv.HandleTokensPostRequests(w, r) {
+		return
+	}
 
 	// Not found error
 	w.WriteHeader(404)

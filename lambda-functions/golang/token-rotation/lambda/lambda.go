@@ -56,10 +56,10 @@ func (l *L) GetEventSourceMappingUuidTuples(ctx context.Context, functionNames [
 	return functionNameUuidTuples, nil
 }
 
-func (h *L) EnableEventSourceMapping(ctx context.Context, functionName string, uuid string) error {
+func (l *L) EnableEventSourceMapping(ctx context.Context, functionName string, uuid string) error {
 	log.Default().Printf("Enabling event source mapping of %s:%s", functionName, uuid)
 
-	_, err := h.Client.UpdateEventSourceMapping(ctx, &lambda.UpdateEventSourceMappingInput{
+	_, err := l.Client.UpdateEventSourceMapping(ctx, &lambda.UpdateEventSourceMappingInput{
 		FunctionName: aws.String(functionName),
 		UUID:         aws.String(uuid),
 		Enabled:      aws.Bool(true),
@@ -68,10 +68,10 @@ func (h *L) EnableEventSourceMapping(ctx context.Context, functionName string, u
 	return err
 }
 
-func (h *L) DisableEventSourceMapping(ctx context.Context, functionName string, uuid string) error {
+func (l *L) DisableEventSourceMapping(ctx context.Context, functionName string, uuid string) error {
 	log.Default().Printf("Disabled event source mapping of %s:%s", functionName, uuid)
 
-	_, err := h.Client.UpdateEventSourceMapping(ctx, &lambda.UpdateEventSourceMappingInput{
+	_, err := l.Client.UpdateEventSourceMapping(ctx, &lambda.UpdateEventSourceMappingInput{
 		FunctionName: aws.String(functionName),
 		UUID:         aws.String(uuid),
 		Enabled:      aws.Bool(false),

@@ -28,5 +28,6 @@ func (msm *MockSecretsManager) GetSecretValue(ctx context.Context) (*secretsmana
 }
 
 func (msm *MockSecretsManager) UpdateSecretValue(ctx context.Context, secretValue string) error {
+	msm.Token = secretValue
 	return nil
 }

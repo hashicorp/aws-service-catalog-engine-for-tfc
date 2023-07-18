@@ -1,14 +1,14 @@
 package testtfc
 
 import (
-	"github.com/hashicorp/go-tfe"
-	"fmt"
-	"net/http"
 	"encoding/json"
+	"fmt"
+	"github.com/hashicorp/go-tfe"
+	"net/http"
 )
 
 func (srv *MockTFC) AddApply(applyId string, apply *tfe.Apply) *tfe.Apply {
-	// Save the apply to the mock server
+	// Save the Apply to the mock server
 	applyPath := fmt.Sprintf("/api/v2/applies/%s", applyId)
 	srv.Applies[applyPath] = apply
 

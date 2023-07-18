@@ -200,12 +200,12 @@ resource "aws_lambda_function" "state_machine_lambda" {
 }
 
 locals {
-  # ARNs for each of the Lambda Functions created in this file (for resources in other files to reference easily)
+  # ARNs for each of the Lambda functions created in this file (for resources in other files to reference easily)
   send_apply_lambda_arn        = lookup(aws_lambda_function.state_machine_lambda, local.send_apply_lambda_name, { arn : "" }).arn
   send_destroy_lambda_arn      = lookup(aws_lambda_function.state_machine_lambda, local.send_destroy_lambda_name, { arn : "" }).arn
   poll_run_status_lambda_arn   = lookup(aws_lambda_function.state_machine_lambda, local.poll_run_status_lambda_name, { arn : "" }).arn
   notify_run_result_lambda_arn = lookup(aws_lambda_function.state_machine_lambda, local.notify_run_result_lambda_name, { arn : "" }).arn
 
-  # ARNs of the IAM Roles for some of the Lambda Functions created in this file (for resources in other files to reference easily)
+  # ARNs of the IAM roles for some of the Lambda functions created in this file (for resources in other files to reference easily)
   send_apply_lambda_role_arn = lookup(aws_iam_role.state_machine_lambda, local.send_apply_lambda_name, { arn : "" }).arn
 }

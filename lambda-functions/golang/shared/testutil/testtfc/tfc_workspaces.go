@@ -1,11 +1,11 @@
 package testtfc
 
 import (
-	"github.com/hashicorp/go-tfe"
-	"fmt"
-	"net/http"
 	"encoding/json"
+	"fmt"
+	"github.com/hashicorp/go-tfe"
 	"log"
+	"net/http"
 	"strings"
 )
 
@@ -19,13 +19,13 @@ func (srv *MockTFC) AddWorkspace(id string, p WorkspaceFactoryParameters) *tfe.W
 		name = p.Name
 	}
 
-	// create the mock workspace
+	// Create the mock workspace
 	workspace := &tfe.Workspace{
 		ID:   id,
 		Name: name,
 	}
 
-	// save the workspace to the mock server
+	// Save the workspace to the mock server
 	workspaceId := fmt.Sprintf(id)
 	srv.Workspaces[workspaceId] = workspace
 

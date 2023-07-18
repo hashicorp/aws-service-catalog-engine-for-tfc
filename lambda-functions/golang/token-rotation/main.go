@@ -12,9 +12,7 @@ import (
 )
 
 type RotateTeamTokensRequest struct {
-	Token       string    `json:"token"`
-	TeamTokenID string    `json:"teamTokenID"`
-	Operation   Operation `json:"operation"`
+	Operation Operation `json:"operation"`
 }
 
 type Operation string
@@ -24,6 +22,7 @@ const (
 	Pausing  Operation = "PAUSING"
 	Polling  Operation = "POLLING"
 	Rotating Operation = "ROTATING"
+	Resuming Operation = "RESUMING"
 	Erroring Operation = "ERRORING"
 )
 
@@ -62,14 +61,10 @@ func main() {
 	// Get terminating function name
 	terminatingFunctionName := os.Getenv("TERMINATING_FUNCTION_NAME")
 
-	// Get team id for team token to rotate
-	teamId := os.Getenv("TEAM_ID")
-
 	handler := RotateTeamTokensHandler{
 		secretsManager:              secretsManager,
 		stepFunctions:               stepfunctions.NewFromConfig(sdkConfig),
 		lambda:                      lambda.NewFromConfig(sdkConfig),
-		teamID:                      teamId,
 		provisioningStateMachineArn: provisioningStateMachineArn,
 		updatingStateMachineArn:     updatingStateMachineArn,
 		terminatingStateMachineArn:  terminatingStateMachineArn,
