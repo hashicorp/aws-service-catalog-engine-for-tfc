@@ -27,7 +27,8 @@ const (
 )
 
 type RotateTeamTokensResponse struct {
-	StateMachineExecutionCount int `json:"stateMachineExecutionCount"`
+	StateMachineExecutionCount int                             `json:"stateMachineExecutionCount"`
+	EventSourceMappingStatus   lambda.EventSourceMappingStatus `json:"eventSourceMappingStatus"`
 }
 
 func main() {
@@ -52,15 +53,6 @@ func main() {
 	// Get terminating state machine ARN
 	terminatingStateMachineArn := os.Getenv("TERMINATING_STATE_MACHINE_ARN")
 
-	// Get provisioning function name
-	provisioningFunctionName := os.Getenv("PROVISIONING_FUNCTION_NAME")
-
-	// Get updating function name
-	updatingFunctionName := os.Getenv("UPDATING_FUNCTION_NAME")
-
-	// Get terminating function name
-	terminatingFunctionName := os.Getenv("TERMINATING_FUNCTION_NAME")
-
 	handler := RotateTeamTokensHandler{
 		secretsManager:              secretsManager,
 		stepFunctions:               stepfunctions.NewFromConfig(sdkConfig),
@@ -68,9 +60,6 @@ func main() {
 		provisioningStateMachineArn: provisioningStateMachineArn,
 		updatingStateMachineArn:     updatingStateMachineArn,
 		terminatingStateMachineArn:  terminatingStateMachineArn,
-		provisioningFunctionName:    provisioningFunctionName,
-		updatingFunctionName:        updatingFunctionName,
-		terminatingFunctionName:     terminatingFunctionName,
 	}
 
 	lambdacore.Start(handler.HandleRequest)

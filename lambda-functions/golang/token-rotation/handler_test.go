@@ -36,12 +36,9 @@ func TestTokenRotationHandler_SuccessPausing(t *testing.T) {
 
 	// Create a test instance of the Lambda function
 	testHandler := RotateTeamTokensHandler{
-		secretsManager:           mockSecretsManager,
-		stepFunctions:            mockStepFunctions,
-		lambda:                   mockLambdaFunction,
-		provisioningFunctionName: "arn:provision-thing-123",
-		updatingFunctionName:     "arn:update-thing-123",
-		terminatingFunctionName:  "arn:terminate-thing-123",
+		secretsManager: mockSecretsManager,
+		stepFunctions:  mockStepFunctions,
+		lambda:         mockLambdaFunction,
 	}
 
 	// Create test request
@@ -191,12 +188,9 @@ func TestTokenRotationHandler_SuccessResuming(t *testing.T) {
 
 	// Create a test instance of the Lambda function
 	testHandler := RotateTeamTokensHandler{
-		secretsManager:           mockSecretsManager,
-		stepFunctions:            mockStepFunctions,
-		lambda:                   mockLambdaFunction,
-		provisioningFunctionName: "arn:provision-thing-123",
-		updatingFunctionName:     "arn:update-thing-123",
-		terminatingFunctionName:  "arn:terminate-thing-123",
+		secretsManager: mockSecretsManager,
+		stepFunctions:  mockStepFunctions,
+		lambda:         mockLambdaFunction,
 	}
 
 	// Create test request
@@ -250,12 +244,9 @@ func TestTokenRotationHandler_ErrorPausing(t *testing.T) {
 
 	// Create a test instance of the Lambda function
 	testHandler := RotateTeamTokensHandler{
-		secretsManager:           mockSecretsManager,
-		stepFunctions:            mockStepFunctions,
-		lambda:                   mockLambdaFunction,
-		provisioningFunctionName: "arn:provision-thing-123",
-		updatingFunctionName:     "arn:update-thing-123",
-		terminatingFunctionName:  "arn:terminate-thing-123",
+		secretsManager: mockSecretsManager,
+		stepFunctions:  mockStepFunctions,
+		lambda:         mockLambdaFunction,
 	}
 
 	// Create test request
@@ -382,12 +373,9 @@ func TestTokenRotationHandler_ErrorResuming(t *testing.T) {
 
 	// Create a test instance of the Lambda function
 	testHandler := RotateTeamTokensHandler{
-		secretsManager:           mockSecretsManager,
-		stepFunctions:            mockStepFunctions,
-		lambda:                   mockLambdaFunction,
-		provisioningFunctionName: "arn:provision-thing-123",
-		updatingFunctionName:     "arn:update-thing-123",
-		terminatingFunctionName:  "arn:terminate-thing-123",
+		secretsManager: mockSecretsManager,
+		stepFunctions:  mockStepFunctions,
+		lambda:         mockLambdaFunction,
 	}
 
 	// Create test request

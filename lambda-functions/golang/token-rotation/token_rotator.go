@@ -8,16 +8,11 @@ import (
 	"net/http"
 )
 
-func (h *RotateTeamTokensHandler) GetEventSourceMappingUuidTuples(ctx context.Context) ([]lambda.FunctionNameUuidTuple, error) {
-	functionNames := []string{h.provisioningFunctionName, h.updatingFunctionName, h.terminatingFunctionName}
-
-	return h.lambda.GetEventSourceMappingUuidTuples(ctx, functionNames)
-}
-
-func (h *RotateTeamTokensHandler) UpdateEventSourceMappings(ctx context.Context, tuples []lambda.FunctionNameUuidTuple, enabled bool) error {
+func (h *RotateTeamTokensHandler) UpdateEventSourceMappings(ctx context.Context, tuples *lambda.FunctionNameUuidTuples, enabled bool) error {
 	// Update the event source mappings asynchronously and restart the SQS queues
 	// The update is an asynchronous operation, so await its completion
-	for _, tuple := range tuples {
+	tuplesList := []*lambda.FunctionNameUuidTuple{tuples.ProvisioningLambdaEventSourceMapping, tuples.UpdatingLambdaEventSourceMapping, tuples.TerminatingLambdaEventSourceMapping}
+	for _, tuple := range tuplesList {
 		var err error
 
 		// Update the event mapping based on the "enabled" parameter

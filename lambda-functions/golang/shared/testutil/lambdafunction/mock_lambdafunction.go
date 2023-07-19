@@ -18,11 +18,23 @@ type MockLambdaFunctionWithErrorResponse struct {
 	Terminating  bool
 }
 
-func (l *MockLambdaFunction) GetEventSourceMappingUuidTuples(ctx context.Context, functionNames []string) ([]lambda.FunctionNameUuidTuple, error) {
-	provisioningUuidTuple := lambda.FunctionNameUuidTuple{"provisioningFunctionName", "provisioningUuid"}
-	updatingUuidTuple := lambda.FunctionNameUuidTuple{"updatingFunctionName", "updatingUuid"}
-	terminatingUuidTuple := lambda.FunctionNameUuidTuple{"terminatingFunctionName", "terminatingUuid"}
-	return []lambda.FunctionNameUuidTuple{provisioningUuidTuple, updatingUuidTuple, terminatingUuidTuple}, nil
+func boolToEventSourceMappingStatus(bool bool) lambda.EventSourceMappingStatus {
+	if bool {
+		return lambda.EventSourceEnabled
+	} else {
+		return lambda.EventSourceDisabled
+	}
+}
+
+func (l *MockLambdaFunction) GetEventSourceMappingUuidTuples(ctx context.Context) (*lambda.FunctionNameUuidTuples, error) {
+	provisioningUuidTuple := &lambda.FunctionNameUuidTuple{"provisioningFunctionName", "provisioningUuid", boolToEventSourceMappingStatus(l.Provisioning)}
+	updatingUuidTuple := &lambda.FunctionNameUuidTuple{"updatingFunctionName", "updatingUuid", boolToEventSourceMappingStatus(l.Updating)}
+	terminatingUuidTuple := &lambda.FunctionNameUuidTuple{"terminatingFunctionName", "terminatingUuid", boolToEventSourceMappingStatus(l.Terminating)}
+	return &lambda.FunctionNameUuidTuples{
+		ProvisioningLambdaEventSourceMapping: provisioningUuidTuple,
+		UpdatingLambdaEventSourceMapping:     updatingUuidTuple,
+		TerminatingLambdaEventSourceMapping:  terminatingUuidTuple,
+	}, nil
 }
 
 func (l *MockLambdaFunction) EnableEventSourceMapping(ctx context.Context, functionName string, uuid string) error {
@@ -63,7 +75,7 @@ func (l *MockLambdaFunction) DisableEventSourceMapping(ctx context.Context, func
 	return errors.New("function name or uuid not found")
 }
 
-func (l *MockLambdaFunctionWithErrorResponse) GetEventSourceMappingUuidTuples(ctx context.Context, functionNames []string) ([]lambda.FunctionNameUuidTuple, error) {
+func (l *MockLambdaFunctionWithErrorResponse) GetEventSourceMappingUuidTuples(ctx context.Context) (*lambda.FunctionNameUuidTuples, error) {
 	return nil, errors.New("function name or uuid not found")
 }
 

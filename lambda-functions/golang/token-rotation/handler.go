@@ -18,16 +18,12 @@ type RotateTeamTokensHandler struct {
 	provisioningStateMachineArn string
 	updatingStateMachineArn     string
 	terminatingStateMachineArn  string
-	// Lambda functions to pause invocations of during rotation
-	provisioningFunctionName string
-	updatingFunctionName     string
-	terminatingFunctionName  string
 }
 
 func (h *RotateTeamTokensHandler) HandleRequest(ctx context.Context, request RotateTeamTokensRequest) (*RotateTeamTokensResponse, error) {
 	switch {
 	case request.Operation == Pausing:
-		eventSourceMappingsUuids, err := h.GetEventSourceMappingUuidTuples(ctx)
+		eventSourceMappingsUuids, err := h.lambda.GetEventSourceMappingUuidTuples(ctx)
 		if err != nil {
 			log.Default().Printf("error getting event source mappings for function: %v", err)
 			return nil, err
@@ -45,7 +41,19 @@ func (h *RotateTeamTokensHandler) HandleRequest(ctx context.Context, request Rot
 			log.Default().Printf("error polling state machine executions: %v", err)
 			return nil, err
 		}
-		return &RotateTeamTokensResponse{StateMachineExecutionCount: count}, err
+		statuses, err := h.lambda.GetEventSourceMappingUuidTuples(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		aggregatedStatus := lambda.EventSourceDisabling
+		if statuses.ProvisioningLambdaEventSourceMapping.EventSourceMappingStatus == lambda.EventSourceDisabled &&
+			statuses.UpdatingLambdaEventSourceMapping.EventSourceMappingStatus == lambda.EventSourceDisabled &&
+			statuses.TerminatingLambdaEventSourceMapping.EventSourceMappingStatus == lambda.EventSourceDisabled {
+			aggregatedStatus = lambda.EventSourceDisabled
+		}
+
+		return &RotateTeamTokensResponse{StateMachineExecutionCount: count, EventSourceMappingStatus: aggregatedStatus}, err
 	case request.Operation == Rotating:
 		err := h.RotateToken(ctx)
 		if err != nil {
@@ -54,7 +62,7 @@ func (h *RotateTeamTokensHandler) HandleRequest(ctx context.Context, request Rot
 		}
 		return &RotateTeamTokensResponse{}, nil
 	case request.Operation == Resuming:
-		eventSourceMappingsUuids, err := h.GetEventSourceMappingUuidTuples(ctx)
+		eventSourceMappingsUuids, err := h.lambda.GetEventSourceMappingUuidTuples(ctx)
 		if err != nil {
 			log.Default().Printf("error resuming event source mappings for function: %v", err)
 			return &RotateTeamTokensResponse{}, err

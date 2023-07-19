@@ -318,12 +318,20 @@ resource "aws_sfn_state_machine" "rotate_token_state_machine" {
       "Comment": "Looks-up the current status of the command invocation and delegates accordingly to handle it",
       "Choices": [
         {
-          "Variable": "$.pollStateMachinesResult.stateMachineExecutionCount",
-          "NumericEquals": 0,
+          "And": [
+            {
+              "Variable": "$.pollStateMachinesResult.stateMachineExecutionCount",
+              "NumericEquals": 0
+            },
+            {
+              "Variable": "$.pollStateMachinesResult.eventSourceMappingStatus",
+              "StringEquals": "Disabled"
+            }
+          ],
           "Next": "Rotate team token"
         }
       ],
-      "Default": "Are there any outstanding state machine executions?"
+      "Default": "Wait for all state machine executions to finish"
     },
     "Rotate team token": {
       "Type": "Task",
@@ -331,7 +339,7 @@ resource "aws_sfn_state_machine" "rotate_token_state_machine" {
       "Parameters": {
         "operation": "ROTATING"
       },
-        "Next": "Resume SQS processing"
+      "Next": "Resume SQS processing"
     },
     "Resume SQS processing": {
       "Type": "Task",
@@ -339,11 +347,6 @@ resource "aws_sfn_state_machine" "rotate_token_state_machine" {
       "Parameters": {
         "operation": "RESUMING"
       },
-        "Next": "Wait for all state machine executions to resume"
-    },
-    "Wait for all state machine executions to resume": {
-      "Type": "Wait",
-      "Seconds": 1,
       "End": true
     },
     "Notify team token rotation failure": {
