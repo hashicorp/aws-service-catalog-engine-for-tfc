@@ -377,7 +377,7 @@ func TestNotifyRunResultHandler_Provisioning_MissingApply(t *testing.T) {
 
 	// Send the test request
 	_, err := testHandler.HandleRequest(context.Background(), testRequest)
-	// Verify that an error was returned so that the lambda can be retried
+	// Verify that an error was returned so that the Lambda can be retried
 	assert.NotNil(t, err, "Error should have been returned by the Lambda")
 
 	// Verify the TFC workspace was not deleted (like in the terminating workflow)

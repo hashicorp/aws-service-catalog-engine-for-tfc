@@ -23,23 +23,26 @@ func GetTFEClient(ctx context.Context, secretsManager secretsmanager.SecretsMana
 
 func GetTFEClientWithHeaders(ctx context.Context, secretsManager secretsmanager.SecretsManager, headers http.Header) (*tfe.Client, error) {
 	// Fetch the TFE credentials/config from AWS Secrets Manager
-	log.Default().Print("fetching TFC credentials from secretsmanager...")
+	log.Default().Print("fetching TFC credentials from secretsmanager")
 	tfeCredentialsSecret, err := secretsManager.GetSecretValue(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Prepend protocol onto hostname if it does not yet have one specified
-	hostname := tfeCredentialsSecret.Hostname
-	if !(strings.HasPrefix(hostname, "https:") || strings.HasPrefix(hostname, "http:")) {
-		hostname = fmt.Sprintf("https://%s", tfeCredentialsSecret.Hostname)
-	}
+	// Use the credentials to create a TFE client
+	return GetTFEClientWithCredentials(tfeCredentialsSecret, headers)
+}
 
-	log.Default().Printf("creating TFE client with hostname: %s", hostname)
-	return ClientWithDefaultConfig(hostname, tfeCredentialsSecret.Token, headers)
+func GetTFEClientWithCredentials(tfeCredentialsSecret *secretsmanager.TFECredentialsSecret, headers http.Header) (*tfe.Client, error) {
+	if strings.HasPrefix(tfeCredentialsSecret.Hostname, "https:") || strings.HasPrefix(tfeCredentialsSecret.Hostname, "http:") {
+		return ClientWithDefaultConfig(tfeCredentialsSecret.Hostname, tfeCredentialsSecret.Token, headers)
+	}
+	log.Default().Print("prepending protocol to TFC client hostname")
+	return ClientWithDefaultConfig(fmt.Sprintf("https://%s", tfeCredentialsSecret.Hostname), tfeCredentialsSecret.Token, headers)
 }
 
 func ClientWithDefaultConfig(address string, token string, headers http.Header) (*tfe.Client, error) {
+	log.Default().Printf("creating new TFC client for %s", address)
 	retryClient := retryablehttp.NewClient()
 	retryClient.RetryMax = 10
 	retryClient.ErrorHandler = ErrorHandler

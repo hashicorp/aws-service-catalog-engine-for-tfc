@@ -16,3 +16,6 @@ terraform.tfvars
 
 # Terraform artifacts
 dist/
+
+# Golang files
+lambda-functions/golang/vendor/

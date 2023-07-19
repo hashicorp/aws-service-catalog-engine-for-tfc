@@ -63,8 +63,10 @@ func main() {
 	// Create temporary context to initialize the handler with
 	initContext := context.TODO()
 
-	// Create step functions client
+	// Initialize the TFE client
 	sdkConfig := awsconfig.GetSdkConfig(initContext)
+
+	// Create the Step Functions client
 	sfnClient := sfn.NewFromConfig(sdkConfig)
 
 	// Get Terraform Organization

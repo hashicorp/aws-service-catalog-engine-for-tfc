@@ -36,7 +36,7 @@ data "aws_region" "current" {}
 resource "aws_servicecatalog_portfolio" "portfolio" {
   name          = "TFC Example Portfolio"
   description   = "Example Portfolio created via AWS Service Catalog Engine for TFC"
-  provider_name = "Hashicorp Examples"
+  provider_name = "HashiCorp Examples"
 }
 
 # Products

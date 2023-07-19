@@ -5,18 +5,14 @@ import (
 	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/tfc"
 	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/token-rotation/lambda"
 	"log"
+	"net/http"
 )
 
-func (h *RotateTeamTokensHandler) GetEventSourceMappingUuidTuples(ctx context.Context) ([]lambda.FunctionNameUuidTuple, error) {
-	functionNames := []string{h.provisioningFunctionName, h.updatingFunctionName, h.terminatingFunctionName}
-
-	return h.lambda.GetEventSourceMappingUuidTuples(ctx, functionNames)
-}
-
-func (h *RotateTeamTokensHandler) UpdateEventSourceMappings(ctx context.Context, tuples []lambda.FunctionNameUuidTuple, enabled bool) error {
+func (h *RotateTeamTokensHandler) UpdateEventSourceMappings(ctx context.Context, tuples *lambda.FunctionNameUuidTuples, enabled bool) error {
 	// Update the event source mappings asynchronously and restart the SQS queues
 	// The update is an asynchronous operation, so await its completion
-	for _, tuple := range tuples {
+	tuplesList := []*lambda.FunctionNameUuidTuple{tuples.ProvisioningLambdaEventSourceMapping, tuples.UpdatingLambdaEventSourceMapping, tuples.TerminatingLambdaEventSourceMapping}
+	for _, tuple := range tuplesList {
 		var err error
 
 		// Update the event mapping based on the "enabled" parameter
@@ -52,15 +48,21 @@ func (h *RotateTeamTokensHandler) StateMachineExecutions(ctx context.Context) (i
 	return count, nil
 }
 
-func (h *RotateTeamTokensHandler) RotateToken(ctx context.Context, teamID string) error {
-	// Get TFE Client
-	tfeClient, err := tfc.GetTFEClient(ctx, h.secretsManager)
+func (h *RotateTeamTokensHandler) RotateToken(ctx context.Context) error {
+	// Fetch the TFE credentials/config from AWS Secrets Manager
+	tfeCredentialsSecret, err := h.secretsManager.GetSecretValue(ctx)
 	if err != nil {
-		log.Fatalf("failed to initialize TFE client: %s", err)
+		return err
 	}
 
-	// Creates a new team token, replacing any existing token once all the state machine executions have finished
-	tt, err := tfeClient.TeamTokens.Create(ctx, teamID)
+	// Use the credentials to create a TFE client
+	tfeClient, err := tfc.GetTFEClientWithCredentials(tfeCredentialsSecret, http.Header{})
+	if err != nil {
+		return err
+	}
+
+	// Creates a new Team Token, replacing any existing token, once all the state machine executions have finished
+	tt, err := tfeClient.TeamTokens.Create(ctx, tfeCredentialsSecret.TeamId)
 	if err != nil {
 		return err
 	}
