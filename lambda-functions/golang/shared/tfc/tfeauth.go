@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 	"log"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/exceptions"
 )
 
 type TFECredentialsSecret struct {
@@ -41,6 +42,7 @@ func GetTFEClientWithHeaders(ctx context.Context, secretsManager secretsmanager.
 func ClientWithDefaultConfig(address string, token string, headers http.Header) (*tfe.Client, error) {
 	retryClient := retryablehttp.NewClient()
 	retryClient.RetryMax = 10
+	retryClient.ErrorHandler = ErrorHandler
 
 	return tfe.NewClient(&tfe.Config{
 		Address:           fmt.Sprintf(address),
@@ -49,4 +51,15 @@ func ClientWithDefaultConfig(address string, token string, headers http.Header) 
 		HTTPClient:        retryClient.HTTPClient,
 		Headers:           headers,
 	})
+}
+
+func ErrorHandler(resp *http.Response, err error, _ int) (*http.Response, error) {
+	// Replace the "unauthorized" error with an error that provides the user with next steps to solve their issue
+	if err.Error() == "unauthorized" {
+		return resp, exceptions.TFEUnauthorizedToken
+	}
+
+	return resp, exceptions.TFEException{
+		Message: fmt.Sprintf("request to Terraform Cloud failed. cause: %s", err.Error()),
+	}
 }

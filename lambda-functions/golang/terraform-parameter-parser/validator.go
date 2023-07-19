@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/aws/aws-sdk-go-v2/aws/arn"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/exceptions"
 )
 
 const ArtifactKey = "Artifact"
@@ -47,25 +48,25 @@ func ValidateInput(input TerraformOpenSourceParameterParserInput) error {
 
 func validateRequiredKeysExist(input TerraformOpenSourceParameterParserInput) error {
 	if reflect.DeepEqual(input.Artifact, Artifact{}) {
-		return ParserInvalidParameterException{
+		return exceptions.ParserInvalidParameterException{
 			Message: fmt.Sprintf(RequiredKeyMissingOrEmptyErrorMessage, ArtifactKey),
 		}
 	}
 
 	if input.LaunchRoleArn == "" {
-		return ParserInvalidParameterException{
+		return exceptions.ParserInvalidParameterException{
 			Message: fmt.Sprintf(RequiredKeyMissingOrEmptyErrorMessage, LaunchRoleArnKey),
 		}
 	}
 
 	if input.Artifact.Path == "" {
-		return ParserInvalidParameterException{
+		return exceptions.ParserInvalidParameterException{
 			Message: fmt.Sprintf(RequiredKeyMissingOrEmptyErrorMessage, ArtifactPathKey),
 		}
 	}
 
 	if input.Artifact.Type == "" {
-		return ParserInvalidParameterException{
+		return exceptions.ParserInvalidParameterException{
 			Message: fmt.Sprintf(RequiredKeyMissingOrEmptyErrorMessage, ArtifactTypeKey),
 		}
 	}
@@ -76,13 +77,13 @@ func validateRequiredKeysExist(input TerraformOpenSourceParameterParserInput) er
 func validateLaunchRoleArnIsSyntacticallyCorrect(launchRoleArnString string) error {
 	launchRoleArn, err := arn.Parse(launchRoleArnString)
 	if err != nil {
-		return ParserInvalidParameterException{
+		return exceptions.ParserInvalidParameterException{
 			Message: fmt.Sprintf(InvalidLaunchRoleArnSyntaxErrorMessage, launchRoleArnString),
 		}
 	}
 
 	if launchRoleArn.Service != IamArnServiceKey {
-		return ParserInvalidParameterException{
+		return exceptions.ParserInvalidParameterException{
 			Message: fmt.Sprintf(InvalidIamLaunchRoleArnErrorMessage, launchRoleArnString),
 		}
 	}
@@ -92,20 +93,20 @@ func validateLaunchRoleArnIsSyntacticallyCorrect(launchRoleArnString string) err
 
 func validateArtifact(artifact Artifact) error {
 	if artifact.Type != DefaultArtifactType {
-		return ParserInvalidParameterException{
+		return exceptions.ParserInvalidParameterException{
 			Message: fmt.Sprintf(InvalidArtifactTypeErrorMessage, artifact.Type),
 		}
 	}
 
 	artifactUri, err := url.Parse(artifact.Path)
 	if err != nil {
-		return ParserInvalidParameterException{
+		return exceptions.ParserInvalidParameterException{
 			Message: fmt.Sprintf(InvalidArtifactPathErrorMessage, artifact.Path),
 		}
 	}
 
 	if artifactUri.Scheme != S3Scheme || artifactUri.Host == "" || artifactUri.Path == "" {
-		return ParserInvalidParameterException{
+		return exceptions.ParserInvalidParameterException{
 			Message: fmt.Sprintf(InvalidArtifactPathErrorMessage, artifact.Path),
 		}
 	}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/exceptions"
 )
 
 func TestValidateInputHappy(t *testing.T) {
@@ -37,7 +38,7 @@ func TestValidateInputWithEmptyArtifactThrowsParserInvalidParameterException(t *
 	err := ValidateInput(input)
 
 	// assert
-	if !reflect.DeepEqual(err, ParserInvalidParameterException{Message: expectedErrorMessage}) {
+	if !reflect.DeepEqual(err, exceptions.ParserInvalidParameterException{Message: expectedErrorMessage}) {
 		t.Errorf("Validator did not throw ParserInvalidParameterException with expected error message")
 	}
 }
@@ -57,7 +58,7 @@ func TestValidateInputWithEmptyLaunchRoleArnThrowsParserInvalidParameterExceptio
 	err := ValidateInput(input)
 
 	// assert
-	if !reflect.DeepEqual(err, ParserInvalidParameterException{Message: expectedErrorMessage}) {
+	if !reflect.DeepEqual(err, exceptions.ParserInvalidParameterException{Message: expectedErrorMessage}) {
 		t.Errorf("Validator did not throw ParserInvalidParameterException with expected error message")
 	}
 }
@@ -77,7 +78,7 @@ func TestValidateInputWithEmptyArtifactPathThrowsParserInvalidParameterException
 	err := ValidateInput(input)
 
 	// assert
-	if !reflect.DeepEqual(err, ParserInvalidParameterException{Message: expectedErrorMessage}) {
+	if !reflect.DeepEqual(err, exceptions.ParserInvalidParameterException{Message: expectedErrorMessage}) {
 		t.Errorf("Validator did not throw ParserInvalidParameterException with expected error message")
 	}
 }
@@ -97,7 +98,7 @@ func TestValidateInputWithEmptyArtifactTypeThrowsParserInvalidParameterException
 	err := ValidateInput(input)
 
 	// assert
-	if !reflect.DeepEqual(err, ParserInvalidParameterException{Message: expectedErrorMessage}) {
+	if !reflect.DeepEqual(err, exceptions.ParserInvalidParameterException{Message: expectedErrorMessage}) {
 		t.Errorf("Validator did not throw ParserInvalidParameterException with expected error message")
 	}
 }
@@ -117,7 +118,7 @@ func TestValidateInputWithSyntacticallyIncorrectArnThrowsParserInvalidParameterE
 	err := ValidateInput(input)
 
 	// assert
-	if !reflect.DeepEqual(err, ParserInvalidParameterException{Message: expectedErrorMessage}) {
+	if !reflect.DeepEqual(err, exceptions.ParserInvalidParameterException{Message: expectedErrorMessage}) {
 		t.Errorf("Validator did not throw ParserInvalidParameterException with expected error message")
 	}
 }
@@ -137,7 +138,7 @@ func TestValidateInputWithNonIamArnThrowsParserInvalidParameterException(t *test
 	err := ValidateInput(input)
 
 	// assert
-	if !reflect.DeepEqual(err, ParserInvalidParameterException{Message: expectedErrorMessage}) {
+	if !reflect.DeepEqual(err, exceptions.ParserInvalidParameterException{Message: expectedErrorMessage}) {
 		t.Errorf("Validator did not throw ParserInvalidParameterException with expected error message")
 	}
 }
@@ -157,7 +158,7 @@ func TestValidateInputWithNonDefaultArtifactTypeThrowsParserInvalidParameterExce
 	err := ValidateInput(input)
 
 	// assert
-	if !reflect.DeepEqual(err, ParserInvalidParameterException{Message: expectedErrorMessage}) {
+	if !reflect.DeepEqual(err, exceptions.ParserInvalidParameterException{Message: expectedErrorMessage}) {
 		t.Errorf("Validator did not throw ParserInvalidParameterException with expected error message")
 	}
 }
@@ -177,7 +178,7 @@ func TestValidateInputWithInvalidArtifactPathThrowsParserInvalidParameterExcepti
 	err := ValidateInput(input)
 
 	// assert
-	if !reflect.DeepEqual(err, ParserInvalidParameterException{Message: expectedErrorMessage}) {
+	if !reflect.DeepEqual(err, exceptions.ParserInvalidParameterException{Message: expectedErrorMessage}) {
 		t.Errorf("Validator did not throw ParserInvalidParameterException with expected error message")
 	}
 }
@@ -197,7 +198,7 @@ func TestValidateInputWithNoneS3ArtifactPathThrowsParserInvalidParameterExceptio
 	err := ValidateInput(input)
 
 	// assert
-	if !reflect.DeepEqual(err, ParserInvalidParameterException{Message: expectedErrorMessage}) {
+	if !reflect.DeepEqual(err, exceptions.ParserInvalidParameterException{Message: expectedErrorMessage}) {
 		t.Errorf("Validator did not throw ParserInvalidParameterException with expected error message")
 	}
 }
