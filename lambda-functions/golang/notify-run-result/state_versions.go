@@ -109,7 +109,7 @@ func GetCurrentStateVersionForApply(ctx context.Context, client *tfe.Client, app
 		}
 
 		if currentStateVersion == nil {
-			return nil, errors.New("the provisioned product had no had no state versions in Terraform Cloud. if re-provisioning the product fails, please file an issue in the repository: https://github.com/hashicorp/aws-service-catalog-engine-for-tfc or contact Hashicorp support")
+			return nil, errors.New("the provisioned product had no state versions in Terraform Cloud. If re-provisioning the product fails, please file an issue in the repository: https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/issues or contact HashiCorp support")
 		}
 	} else {
 		currentStateVersion = a.StateVersions[0]
