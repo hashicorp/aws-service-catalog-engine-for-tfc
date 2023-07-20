@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/terraform-config-inspect/tfconfig"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/exceptions"
 )
 
 const PrimaryModuleName = "PrimaryModule"
@@ -19,7 +20,7 @@ const NoFilesToParseExceptionMessage = "No .tf files found. Nothing to parse. Ma
 // parses out the variable blocks and returns slice of Parameter pointers
 func ParseParametersFromConfiguration(fileMap map[string]string) ([]*Parameter, error) {
 	if len(fileMap) == 0 {
-		return nil, ParserInvalidParameterException{
+		return nil, exceptions.ParserInvalidParameterException{
 			Message: NoFilesToParseExceptionMessage,
 		}
 	}
@@ -94,11 +95,11 @@ func parseParameterMapFromFileMap(fileMap map[string]string, moduleName string) 
 		}
 
 		parameterMap[variable.Name] = &Parameter{
-			Key: variable.Name,
+			Key:          variable.Name,
 			DefaultValue: defaultValue,
-			Type: variable.Type,
-			Description: variable.Description,
-			IsNoEcho: variable.Sensitive,
+			Type:         variable.Type,
+			Description:  variable.Description,
+			IsNoEcho:     variable.Sensitive,
 		}
 	}
 	return parameterMap

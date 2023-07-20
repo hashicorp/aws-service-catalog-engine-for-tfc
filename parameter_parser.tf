@@ -1,5 +1,6 @@
 resource "aws_lambda_function" "parameter_parser" {
-  filename      = data.archive_file.parameter_parser.output_path
+  filename = data.archive_file.parameter_parser.output_path
+  # TODO: Rename after AWS has modified product type
   function_name = "ServiceCatalogTerraformOSParameterParser"
   role          = aws_iam_role.parameter_parser.arn
   handler       = "main"
@@ -24,12 +25,12 @@ data "aws_iam_policy_document" "parameter_parser_assume_policy" {
 }
 
 resource "aws_iam_role" "parameter_parser" {
-  name               = "ServiceCatalogTerraformTFCParameterParserRole"
+  name               = "ServiceCatalogTFCParameterParserRole"
   assume_role_policy = data.aws_iam_policy_document.parameter_parser_assume_policy.json
 }
 
 resource "aws_iam_role_policy" "parameter_parser" {
-  name   = "ServiceCatalogTerraformTFCParameterParserRolePolicy"
+  name   = "ServiceCatalogTFCParameterParserRolePolicy"
   role   = aws_iam_role.parameter_parser.id
   policy = data.aws_iam_policy_document.parameter_parser.json
 }

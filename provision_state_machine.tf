@@ -124,6 +124,7 @@ resource "aws_sfn_state_machine" "provision_state_machine" {
         "awsAccountId.$": "$.identity.awsAccountId",
         "terraformOrganization.$": "$.terraformOrganization",
         "provisionedProductId.$": "$.provisionedProductId",
+        "provisioningArtifactId.$": "$.provisioningArtifactId",
         "artifact.$": "$.artifact",
         "launchRoleArn.$": "$.launchRoleArn",
         "productId.$": "$.productId",

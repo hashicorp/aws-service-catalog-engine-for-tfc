@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/url"
 	"regexp"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/tfc"
 )
 
 func FetchRunOutputs(ctx context.Context, client *tfe.Client, request NotifyRunResultRequest) ([]types.RecordOutput, error) {
@@ -18,12 +19,12 @@ func FetchRunOutputs(ctx context.Context, client *tfe.Client, request NotifyRunR
 	workspaceName := identifiers.GetWorkspaceName(request.AwsAccountId, request.ProvisionedProductId)
 	w, err := client.Workspaces.Read(ctx, request.TerraformOrganization, workspaceName)
 	if err != nil {
-		return nil, err
+		return nil, tfc.Error(err)
 	}
 
 	run, err := client.Runs.Read(ctx, request.TerraformRunId)
 	if err != nil {
-		return nil, err
+		return nil, tfc.Error(err)
 	}
 
 	// Get state version of the Apply
@@ -88,7 +89,7 @@ func GetCurrentStateVersionForApply(ctx context.Context, client *tfe.Client, app
 	a := &Apply{}
 	err = req.Do(ctx, a)
 	if err != nil {
-		return nil, err
+		return nil, tfc.Error(err)
 	}
 
 	log.Default().Printf("Apply status is currently: %s", a.Status)
@@ -96,7 +97,7 @@ func GetCurrentStateVersionForApply(ctx context.Context, client *tfe.Client, app
 	// We expect there will be only one state version for the Apply. It is a has-many relationship due to
 	// legacy decisions, but all modern versions of Terraform should only have a single State Version.
 	if len(a.StateVersions) > 1 {
-		return nil, errors.New("too many state versions exist for this run to determine the current state version")
+		return nil, errors.New("too many state versions exist for this run to determine the current state version. If re-provisioning the product fails, please file an issue in the repository: https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/issues or contact HashiCorp support")
 	}
 
 	var currentStateVersion *tfe.StateVersion
@@ -104,11 +105,11 @@ func GetCurrentStateVersionForApply(ctx context.Context, client *tfe.Client, app
 		// If Run wasn't applied due to no changes being present in the Plan, fetch the latest State Version
 		currentStateVersion, err = client.StateVersions.ReadCurrent(ctx, workspace.ID)
 		if err != nil {
-			return nil, err
+			return nil, tfc.Error(err)
 		}
 
 		if currentStateVersion == nil {
-			return nil, errors.New("run has no state version")
+			return nil, errors.New("the provisioned product had no state versions in Terraform Cloud. If re-provisioning the product fails, please file an issue in the repository: https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/issues or contact HashiCorp support")
 		}
 	} else {
 		currentStateVersion = a.StateVersions[0]
@@ -125,7 +126,7 @@ func GetAllStateVersionOutputs(ctx context.Context, client *tfe.Client, stateVer
 		},
 	})
 	if err != nil {
-		return nil, err
+		return nil, tfc.Error(err)
 	}
 
 	// If more state version outputs exists, fetch them and return them as well

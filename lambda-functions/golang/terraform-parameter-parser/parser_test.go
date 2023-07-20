@@ -3,6 +3,7 @@ package main
 import (
 	"reflect"
 	"testing"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/exceptions"
 )
 
 const PrimaryFileName1 = "main.tf"
@@ -23,27 +24,27 @@ func TestParseParametersFromConfigurationHappy(t *testing.T) {
 	expectedResultMap := make(map[string]*Parameter)
 
 	expectedParameter1 := &Parameter{
-		Key: "instance_name",
+		Key:          "instance_name",
 		DefaultValue: "my_vm",
-		Type: "string",
-		Description: "",
-		IsNoEcho: false,
+		Type:         "string",
+		Description:  "",
+		IsNoEcho:     false,
 	}
 
 	expectedParameter2 := &Parameter{
-		Key: "test_variable_number",
+		Key:          "test_variable_number",
 		DefaultValue: "",
-		Type: "number",
-		Description: "The variable in a number type",
-		IsNoEcho: true,
+		Type:         "number",
+		Description:  "The variable in a number type",
+		IsNoEcho:     true,
 	}
 
 	expectedParameter3 := &Parameter{
-		Key: "test_variable_complex_type",
+		Key:          "test_variable_complex_type",
 		DefaultValue: "{\"create_rg\":true,\"location\":\"default_location\",\"name\":\"default_name\"}",
-		Type: "object({\n        create_rg = bool\n        name      = string\n        location  = string\n    })",
-		Description: "The variable in a complex type",
-		IsNoEcho: false,
+		Type:         "object({\n        create_rg = bool\n        name      = string\n        location  = string\n    })",
+		Description:  "The variable in a complex type",
+		IsNoEcho:     false,
 	}
 
 	expectedResultMap["instance_name"] = expectedParameter1
@@ -93,35 +94,35 @@ func TestParseParametersFromConfigurationWithOverrideFilesHappy(t *testing.T) {
 	expectedResultMap := make(map[string]*Parameter)
 
 	expectedParameter1 := &Parameter{
-		Key: "instance_name",
+		Key:          "instance_name",
 		DefaultValue: "name from override file",
-		Type: "string",
-		Description: "",
-		IsNoEcho: false,
+		Type:         "string",
+		Description:  "",
+		IsNoEcho:     false,
 	}
 
 	expectedParameter2 := &Parameter{
-		Key: "test_variable_number",
+		Key:          "test_variable_number",
 		DefaultValue: "",
-		Type: "string",
-		Description: "The variable in a string type in override file",
-		IsNoEcho: false,
+		Type:         "string",
+		Description:  "The variable in a string type in override file",
+		IsNoEcho:     false,
 	}
 
 	expectedParameter3 := &Parameter{
-		Key: "test_variable_complex_type",
+		Key:          "test_variable_complex_type",
 		DefaultValue: "{\"create_rg\":true,\"location\":\"default_location\",\"name\":\"default_name\"}",
-		Type: "object({\n        create_rg = bool\n        name      = string\n        location  = string\n    })",
-		Description: "The variable in a complex type",
-		IsNoEcho: true,
+		Type:         "object({\n        create_rg = bool\n        name      = string\n        location  = string\n    })",
+		Description:  "The variable in a complex type",
+		IsNoEcho:     true,
 	}
 
 	expectedParameter4 := &Parameter{
-		Key: "new_variable_from_override",
+		Key:          "new_variable_from_override",
 		DefaultValue: "hello",
-		Type: "string",
-		Description: "A new variable",
-		IsNoEcho: true,
+		Type:         "string",
+		Description:  "A new variable",
+		IsNoEcho:     true,
 	}
 
 	expectedResultMap["instance_name"] = expectedParameter1
@@ -136,7 +137,6 @@ func TestParseParametersFromConfigurationWithOverrideFilesHappy(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error returned. %v", err)
 	}
-
 
 	// assert the number of parameters parsed is as expected
 	if len(actualResult) != len(expectedResultMap) {
@@ -171,67 +171,67 @@ func TestParseParametersFromConfigurationWithComprehensiveVariableFileHappy(t *t
 	expectedResultMap := make(map[string]*Parameter)
 
 	expectedParameter1 := &Parameter{
-		Key: "string_variable",
+		Key:          "string_variable",
 		DefaultValue: "hello world",
-		Type: "string",
-		Description: "",
-		IsNoEcho: false,
+		Type:         "string",
+		Description:  "",
+		IsNoEcho:     false,
 	}
 
 	expectedParameter2 := &Parameter{
-		Key: "number_variable",
+		Key:          "number_variable",
 		DefaultValue: "100",
-		Type: "number",
-		Description: "",
-		IsNoEcho: false,
+		Type:         "number",
+		Description:  "",
+		IsNoEcho:     false,
 	}
 
 	expectedParameter3 := &Parameter{
-		Key: "bool_variable",
+		Key:          "bool_variable",
 		DefaultValue: "true",
-		Type: "bool",
-		Description: "",
-		IsNoEcho: false,
+		Type:         "bool",
+		Description:  "",
+		IsNoEcho:     false,
 	}
 
 	expectedParameter4 := &Parameter{
-		Key: "list_variable",
+		Key:          "list_variable",
 		DefaultValue: "[\"hello\",\"world\"]",
-		Type: "list(string)",
-		Description: "",
-		IsNoEcho: false,
+		Type:         "list(string)",
+		Description:  "",
+		IsNoEcho:     false,
 	}
 
 	expectedParameter5 := &Parameter{
-		Key: "set_variable",
+		Key:          "set_variable",
 		DefaultValue: "[1,2]",
-		Type: "set(number)",
-		Description: "",
-		IsNoEcho: false,
+		Type:         "set(number)",
+		Description:  "",
+		IsNoEcho:     false,
 	}
 
 	expectedParameter6 := &Parameter{
-		Key: "map_variable",
+		Key:          "map_variable",
 		DefaultValue: "{\"k1\":\"v1\",\"k2\":\"v2\",\"k3\":\"v3\"}",
-		Type: "map(string)",
-		Description: "",
-		IsNoEcho: false,
+		Type:         "map(string)",
+		Description:  "",
+		IsNoEcho:     false,
 	}
 
 	expectedParameter7 := &Parameter{
-		Key: "object_variable",
+		Key:          "object_variable",
 		DefaultValue: "{\"create_rg\":true,\"location\":\"default_location\",\"name\":\"default_name\"}",
-		Type: "object({\n        create_rg = bool\n        name      = string\n        location  = string\n    })",
-		Description: "",
-		IsNoEcho: false,
+		Type:         "object({\n        create_rg = bool\n        name      = string\n        location  = string\n    })",
+		Description:  "",
+		IsNoEcho:     false,
 	}
 
 	expectedParameter8 := &Parameter{
-		Key: "tuple_variable",
+		Key:          "tuple_variable",
 		DefaultValue: "[\"hello\",\"world\",false]",
-		Type: "tuple([string,string,bool])",
-		Description: "",
-		IsNoEcho: false,
+		Type:         "tuple([string,string,bool])",
+		Description:  "",
+		IsNoEcho:     false,
 	}
 
 	expectedResultMap["string_variable"] = expectedParameter1
@@ -285,7 +285,7 @@ func TestParseParametersFromConfigurationWithNoFilesThrowsParserInvalidParameter
 	_, err := ParseParametersFromConfiguration(fileMap)
 
 	// assert
-	if !reflect.DeepEqual(err, ParserInvalidParameterException{Message: expectedErrorMessage}) {
+	if !reflect.DeepEqual(err, exceptions.ParserInvalidParameterException{Message: expectedErrorMessage}) {
 		t.Errorf("Validator did not throw ParserInvalidParameterException with expected error message")
 	}
 }

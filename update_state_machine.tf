@@ -123,6 +123,7 @@ resource "aws_sfn_state_machine" "update_state_machine" {
         "awsAccountId.$": "$.identity.awsAccountId",
         "terraformOrganization.$": "$.terraformOrganization",
         "provisionedProductId.$": "$.provisionedProductId",
+        "provisioningArtifactId.$": "$.provisioningArtifactId",
         "artifact.$": "$.artifact",
         "launchRoleArn.$": "$.launchRoleArn",
         "productId.$": "$.productId",

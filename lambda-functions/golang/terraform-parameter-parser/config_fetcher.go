@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/fileutils"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/exceptions"
 )
 
 const LaunchRoleAccessDeniedErrorMessage = "Access denied while assuming launch role %s: %s"
@@ -16,13 +17,13 @@ func (h *TerraformParameterParserHandler) fetchArtifact(ctx context.Context, req
 	sourceProductConfig, err := fileutils.DownloadS3File(ctx, h.s3Downloader, request.LaunchRoleArn, request.Artifact.Path)
 	if err != nil {
 		return map[string]string{},
-			ParserAccessDeniedException{Message: fmt.Sprintf(ArtifactFetchAccessDeniedErrorMessage, request.Artifact.Path, err.Error())}
+			exceptions.ParserAccessDeniedException{Message: fmt.Sprintf(ArtifactFetchAccessDeniedErrorMessage, request.Artifact.Path, err.Error())}
 	}
 
 	fileMap, err := UnzipArchive(sourceProductConfig)
 	if err != nil {
 		return fileMap,
-			ParserInvalidParameterException{Message: fmt.Sprintf(UnzipFailureErrorMessage, request.Artifact.Path, err.Error())}
+			exceptions.ParserInvalidParameterException{Message: fmt.Sprintf(UnzipFailureErrorMessage, request.Artifact.Path, err.Error())}
 	}
 
 	return fileMap, nil

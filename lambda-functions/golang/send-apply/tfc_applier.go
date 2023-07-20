@@ -11,6 +11,10 @@ import (
 const ProviderAuthVariableKey = "TFC_AWS_PROVIDER_AUTH"
 const RunRoleArnVariableKey = "TFC_AWS_RUN_ROLE_ARN"
 
+const ProductIdMetadataHeaderKey = "Tfp-Aws-Service-Catalog-Product-Id"
+const ProvisionedProductIdMetadataHeaderKey = "Tfp-Aws-Service-Catalog-Prv-Product-Id"
+const ProductVersionMetadataHeaderKey = "Tfp-Aws-Service-Catalog-Product-Ver"
+
 type TFCApplier struct {
 	tfeClient *tfe.Client
 }
@@ -18,26 +22,32 @@ type TFCApplier struct {
 func (h *SendApplyHandler) NewTFCApplier(ctx context.Context, request SendApplyRequest) (*TFCApplier, error) {
 	headers := http.Header{}
 
-	headers.Set("Tfp-Aws-Service-Catalog-Product-Id", request.ProductId)
-	headers.Set("Tfp-Aws-Service-Catalog-Prv-Product-Id", request.ProvisionedProductId)
-	//headers.Set("Tfp-Aws-Service-Catalog-Portfolio-Id", request)
-	//headers.Set("Tfp-Aws-Service-Catalog-Product-Ver", request)
+	headers.Set(ProductIdMetadataHeaderKey, request.ProductId)
+	headers.Set(ProvisionedProductIdMetadataHeaderKey, request.ProvisionedProductId)
+	headers.Set(ProductVersionMetadataHeaderKey, request.ProvisionedArtifactId)
 
 	tfeClient, err := tfc.GetTFEClientWithHeaders(ctx, h.secretsManager, headers)
 	return &TFCApplier{tfeClient: tfeClient}, err
 }
 
 func (applier *TFCApplier) FindOrCreateProject(ctx context.Context, organizationName string, name string) (*tfe.Project, error) {
+	log.Default().Printf("finding or creating TFC project with name: %s", name)
+
 	// Check if the project already exists...
 	project, err := applier.FindProjectByName(ctx, organizationName, name, 0)
 	if project != nil || err != nil {
+		if err == nil {
+			log.Default().Printf("found existing project with id: %s", project.ID)
+		}
 		return project, err
 	}
 
 	// Otherwise, create the project
-	return applier.tfeClient.Projects.Create(ctx, organizationName, tfe.ProjectCreateOptions{
+	log.Default().Printf("no existing project found, creating new project...")
+	newProject, err := applier.tfeClient.Projects.Create(ctx, organizationName, tfe.ProjectCreateOptions{
 		Name: name,
 	})
+	return newProject, tfc.Error(err)
 }
 
 func (applier *TFCApplier) FindProjectByName(ctx context.Context, organizationName string, projectName string, pageNumber int) (*tfe.Project, error) {
@@ -50,7 +60,7 @@ func (applier *TFCApplier) FindProjectByName(ctx context.Context, organizationNa
 		Name: projectName,
 	})
 	if err != nil {
-		return nil, err
+		return nil, tfc.Error(err)
 	}
 
 	for _, project := range projects.Items {
@@ -72,14 +82,19 @@ func (applier *TFCApplier) FindOrCreateWorkspace(ctx context.Context, organizati
 	// Check if the workspace already exists...
 	workspace, err := applier.FindWorkspaceByName(ctx, organizationName, workspaceName, 0)
 	if workspace != nil || err != nil {
+		if err == nil {
+			log.Default().Printf("found existing workspace with id: %s", workspace.ID)
+		}
 		return workspace, err
 	}
 
 	// Otherwise, create the Workspace
-	return applier.tfeClient.Workspaces.Create(ctx, organizationName, tfe.WorkspaceCreateOptions{
+	log.Default().Printf("no existing workspace found, creating new workspace...")
+	newWorkspace, err := applier.tfeClient.Workspaces.Create(ctx, organizationName, tfe.WorkspaceCreateOptions{
 		Name:    tfe.String(workspaceName),
 		Project: project,
 	})
+	return newWorkspace, tfc.Error(err)
 }
 
 func (applier *TFCApplier) FindWorkspaceByName(ctx context.Context, organizationName string, workspaceName string, pageNumber int) (*tfe.Workspace, error) {
@@ -92,7 +107,7 @@ func (applier *TFCApplier) FindWorkspaceByName(ctx context.Context, organization
 		Search: workspaceName,
 	})
 	if err != nil {
-		return nil, err
+		return nil, tfc.Error(err)
 	}
 
 	for _, workspace := range workspaces.Items {
@@ -133,13 +148,14 @@ func (applier *TFCApplier) UpdateWorkspaceParameterVariables(ctx context.Context
 }
 
 func (applier *TFCApplier) CreateConfigurationVersion(ctx context.Context, workspaceId string) (*tfe.ConfigurationVersion, error) {
-	return applier.tfeClient.ConfigurationVersions.Create(ctx,
+	newConfigurationVersion, err := applier.tfeClient.ConfigurationVersions.Create(ctx,
 		workspaceId,
 		tfe.ConfigurationVersionCreateOptions{
 			// Disable auto queue runs, so we can create the run ourselves to get the runId
 			AutoQueueRuns: tfe.Bool(false),
 		},
 	)
+	return newConfigurationVersion, tfc.Error(err)
 }
 
 func (applier *TFCApplier) FindOrCreateTerraformVariable(ctx context.Context, w *tfe.Workspace, key string, value string) error {
@@ -165,7 +181,7 @@ func (applier *TFCApplier) findOrCreateVariable(ctx context.Context, w *tfe.Work
 			Category: tfe.Category(category),
 			HCL:      tfe.Bool(false),
 		})
-		return err
+		return tfc.Error(err)
 	}
 
 	// Create the variable as it does not currently exist
@@ -178,7 +194,7 @@ func (applier *TFCApplier) findOrCreateVariable(ctx context.Context, w *tfe.Work
 		HCL:         tfe.Bool(false),
 		Sensitive:   tfe.Bool(false),
 	})
-	return err
+	return tfc.Error(err)
 }
 
 func (applier *TFCApplier) findVariableByKey(ctx context.Context, w *tfe.Workspace, key string, pageNumber int) (*tfe.Variable, error) {
@@ -189,7 +205,7 @@ func (applier *TFCApplier) findVariableByKey(ctx context.Context, w *tfe.Workspa
 		},
 	})
 	if err != nil {
-		return nil, err
+		return nil, tfc.Error(err)
 	}
 
 	for _, variable := range variables.Items {
@@ -230,7 +246,7 @@ func (applier *TFCApplier) PurgeVariables(ctx context.Context, w *tfe.Workspace,
 	for _, variablesToPurge := range variablesToPurge {
 		err := applier.tfeClient.Variables.Delete(ctx, w.ID, variablesToPurge.ID)
 		if err != nil {
-			return err
+			return tfc.Error(err)
 		}
 	}
 
@@ -245,7 +261,7 @@ func (applier *TFCApplier) checkVariablesForPurge(ctx context.Context, w *tfe.Wo
 		},
 	})
 	if err != nil {
-		return nil, err
+		return nil, tfc.Error(err)
 	}
 
 	for _, variable := range variables.Items {

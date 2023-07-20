@@ -153,19 +153,22 @@ func (h NotifyRunResultHandler) NotifyUpdatingResult(ctx context.Context, tfeCli
 }
 
 func FormatError(err string, errorMessage string) *string {
+	// Simplify the error message (if possible)
+	simplifiedErrorString := SimplifyError(errorMessage)
+
 	// Check if error was due to lambda timeout
 	if err == "States.Timeout" {
 		return aws.String("A lambda function invoked by the state machine has timed out")
 	}
 
 	// Max error message length is 2048
-	if len(errorMessage) <= (2048) {
-		return aws.String(errorMessage)
+	if len(simplifiedErrorString) <= (2048) {
+		return aws.String(simplifiedErrorString)
 	}
 
 	// Truncate error message to fit maximum failure reason length allowed by Service Catalog.
 	// We use 2045 to make room for the ellipsis.
-	return aws.String(errorMessage[:2045] + "...")
+	return aws.String(simplifiedErrorString[:2045] + "...")
 }
 
 func DeleteWorkspace(ctx context.Context, client *tfe.Client, request NotifyRunResultRequest) error {

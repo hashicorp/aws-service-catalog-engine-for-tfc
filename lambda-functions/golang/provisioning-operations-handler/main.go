@@ -24,6 +24,7 @@ type StateMachinePayload struct {
 	ProductId              string `json:"productId"`
 	ProvisionedProductId   string `json:"provisionedProductId"`
 	ProvisionedProductName string `json:"provisionedProductName"`
+	ProvisionedArtifactId  string `json:"provisioningArtifactId"`
 	RecordId               string `json:"recordId"`
 	LaunchRoleArn          string `json:"launchRoleArn"`
 	TerraformOrganization  string `json:"terraformOrganization"`
