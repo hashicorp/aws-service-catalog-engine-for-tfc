@@ -163,7 +163,7 @@ func TestPollRunStatusHandler_InvalidTFCToken(t *testing.T) {
 	_, err := testHandler.HandleRequest(context.TODO(), testRequest)
 
 	// Check the Lambda response
-	assert.ErrorContains(t, err, "authorization token for TFC was acquired, but invalid or lacks sufficient permissions")
+	assert.ErrorContains(t, err, "The current authorization token is not valid")
 }
 
 func TestPollRunStatusHandler_CannotConnect(t *testing.T) {

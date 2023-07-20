@@ -19,15 +19,20 @@ func SimplifyError(errorString string) string {
 		return errorString
 	}
 
-	log.Default().Printf("simplifying error with type of %s and message: ", errorParsed.ErrorType, errorParsed.ErrorMessage)
+	log.Default().Printf("simplifying error with type of %s and message: %s", errorParsed.ErrorType, errorParsed.ErrorMessage)
+
+	if errorParsed.ErrorType == "errorString" && errorParsed.ErrorMessage == "Failed running terraform apply" {
+		// if the error was due to the terraform failing to apply in TFC, give the user helpful next steps
+		return "Failed to run terraform apply in Terraform Cloud. Check the workspace in Terraform Cloud for details"
+	}
 
 	if errorParsed.ErrorType == "errorString" && errorParsed.ErrorMessage != "" {
-		// if the errorString is recognized, simplify the error
+		// if the errorType is errorString, simplify the error by de-jsonifying it
 		return errorParsed.ErrorMessage
 	}
 
 	if errorParsed.ErrorType == "TFEUnauthorized" && errorParsed.ErrorMessage != "" {
-		// if the TFEUnauthorized is recognized, simplify the error
+		// if the errorType is TFEUnauthorized, simplify the error message
 		return errorParsed.ErrorMessage
 	}
 
