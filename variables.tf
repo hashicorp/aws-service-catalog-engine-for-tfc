@@ -1,3 +1,6 @@
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
 variable "tfc_organization" {
   type        = string
   description = "Name of the organization to manage infrastructure with in TFC"

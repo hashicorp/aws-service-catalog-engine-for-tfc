@@ -1,4 +1,6 @@
-# Lambda Policies
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
 
 data "aws_iam_policy_document" "send_apply" {
   version = "2012-10-17"
