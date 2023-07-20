@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) HashiCorp, Inc.
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
 package fileutils
 
 import (
@@ -7,6 +12,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/awsconfig"
 	"os"
+	"fmt"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/exceptions"
 )
 
 type S3Downloader interface {
@@ -28,7 +35,7 @@ func NewS3DownloaderWithAssumedRole(ctx context.Context, sdkConfig aws.Config) S
 			// Assume the provided IAM launch role
 			assumedRoleConfig, err := awsconfig.GetSdkConfigWithRoleArn(ctx, sdkConfig, launchRoleArn)
 			if err != nil {
-				return nil, err
+				return nil, exceptions.ParserAccessDeniedException{Message: fmt.Sprintf("Access denied while assuming launch role %s: %s", launchRoleArn, err.Error())}
 			}
 
 			return s3.NewFromConfig(assumedRoleConfig), nil

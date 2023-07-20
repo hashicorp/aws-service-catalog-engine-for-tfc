@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) HashiCorp, Inc.
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
 package fileutils
 
 import (
@@ -27,7 +32,6 @@ func DownloadS3File(ctx context.Context, s3Downloader S3Downloader, launchRoleAr
 	}
 
 	numBytes, err := s3Downloader.Download(ctx, launchRoleArn, tmp, bucket, objectKey)
-
 	if err != nil {
 		return nil, err
 	}

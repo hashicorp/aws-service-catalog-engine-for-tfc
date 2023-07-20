@@ -1,3 +1,6 @@
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
 SHELL=/usr/bin/env bash
 BIN_PATH ?= bin
 

@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) HashiCorp, Inc.
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
 package main
 
 import (
@@ -23,7 +28,6 @@ const InvalidLaunchRoleArnSyntaxErrorMessage = "LaunchRoleArn %s is not a syntac
 const InvalidIamLaunchRoleArnErrorMessage = "LaunchRoleArn %s is not a valid iam ARN"
 const InvalidArtifactTypeErrorMessage = "Artifact type %s is not supported, must be AWS_S3"
 const InvalidArtifactPathErrorMessage = "Artifact path %s is not a valid S3 URI"
-const InvalidArtifactFileNameMessage = "Artifact path %s is not valid, must end with .tar.gz"
 
 // ValidateInput - Validates TerraformOpenSourceParameterParserInput
 // Returns a non nil error if an invalid input is provided
