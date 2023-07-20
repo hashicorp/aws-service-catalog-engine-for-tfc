@@ -28,7 +28,7 @@ type MockTFC struct {
 	// Workspaces is a map of all the Workspaces the mock TFC contains, with their respective id as the keys
 	Workspaces map[string]*tfe.Workspace
 
-	// WorkspaceServiceCatalogMetadata is a map of all the aws service catalog metadata the mock TFC contains, with their respective workspace id as the keys
+	// WorkspaceServiceCatalogMetadata is a map of all the AWS Service Catalog metadata the mock TFC contains, with their respective Workspace IDs as the keys
 	WorkspaceServiceCatalogMetadata map[string]*ServiceCatalogMetadata
 
 	// Runs is a map containing the all the Runs the mock TFC contains, the keys are the paths for the Runs

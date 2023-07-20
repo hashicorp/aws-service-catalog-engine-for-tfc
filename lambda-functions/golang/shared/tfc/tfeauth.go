@@ -22,7 +22,7 @@ func GetTFEClient(ctx context.Context, secretsManager secretsmanager.SecretsMana
 
 func GetTFEClientWithHeaders(ctx context.Context, secretsManager secretsmanager.SecretsManager, headers http.Header) (*tfe.Client, error) {
 	// Fetch the TFE credentials/config from AWS Secrets Manager
-	log.Default().Print("fetching TFC credentials from secretsmanager")
+	log.Default().Print("fetching TFC credentials from Secrets Manager")
 	tfeCredentialsSecret, err := secretsManager.GetSecretValue(ctx)
 	if err != nil {
 		return nil, err

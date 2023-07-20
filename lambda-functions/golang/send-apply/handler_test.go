@@ -105,7 +105,7 @@ func TestSendApplyHandler_Success(t *testing.T) {
 	keys := reflect.ValueOf(tfcServer.Workspaces).MapKeys()
 	workspaceId := keys[0].String()
 
-	// check that the metadata headers were set on the workspace in TFC
+	// Check that the metadata headers were set on the workspace in TFC
 	serviceCatalogMetadata := tfcServer.WorkspaceServiceCatalogMetadata[workspaceId]
 	assert.Equal(t, testRequest.ProductId, serviceCatalogMetadata.ProductId)
 	assert.Equal(t, testRequest.ProvisionedProductId, serviceCatalogMetadata.ProvisionedProductId)

@@ -44,11 +44,11 @@ func (srv *MockTFC) HandleWorkspacesPostRequests(w http.ResponseWriter, r *http.
 			return true
 		}
 
-		// persist the workspace
+		// Persist the workspace
 		id := WorkspaceId(workspace)
 		workspace = srv.AddWorkspace(id, WorkspaceFactoryParameters{Name: workspace.Name})
 
-		// persist metadata headers (if they were provided)
+		// Persist metadata headers (if they were provided)
 		metadata := &ServiceCatalogMetadata{
 			ProductId:            r.Header.Get(ProductIdMetadataHeaderKey),
 			ProvisionedProductId: r.Header.Get(ProvisionedProductIdMetadataHeaderKey),

@@ -97,7 +97,7 @@ func GetCurrentStateVersionForApply(ctx context.Context, client *tfe.Client, app
 	// We expect there will be only one state version for the Apply. It is a has-many relationship due to
 	// legacy decisions, but all modern versions of Terraform should only have a single State Version.
 	if len(a.StateVersions) > 1 {
-		return nil, errors.New("too many state versions exist for this run to determine the current state version. if re-provisioning the product fails, please file an issue in the repository: https://github.com/hashicorp/aws-service-catalog-engine-for-tfc or contact Hashicorp support")
+		return nil, errors.New("too many state versions exist for this run to determine the current state version. If re-provisioning the product fails, please file an issue in the repository: https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/issues or contact HashiCorp support")
 	}
 
 	var currentStateVersion *tfe.StateVersion
