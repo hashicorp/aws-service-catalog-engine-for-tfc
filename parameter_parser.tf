@@ -1,5 +1,5 @@
 resource "aws_lambda_function" "parameter_parser" {
-  filename      = data.archive_file.parameter_parser.output_path
+  filename = data.archive_file.parameter_parser.output_path
   # TODO: Rename after AWS has modified product type
   function_name = "ServiceCatalogTerraformOSParameterParser"
   role          = aws_iam_role.parameter_parser.arn
