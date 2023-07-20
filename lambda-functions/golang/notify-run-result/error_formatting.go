@@ -15,7 +15,7 @@ func SimplifyError(errorString string) string {
 	errorParsed := &Error{}
 	err := json.Unmarshal([]byte(errorString), errorParsed)
 	if err != nil {
-		// if the error failed to be parsed, return it as is, without any additional formatting, as it was likely parsed previously
+		// If the error failed to be parsed, return it as is, without any additional formatting, as it was likely parsed previously
 		return errorString
 	}
 
