@@ -36,6 +36,6 @@ func SimplifyError(errorString string) string {
 		return errorParsed.ErrorMessage
 	}
 
-	// not 100% if the error should be formatted or not, so use the original errorString in order to guarantee we don't hide any useful information
+	// To be sure that we don't hide any useful error information, use the original errorString in order to guarantee that all information was passed along
 	return errorString
 }
