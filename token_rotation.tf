@@ -12,12 +12,12 @@ data "aws_iam_policy_document" "rotate_token_handler" {
 }
 
 resource "aws_iam_role" "rotate_token_handler_lambda_execution" {
-  name               = "terraform_engine_rotate_token_handler_lambda_execution_role"
+  name               = "ServiceCatalogTFCRotateTokenHandlerRole"
   assume_role_policy = data.aws_iam_policy_document.rotate_token_handler.json
 }
 
 resource "aws_iam_role_policy" "rotate_token_handler_lambda_execution_role_policy" {
-  name   = "rotate_token_handler_lambda_execution_role_policy"
+  name   = "ServiceCatalogTFCRotateTokenHandlerPolicy"
   role   = aws_iam_role.rotate_token_handler_lambda_execution.id
   policy = data.aws_iam_policy_document.policy_for_rotate_team_token_handler.json
 }
@@ -108,7 +108,7 @@ data "archive_file" "rotate_token_handler" {
 # Lambda for rotating team tokens
 resource "aws_lambda_function" "rotate_token_handler" {
   filename      = data.archive_file.rotate_token_handler.output_path
-  function_name = "TerraformCloudEngineRotateTokenHandlerLambda"
+  function_name = "ServiceCatalogTFCRotateTokenHandler"
   role          = aws_iam_role.rotate_token_handler_lambda_execution.arn
   handler       = "main"
 
@@ -193,7 +193,7 @@ data "aws_iam_policy_document" "policy_for_rotate_team_token_state_machine" {
 
 # Resources for rotating the team token every 30 days
 resource "aws_cloudwatch_event_rule" "rotate_token_schedule" {
-  name                = "TerraformEngineRotateToken"
+  name                = "ServiceCatalogTFCRotateToken"
   description         = "Schedule for Token Rotation"
   schedule_expression = "rate(30 days)"
 }
@@ -205,7 +205,7 @@ resource "aws_cloudwatch_event_target" "token_rotation" {
 }
 
 resource "aws_iam_role" "token_rotation_event_role" {
-  name               = "ServiceCatalogEngineForTerraformCloudTokenRotation"
+  name               = "ServiceCatalogTFCTokenRotationEventRole"
   assume_role_policy = data.aws_iam_policy_document.token_rotation_event_role_policy_document.json
 }
 data "aws_iam_policy_document" "token_rotation_event_role_policy_document" {
@@ -224,7 +224,7 @@ data "aws_iam_policy_document" "token_rotation_event_role_policy_document" {
 }
 
 resource "aws_iam_role_policy" "token_rotation_state_machine_event_role_policy" {
-  name = "ServiceCatalogEngineForTerraformCloudRotationEventPolicy"
+  name = "ServiceCatalogTFCTokenRotationEventPolicy"
   role = aws_iam_role.token_rotation_event_role.id
 
   policy = <<EOF

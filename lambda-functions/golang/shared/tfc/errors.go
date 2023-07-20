@@ -1,23 +1,23 @@
 package tfc
 
 import (
-	"errors"
-	"strings"
+	"fmt"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/exceptions"
 )
 
-// MapErrorAfterRequest exists to map errors from requests to provide more helpful (and specific to this application)
-// messages to aid in configuration and debugging
-func MapErrorAfterRequest(err error) error {
+// Error is used to wrap errors from TFC requests. This sets the type of the error so that users know where the error
+// came from.
+func Error(err error) error {
+	if err == nil {
+		return err
+	}
+
+	// Replace the "unauthorized" error with an error that provides the user with next steps to solve their issue
 	if err.Error() == "unauthorized" {
-		// We know that the token was acquired because the client exists, so the token must have been acquired, but is
-		// invalid or lacks permissions
-		return errors.New("authorization token for TFC was acquired, but invalid or lacks sufficient permissions")
+		return exceptions.TFEUnauthorizedToken
 	}
 
-	if strings.Contains(err.Error(), "connection refused") {
-		// This should only happen if the Lambda is running a VPC or an AWS Outpost
-		return errors.New("failed to connect to Terraform Cloud servers")
+	return exceptions.TFEException{
+		Message: fmt.Sprintf("request to Terraform Cloud failed. cause: %s", err.Error()),
 	}
-
-	return err
 }

@@ -16,7 +16,8 @@ func (h *SendDestroyHandler) HandleRequest(ctx context.Context, request SendDest
 	// Get TFE Client
 	tfeClient, err := tfc.GetTFEClient(ctx, h.secretsManager)
 	if err != nil {
-		log.Fatalf("failed to initialize TFE client: %s", err)
+		log.Default().Printf("failed to initialize TFE client: %s", err)
+		return nil, err
 	}
 
 	workspaceId := getWorkspaceName(request.AwsAccountId, request.ProvisionedProductId)
@@ -24,8 +25,8 @@ func (h *SendDestroyHandler) HandleRequest(ctx context.Context, request SendDest
 	// Get the workspace
 	workspace, err := tfeClient.Workspaces.Read(ctx, request.TerraformOrganization, workspaceId)
 	if err != nil {
-		log.Printf("Workspace does not exist or couldn't be found: %s", err)
-		return nil, err
+		log.Default().Printf("Workspace does not exist or couldn't be found: %s", err)
+		return nil, tfc.Error(err)
 	}
 
 	// Queue "Terraform destroy"
@@ -36,8 +37,8 @@ func (h *SendDestroyHandler) HandleRequest(ctx context.Context, request SendDest
 		AutoApply: tfe.Bool(true),
 	})
 	if err != nil {
-		log.Printf("Failed to queue destroy run: %s", err)
-		return nil, err
+		log.Default().Printf("Failed to queue destroy run: %s", err)
+		return nil, tfc.Error(err)
 	}
 
 	return &SendDestroyResponse{TerraformRunId: run.ID}, err

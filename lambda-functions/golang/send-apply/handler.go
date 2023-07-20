@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/secretsmanager"
 	"github.com/hashicorp/go-tfe"
 	"time"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/tfc"
 )
 
 type SendApplyHandler struct {
@@ -85,7 +86,7 @@ func (h *SendApplyHandler) HandleRequest(ctx context.Context, request SendApplyR
 	for i := 0; ; i++ {
 		refreshed, err := applier.tfeClient.ConfigurationVersions.Read(ctx, cv.ID)
 		if err != nil {
-			return nil, err
+			return nil, tfc.Error(err)
 		}
 
 		if refreshed.Status == tfe.ConfigurationUploaded {
@@ -105,7 +106,7 @@ func (h *SendApplyHandler) HandleRequest(ctx context.Context, request SendApplyR
 		AutoApply:            tfe.Bool(true),
 	})
 	if err != nil {
-		return nil, err
+		return nil, tfc.Error(err)
 	}
 
 	return &SendApplyResponse{TerraformRunId: run.ID}, err

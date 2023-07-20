@@ -12,12 +12,12 @@ data "aws_iam_policy_document" "provision_handler" {
 }
 
 resource "aws_iam_role" "provisioning_handler_lambda_execution" {
-  name               = "terraform_engine_provisioning_handler_lambda_execution_role"
+  name               = "ServiceCatalogTFCProvisionHandlerRole"
   assume_role_policy = data.aws_iam_policy_document.provision_handler.json
 }
 
 resource "aws_iam_role_policy" "provision_handler_lambda_execution_role_policy" {
-  name   = "provision_handler_lambda_execution_role_policy"
+  name   = "ServiceCatalogTFCProvisionHandlerPolicy"
   role   = aws_iam_role.provisioning_handler_lambda_execution.id
   policy = data.aws_iam_policy_document.policy_for_provision_handler.json
 }
@@ -75,7 +75,7 @@ data "archive_file" "provision_handler" {
 
 resource "aws_lambda_function" "provision_handler" {
   filename      = data.archive_file.provision_handler.output_path
-  function_name = "TerraformCloudEngineProvisionHandlerLambda"
+  function_name = "ServiceCatalogTFCProvisionHandlerLambda"
   role          = aws_iam_role.provisioning_handler_lambda_execution.arn
   handler       = "main"
 
@@ -103,7 +103,7 @@ resource "aws_lambda_event_source_mapping" "provision_handler_provision_queue" {
 
 resource "aws_lambda_function" "terminate_handler" {
   filename      = data.archive_file.provision_handler.output_path
-  function_name = "TerraformCloudEngineTerminateHandlerLambda"
+  function_name = "ServiceCatalogTFCTerminateHandlerLambda"
   role          = aws_iam_role.provisioning_handler_lambda_execution.arn
   handler       = "main"
 
@@ -131,7 +131,7 @@ resource "aws_lambda_event_source_mapping" "terminate_handler_terminate_queue" {
 
 resource "aws_lambda_function" "update_handler" {
   filename      = data.archive_file.provision_handler.output_path
-  function_name = "TerraformCloudEngineUpdateHandlerLambda"
+  function_name = "ServiceCatalogTFCUpdateHandlerLambda"
   role          = aws_iam_role.provisioning_handler_lambda_execution.arn
   handler       = "main"
 

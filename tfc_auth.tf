@@ -12,7 +12,7 @@ resource "tfe_team_token" "test_team_token" {
 }
 
 resource "aws_secretsmanager_secret" "team_token_values" {
-  name = "terraform-cloud-service-catalog-engine-credentials"
+  name = "terraform-cloud-service-catalog-engine-cred-set"
 }
 
 resource "aws_secretsmanager_secret_version" "tfc_credentials" {

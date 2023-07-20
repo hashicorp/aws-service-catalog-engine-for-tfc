@@ -26,13 +26,14 @@ func (h *PollRunStatusHandler) HandleRequest(ctx context.Context, request PollRu
 	// Get TFE Client
 	tfeClient, err := tfc.GetTFEClient(ctx, h.secretsManager)
 	if err != nil {
-		log.Fatalf("failed to initialize TFE client: %s", err)
+		log.Printf("failed to initialize TFE client: %s", err)
+		return nil, err
 	}
 
 	// Fetch the latest status of the run
 	run, err := tfeClient.Runs.Read(ctx, request.TerraformRunId)
 	if err != nil {
-		return nil, tfc.MapErrorAfterRequest(err)
+		return nil, tfc.Error(err)
 	}
 
 	// Respond with the appropriate status so the AWS Step Functions state machine will know what the next step is
