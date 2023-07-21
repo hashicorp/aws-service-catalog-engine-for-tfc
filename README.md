@@ -29,6 +29,7 @@ To build the Go code and lambda functions, do the following:
 
 ### Launch the Engine
 To launch the engine, you'll need to set the `TFE_TOKEN` environment variable to a Terraform Cloud user token. It is important to note that this user token must have permission to create workspaces within your organization in order for them to provision products.
+For more information on TFC permissions, please refer to this [documentation](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/permissions).
 
 You'll also need to authenticate the AWS provider as you would normally, using one of the methods mentioned in the AWS provider documentation [here](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication-and-configuration).
 
