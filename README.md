@@ -1,7 +1,7 @@
 # AWS Service Catalog Engine for Terraform Cloud
 The AWS Service Catalog Terraform Cloud Reference Engine (TFC-RE) is a configurable Terraform Cloud Reference Engine that can be installed using AWS Service Catalog. This integration gives administrators governance and visibility into their Terraform workloads, and allows Service Catalog administrators to delegate cloud resource provisioning responsibilities to users within their organizations. For more information about using Terraform Cloud with AWS Service Catalog, see **<insert AWS docs on how to get started here>**.
 
-# Pre-requisites
+# Prerequisites
 The installation can be done from any Linux or Mac machine.
 
 ## Install the Tools
