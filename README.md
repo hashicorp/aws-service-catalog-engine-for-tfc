@@ -199,4 +199,4 @@ To file a bug report or to provide feedback on the TFC-RE, please [open a GitHub
 
 --------------------
 ## License
-[Mozilla Public License v2.0](https://github.com/hashicorp/terraform/blob/main/LICENSE)
+[Mozilla Public License v2.0](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/LICENSE)
