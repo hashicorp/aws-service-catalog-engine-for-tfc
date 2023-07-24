@@ -12,12 +12,12 @@ import (
 	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/lambda-functions/golang/shared/fileutils"
 )
 
-type TerraformOpenSourceParameterParserInput struct {
+type TerraformParameterParserInput struct {
 	Artifact      Artifact `json:"artifact"`
 	LaunchRoleArn string   `json:"launchRoleArn"`
 }
 
-type TerraformOpenSourceParameterParserResponse struct {
+type TerraformParameterParserResponse struct {
 	Parameters []*Parameter `json:"parameters"`
 }
 
@@ -38,16 +38,16 @@ func main() {
 	lambda.Start(h.HandleRequest)
 }
 
-func (h *TerraformParameterParserHandler) HandleRequest(ctx context.Context, event TerraformOpenSourceParameterParserInput) (TerraformOpenSourceParameterParserResponse, error) {
+func (h *TerraformParameterParserHandler) HandleRequest(ctx context.Context, event TerraformParameterParserInput) (TerraformParameterParserResponse, error) {
 	if err := ValidateInput(event); err != nil {
-		return TerraformOpenSourceParameterParserResponse{}, err
+		return TerraformParameterParserResponse{}, err
 	}
 
 	fileMap, fileMapErr := h.fetchArtifact(ctx, event)
 	if fileMapErr != nil {
-		return TerraformOpenSourceParameterParserResponse{}, fileMapErr
+		return TerraformParameterParserResponse{}, fileMapErr
 	}
 
 	parameters, parseParametersErr := ParseParametersFromConfiguration(fileMap)
-	return TerraformOpenSourceParameterParserResponse{Parameters: parameters}, parseParametersErr
+	return TerraformParameterParserResponse{Parameters: parameters}, parseParametersErr
 }

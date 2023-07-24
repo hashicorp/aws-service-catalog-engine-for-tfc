@@ -14,7 +14,7 @@ import (
 
 func TestValidateInputHappy(t *testing.T) {
 	// setup
-	input := TerraformOpenSourceParameterParserInput{
+	input := TerraformParameterParserInput{
 		Artifact: Artifact{
 			Path: TestArtifactPath,
 			Type: TestArtifactType,
@@ -33,7 +33,7 @@ func TestValidateInputHappy(t *testing.T) {
 
 func TestValidateInputWithEmptyArtifactThrowsParserInvalidParameterException(t *testing.T) {
 	// setup
-	input := TerraformOpenSourceParameterParserInput{
+	input := TerraformParameterParserInput{
 		Artifact:      Artifact{},
 		LaunchRoleArn: TestLaunchRoleArn,
 	}
@@ -50,7 +50,7 @@ func TestValidateInputWithEmptyArtifactThrowsParserInvalidParameterException(t *
 
 func TestValidateInputWithEmptyLaunchRoleArnThrowsParserInvalidParameterException(t *testing.T) {
 	// setup
-	input := TerraformOpenSourceParameterParserInput{
+	input := TerraformParameterParserInput{
 		Artifact: Artifact{
 			Path: TestArtifactPath,
 			Type: TestArtifactType,
@@ -70,7 +70,7 @@ func TestValidateInputWithEmptyLaunchRoleArnThrowsParserInvalidParameterExceptio
 
 func TestValidateInputWithEmptyArtifactPathThrowsParserInvalidParameterException(t *testing.T) {
 	// setup
-	input := TerraformOpenSourceParameterParserInput{
+	input := TerraformParameterParserInput{
 		Artifact: Artifact{
 			Path: "",
 			Type: TestArtifactType,
@@ -90,7 +90,7 @@ func TestValidateInputWithEmptyArtifactPathThrowsParserInvalidParameterException
 
 func TestValidateInputWithEmptyArtifactTypeThrowsParserInvalidParameterException(t *testing.T) {
 	// setup
-	input := TerraformOpenSourceParameterParserInput{
+	input := TerraformParameterParserInput{
 		Artifact: Artifact{
 			Path: TestArtifactPath,
 			Type: "",
@@ -110,7 +110,7 @@ func TestValidateInputWithEmptyArtifactTypeThrowsParserInvalidParameterException
 
 func TestValidateInputWithSyntacticallyIncorrectArnThrowsParserInvalidParameterException(t *testing.T) {
 	// setup
-	input := TerraformOpenSourceParameterParserInput{
+	input := TerraformParameterParserInput{
 		Artifact: Artifact{
 			Path: TestArtifactPath,
 			Type: TestArtifactType,
@@ -130,7 +130,7 @@ func TestValidateInputWithSyntacticallyIncorrectArnThrowsParserInvalidParameterE
 
 func TestValidateInputWithNonIamArnThrowsParserInvalidParameterException(t *testing.T) {
 	// setup
-	input := TerraformOpenSourceParameterParserInput{
+	input := TerraformParameterParserInput{
 		Artifact: Artifact{
 			Path: TestArtifactPath,
 			Type: TestArtifactType,
@@ -150,7 +150,7 @@ func TestValidateInputWithNonIamArnThrowsParserInvalidParameterException(t *test
 
 func TestValidateInputWithNonDefaultArtifactTypeThrowsParserInvalidParameterException(t *testing.T) {
 	// setup
-	input := TerraformOpenSourceParameterParserInput{
+	input := TerraformParameterParserInput{
 		Artifact: Artifact{
 			Path: TestArtifactPath,
 			Type: "fakeType",
@@ -170,7 +170,7 @@ func TestValidateInputWithNonDefaultArtifactTypeThrowsParserInvalidParameterExce
 
 func TestValidateInputWithInvalidArtifactPathThrowsParserInvalidParameterException(t *testing.T) {
 	// setup
-	input := TerraformOpenSourceParameterParserInput{
+	input := TerraformParameterParserInput{
 		Artifact: Artifact{
 			Path: "invalidPath",
 			Type: TestArtifactType,
@@ -190,7 +190,7 @@ func TestValidateInputWithInvalidArtifactPathThrowsParserInvalidParameterExcepti
 
 func TestValidateInputWithNoneS3ArtifactPathThrowsParserInvalidParameterException(t *testing.T) {
 	// setup
-	input := TerraformOpenSourceParameterParserInput{
+	input := TerraformParameterParserInput{
 		Artifact: Artifact{
 			Path: "https://terraform-configurations-cross-account-demo/product_with_override_var.tar.gz",
 			Type: TestArtifactType,

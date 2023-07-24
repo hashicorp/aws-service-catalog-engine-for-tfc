@@ -29,9 +29,9 @@ const InvalidIamLaunchRoleArnErrorMessage = "LaunchRoleArn %s is not a valid iam
 const InvalidArtifactTypeErrorMessage = "Artifact type %s is not supported, must be AWS_S3"
 const InvalidArtifactPathErrorMessage = "Artifact path %s is not a valid S3 URI"
 
-// ValidateInput - Validates TerraformOpenSourceParameterParserInput
+// ValidateInput - Validates TerraformParameterParserInput
 // Returns a non nil error if an invalid input is provided
-func ValidateInput(input TerraformOpenSourceParameterParserInput) error {
+func ValidateInput(input TerraformParameterParserInput) error {
 	// validate required keys exist in the input
 	if err := validateRequiredKeysExist(input); err != nil {
 		return err
@@ -50,7 +50,7 @@ func ValidateInput(input TerraformOpenSourceParameterParserInput) error {
 	return nil
 }
 
-func validateRequiredKeysExist(input TerraformOpenSourceParameterParserInput) error {
+func validateRequiredKeysExist(input TerraformParameterParserInput) error {
 	if reflect.DeepEqual(input.Artifact, Artifact{}) {
 		return exceptions.ParserInvalidParameterException{
 			Message: fmt.Sprintf(RequiredKeyMissingOrEmptyErrorMessage, ArtifactKey),

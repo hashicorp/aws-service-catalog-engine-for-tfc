@@ -16,7 +16,7 @@ const ArtifactFetchAccessDeniedErrorMessage = "Access denied while downloading a
 const UnzipFailureErrorMessage = "Artifact from %s is not a valid tar.gz file: %s"
 
 // Fetches the artifact file and returns it as a map of the entry names to their respective contents in string format
-func (h *TerraformParameterParserHandler) fetchArtifact(ctx context.Context, request TerraformOpenSourceParameterParserInput) (map[string]string, error) {
+func (h *TerraformParameterParserHandler) fetchArtifact(ctx context.Context, request TerraformParameterParserInput) (map[string]string, error) {
 	// Download the artifact from S3
 	sourceProductConfig, err := fileutils.DownloadS3File(ctx, h.s3Downloader, request.LaunchRoleArn, request.Artifact.Path)
 	if err != nil {

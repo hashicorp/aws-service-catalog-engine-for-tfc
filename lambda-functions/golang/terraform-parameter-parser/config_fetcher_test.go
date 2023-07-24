@@ -29,7 +29,7 @@ func TestConfigFetcherFetchHappy(t *testing.T) {
 
 	testHandler := &TerraformParameterParserHandler{s3Downloader: mockDownloader}
 
-	input := TerraformOpenSourceParameterParserInput{
+	input := TerraformParameterParserInput{
 		Artifact: Artifact{
 			Path: TestArtifactPath,
 			Type: TestArtifactType,
