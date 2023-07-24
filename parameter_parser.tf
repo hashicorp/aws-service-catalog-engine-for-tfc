@@ -1,3 +1,6 @@
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
 resource "aws_lambda_function" "parameter_parser" {
   filename = data.archive_file.parameter_parser.output_path
   # TODO: Rename after AWS has modified product type

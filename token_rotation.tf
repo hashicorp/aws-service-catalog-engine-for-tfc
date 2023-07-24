@@ -1,3 +1,6 @@
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
 data "aws_iam_policy_document" "rotate_token_handler" {
   statement {
     effect = "Allow"

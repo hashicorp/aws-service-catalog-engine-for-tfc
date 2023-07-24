@@ -1,3 +1,6 @@
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
 resource "tfe_team" "provisioning_team" {
   name         = var.tfc_team
   organization = var.tfc_organization

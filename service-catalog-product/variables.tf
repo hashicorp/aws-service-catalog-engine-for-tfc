@@ -1,3 +1,6 @@
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
 variable "service_catalog_portfolio_ids" {
   type        = list(string)
   description = "ID of the AWS Service Catalog Portfolios to assign the product to"
