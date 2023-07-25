@@ -52,7 +52,7 @@ The TFC-RE creates an example product upon launch, however, if you’d prefer to
 
 ## Updating Token Rotation Frequency
 To enhance security, the Terraform Cloud team token associated with your account is automatically rotated every 30 days. However, the frequency in which the token rotation occurs is customizable. The following can be done to update the rotation frequency:
-1. Update the token rotation frequency within the Terraform configuration itself. This can be done by updating the `[aws_cloudwatch_event_rule` resource](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/blob/main/token_rotation.tf#L198) within the TFC-RE and running `terraform apply` to apply these changes.
+1. Update the token rotation frequency within the Terraform configuration itself. This can be done by updating the [`aws_cloudwatch_event_rule` resource](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/blob/main/token_rotation.tf#L198) within the TFC-RE and running `terraform apply` to apply these changes.
 
 # Troubleshooting
 
