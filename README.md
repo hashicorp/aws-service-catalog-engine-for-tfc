@@ -13,17 +13,13 @@ The AWS Service Catalog Engine for Terraform Cloud (TFC-RE) is an integration be
 
 ### Set Up Your Environment
 1. `git clone` the project.
-2. Export the following environment variables:
-   `AWS_ACCOUNT_ID=<YOUR AWS ACCOUNT ID>
-   AWS_REGION=<YOUR REGION OF CHOICE>`
+2. Export any setup credentials.
 
 For further information regarding credentials, please follow the steps outlined in their AWS [developer guide](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/setup-credentials.html).
 
 ### Launch the Engine
 To launch the engine, you'll need to set the `TFE_TOKEN` environment variable to a Terraform Cloud user token. It is important to note that this user will need permissions to create Teams and other authentication tokens.
 For more information on TFC permissions, please refer to this [documentation](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/permissions).
-
-You'll also need to authenticate the AWS provider as you would normally, using one of the methods mentioned in the AWS provider documentation [here](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication-and-configuration).
 
 After authenticating with both AWS and Terraform Cloud, do the following:
 1. Copy `terraform.tfvars.example` to `terraform.tfvars` and set the organization name to your Terraform Cloud organization name.
