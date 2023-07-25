@@ -20,16 +20,18 @@ func SimplifyError(errorString string) string {
 	errorParsed := &Error{}
 	err := json.Unmarshal([]byte(errorString), errorParsed)
 	if err != nil {
+		if errorString == "Failed running terraform apply" {
+			// If the error was due to the Terraform failing to apply in TFC, give the user helpful next steps
+			return "Failed to run terraform apply in Terraform Cloud. Check the workspace in Terraform Cloud for details"
+		}
+
+		log.Default().Printf("error message was not valid json, returning as is (without formatting): %s", errorString)
+
 		// If the error failed to be parsed, return it as is, without any additional formatting, as it was likely parsed previously
 		return errorString
 	}
 
 	log.Default().Printf("simplifying error with type of %s and message: %s", errorParsed.ErrorType, errorParsed.ErrorMessage)
-
-	if errorParsed.ErrorType == "errorString" && errorParsed.ErrorMessage == "Failed running terraform apply" {
-		// If the error was due to the terraform failing to apply in TFC, give the user helpful next steps
-		return "Failed to run terraform apply in Terraform Cloud. Check the workspace in Terraform Cloud for details"
-	}
 
 	if errorParsed.ErrorType == "errorString" && errorParsed.ErrorMessage != "" {
 		// If the errorType is errorString, simplify the error by de-jsonifying it

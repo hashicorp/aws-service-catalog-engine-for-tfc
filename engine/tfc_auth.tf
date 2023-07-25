@@ -1,9 +1,14 @@
 # Copyright (c) HashiCorp, Inc.
 # SPDX-License-Identifier: MPL-2.0
 
+
+data "tfe_organization" "organization" {
+  name = var.tfc_organization
+}
+
 resource "tfe_team" "provisioning_team" {
   name         = var.tfc_team
-  organization = var.tfc_organization
+  organization = data.tfe_organization.organization.name
   organization_access {
     manage_projects   = true
     manage_workspaces = true
@@ -15,7 +20,7 @@ resource "tfe_team_token" "test_team_token" {
 }
 
 resource "aws_secretsmanager_secret" "team_token_values" {
-  name = "terraform-cloud-service-catalog-engine-cred-set"
+  name = "terraform-cloud-service-catalog-engine-credentials-3"
 }
 
 resource "aws_secretsmanager_secret_version" "tfc_credentials" {

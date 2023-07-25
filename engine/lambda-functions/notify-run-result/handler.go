@@ -56,7 +56,7 @@ func (h NotifyRunResultHandler) NotifyTerminateResult(ctx context.Context, tfeCl
 	var status = types.EngineWorkflowStatusSucceeded
 	var failureReason *string = nil
 	if request.ErrorMessage != "" {
-		failureReason = aws.String(request.ErrorMessage)
+		failureReason = FormatError(request.Error, request.ErrorMessage)
 		status = types.EngineWorkflowStatusFailed
 	}
 

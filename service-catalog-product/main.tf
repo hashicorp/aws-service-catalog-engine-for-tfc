@@ -33,11 +33,26 @@ resource "aws_servicecatalog_product" "example" {
     template_url                = "https://s3.amazonaws.com/${data.aws_s3_object.artifact.bucket}/${data.aws_s3_object.artifact.key}"
     type                        = "TERRAFORM_OPEN_SOURCE"
   }
+}
 
-  tags = {
-    ServiceCatalogProduct = var.product_name
-    ManagedBy             = "tfc"
-  }
+resource "aws_servicecatalog_tag_option_resource_association" "example_product_managed_by" {
+  resource_id   = aws_servicecatalog_product.example.id
+  tag_option_id = aws_servicecatalog_tag_option.product_managed_by.id
+}
+
+resource "aws_servicecatalog_tag_option" "product_managed_by" {
+  key   = "ManagedBy"
+  value = "tfc"
+}
+
+resource "aws_servicecatalog_tag_option_resource_association" "example_product_name" {
+  resource_id   = aws_servicecatalog_product.example.id
+  tag_option_id = aws_servicecatalog_tag_option.product_name.id
+}
+
+resource "aws_servicecatalog_tag_option" "product_name" {
+  key   = "ServiceCatalogProduct"
+  value = var.product_name
 }
 
 resource "aws_servicecatalog_product_portfolio_association" "example" {

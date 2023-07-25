@@ -14,9 +14,9 @@ output "send_apply_lambda_role_arn" {
 }
 
 output "tfc_organization" {
-  value  = local.send_apply_lambda_role_arn
+  value  = data.tfe_organization.organization.name
 }
 
 output "tfc_hostname" {
-  value     = "app.terraform.io"
+  value     = var.tfc_hostname
 }

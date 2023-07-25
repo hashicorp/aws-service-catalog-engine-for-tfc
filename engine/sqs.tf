@@ -84,7 +84,6 @@ resource "aws_sqs_queue" "terraform_engine_dlq" {
   kms_master_key_id = aws_kms_key.queue_key.key_id
 }
 
-
 data "aws_iam_policy_document" "queue_policy" {
   statement {
     sid    = "Enable AWS Service Catalog to send messages to the queue"
@@ -112,7 +111,6 @@ data "aws_iam_policy_document" "queue_policy" {
     resources = [aws_kms_key.queue_key.arn]
   }
 }
-
 
 resource "aws_sqs_queue_policy" "queue_policy" {
   for_each = {
