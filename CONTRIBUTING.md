@@ -1,0 +1,7 @@
+# Contributing
+
+## Pull Requests
+All pull requests require at least one approval from the [CODEOWNERS](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/blob/main/.github/CODEOWNERS). Before merge, all pull request checks must pass, including Go tests.
+
+## Bug Reports
+To file a bug report or to provide feedback on the TFC-RE, please [open a GitHub issue](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/issues). Please try to provide as much detail as possible so that we are able to help you as quickly as possible.

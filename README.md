@@ -1,13 +1,11 @@
 # AWS Service Catalog Engine for Terraform Cloud
-The AWS Service Catalog Terraform Cloud Reference Engine (TFC-RE) is a configurable Terraform Cloud Reference Engine that can be installed using AWS Service Catalog. This integration gives administrators governance and visibility into their Terraform workloads, and allows Service Catalog administrators to delegate cloud resource provisioning responsibilities to users within their organizations. For more information about using Terraform Cloud with AWS Service Catalog, see **<insert AWS docs on how to get started here>**.
+The AWS Service Catalog Engine for Terraform Cloud (TFC-RE) is an integration between AWS Service Catalog and Terraform Cloud that allows users to provision Service Catalog products using TFC. This integration gives administrators governance and visibility into their Terraform workloads, and allows Service Catalog administrators to delegate cloud resource provisioning responsibilities to users within their organizations.
 
 # Prerequisites
-The installation can be done from any Linux or Mac machine.
-
-## Install the Tools
-1. Install the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) tools.
-2. Install [Go](https://go.dev/doc/install).
-3. Install the [Terraform CLI](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli) tools.
+1. A Terraform Cloud organization that supports [Team Management](https://www.hashicorp.com/products/terraform/pricing).
+2. A way to authenticate the AWS provider (see documentation [here](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication-and-configuration) for list of options).
+3. An [API Token](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/api-tokens) to use to authenticate the TFE Terraform Provider.
+4. The [Terraform CLI](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli) tools.
 
 # Install the Terraform Cloud Reference Engine
 
@@ -16,24 +14,18 @@ The installation can be done from any Linux or Mac machine.
 ### Set Up Your Environment
 1. `git clone` the project.
 2. Export the following environment variables:
-
    `AWS_ACCOUNT_ID=<YOUR AWS ACCOUNT ID>
    AWS_REGION=<YOUR REGION OF CHOICE>`
 
 For further information regarding credentials, please follow the steps outlined in their AWS [developer guide](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/setup-credentials.html).
 
-### Build the Code
-To build the Go code and lambda functions, do the following:
-1. `cd` into `lambda-functions/golang`.
-2. Run `make bin` to build the Lambda functions and install the necessary dependencies.
-
 ### Launch the Engine
-To launch the engine, you'll need to set the `TFE_TOKEN` environment variable to a Terraform Cloud user token. It is important to note that this user token must have permission to create workspaces within your organization in order for them to provision products.
+To launch the engine, you'll need to set the `TFE_TOKEN` environment variable to a Terraform Cloud user token. It is important to note that this user will need permissions to create Teams and other authentication tokens.
 For more information on TFC permissions, please refer to this [documentation](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/permissions).
 
 You'll also need to authenticate the AWS provider as you would normally, using one of the methods mentioned in the AWS provider documentation [here](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication-and-configuration).
 
-Additionally, you’ll need to do the following:
+After authenticating with both AWS and Terraform Cloud, do the following:
 
 1. Copy `terraform.tfvars.example` to `terraform.tfvars` and set the organization name to your Terraform Cloud organization name.
 2. Run `terraform plan` to verify your setup, and then run `terraform apply` to apply your changes.
@@ -45,12 +37,14 @@ To test your newly provisioned Service Catalog Engine for Terraform Cloud, follo
 
 The example product mentioned above can be found [here](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/tree/main/example-product).
 
-# Troubleshooting
+## Troubleshooting Terraform Authentication
+If you run into TFC workspace issues, such as issues when creating TFC workspaces, it may mean that the [Team](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/teams) that has been created to launch products for your AWS Service Catalog account may not have the correct set of permissions on Terraform Cloud.
 
-## Terraform Authentication
-If you run into TFC workspace issues, it may mean that the user that has been granted access to launch products within your AWS Service Catalog account may not have the correct set of permissions on Terraform Cloud.
+**Solution:** Re-apply the engine's Terraform to reset the Team's permissions (thus re-granting it permissions to create and manage workspaces within your organization).
 
-**Solution:** Grant users permission to create workspaces within your organization.
+# Architecture
+To better understand the TFC-RE architecture, please refer to the following diagram:
+![The TFC-RE Flow](images/engine_flow.png)
 
 # Creating and Provisioning a Product in Service Catalog
 The TFC-RE creates an example product upon launch, however, if you’d prefer to create a new product using the Service Catalog UI, please refer to the steps outlined in this section. For more information on how to provision a product using Terraform Cloud and AWS Service Catalog, please refer to this **<insert documentation on how to do this, here>** documentation.
@@ -78,33 +72,17 @@ Once the user has been granted the necessary permissions on a portfolio that con
 2. Terminate a provisioned product via Service Catalog, triggering a destroy run in TFC.
 3. Update the team token rotation frequency via AWS EventBridge, altering the frequency in which the TFC team token rotates.
 
-# Troubleshooting
-
-### Exceptions
-There are three common exceptions that can be thrown during the provisioning of a product. The three exceptions that can be expected are:
-1. `DuplicateResourceException`: This exception is thrown when a duplicate resource has been specified.
-2. `InvalidParametersException`: This exception is thrown when the provided parameters are invalid.
-3. `ResourceNotFoundException`: This exception is thrown when the resource cannot be found.
-
-For more information on provisioned products, please refer to this AWS developer [documentation](https://docs.aws.amazon.com/servicecatalog/latest/dg/API_ProvisionProduct.html).
-
 # Token Rotation
 
 ## Updating Token Rotation Frequency
-To enhance security, the Terraform Cloud team token associated with your account is automatically rotated every 30 days. However, the frequency in which the token rotation occurs is customizable. There are two ways in which the token rotation frequency can be updated:
+To enhance security, the Terraform Cloud team token associated with your account is automatically rotated every 30 days. However, the frequency in which the token rotation occurs is customizable. The following can be done to update the rotation frequency:
 1. Update the token rotation frequency within the Terraform configuration itself. This can be done by updating the `[aws_cloudwatch_event_rule` resource](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/blob/main/token_rotation.tf#L198) within the TFC-RE and running `terraform apply` to apply these changes.
-2. Update the token rotation frequency within the AWS EventBridge UI. To do this, navigate to “rules” and select [`TerraformEngineRotateToken`](https://us-west-2.console.aws.amazon.com/events/home?region=us-west-2#/eventbus/default/rules/TerraformEngineRotateToken). From here, click “[Edit](https://us-west-2.console.aws.amazon.com/events/home?region=us-west-2#/eventbus/default/rules/TerraformEngineRotateToken/edit),” and then navigate to “Define schedule.” It is within “Define schedule” where you can manually update the token rotation frequency. While we recommend that tokens are rotated every 30 days, Admins can update this interval to whatever frequency they’d prefer.
-
-## Token Rotation Monitoring
-To monitor token rotation, an AWS Admin can navigate to AWS EventBridge and view the [`TerraformEngineRotateToken`](https://us-west-2.console.aws.amazon.com/events/home?region=us-west-2#/eventbus/default/rules/TerraformEngineRotateToken) rules through the “Monitoring” tab.
 
 # Troubleshooting
 
 ### Exceptions
-There are three types of exceptions that can be thrown by the TFC-RE. The three exceptions that can be expected are:
-1. `ParserInvalidParameterException`: This exception is thrown when an invalid input is provided to the parser.
-2. `ParserAccessDeniedException`: This exception is thrown when the parser is passed a launch role that it cannot assume. Alternatively, this exception can be thrown when the launch role cannot access the artifact that is passed to the parser.
-3. `NoFilesToParseExceptionMessage`: This exception is thrown when the parser is unable to find a `.tf` file to parse, or when the Terraform configuration does not contain a `.tf` file for the `root` module.
+The TFC-RE can throw exceptions. An exception that can be expected is:
+1. `NoFilesToParseExceptionMessage`: This exception is thrown when the parser is unable to find a `.tf` file to parse, or when the Terraform configuration does not contain a `.tf` file for the `root` module. To ensure that your file contains `.tf` files at the root level, try recreating the file using the commands in the Terraform Cloud API-driven workflow guide [here](https://developer.hashicorp.com/terraform/cloud-docs/run/api#2-create-the-file-for-upload).
 
 # Monitoring
 
@@ -125,6 +103,9 @@ For more insight into a particular Lambda function, leveraging the AWS Lambda se
 ### Amazon SQS
 The Amazon SQS contains information regarding Service Catalog workloads. The Amazon SQS service can provide information regarding Lambda triggers, tagging, access policies, and more for a given queue. It also contains the dead-letter queue. Each queue has its own “message retention period,” which is the duration that the messages will be kept. The message retention period is configurable, and is set to 4 days by default for the TFC-RE. For more information on Amazon SQS, please refer to this AWS developer [documentation](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html), and for more information on setting queue attributes, please refer to this AWS developer [documentation](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SetQueueAttributes.html).
 
+# TFE Token Rotation
+To monitor token rotation, an AWS Admin can search for metrics related to the `TerraformEngineRotateToken` event rule in AWS CloudWatch.
+
 ## Monitoring with TFC
 
 ### Run Outputs
@@ -141,6 +122,10 @@ Provisioning artifacts must be a tar file, in the `.tar.gz` format, with a filen
 ### Troubleshooting Artifact Files
 If you run into issues with the artifact files, ensure that the filename extensions are correct—tar files must be in the `.tar.gz` format and Terraform files must be in the `.tf` format. If the filename extensions are not the root cause, next ensure that the `.tar.gz` file is located in the `root` directory.
 
+# Maximum Configuration Version Size
+The maximum configuration version size supports files up to 950KB. Files larger than 950KB will result in a failure within AWS Service Catalog.
+
+
 ## Parameter Parser
 
 ### Parsing Large Artifacts
@@ -156,47 +141,24 @@ If the provisioning step takes too long, the AWS Service Catalog will timeout. T
 
 **Cause:** This error occurs when a Lambda function times out.
 
-**Solution:** To resolve this error, try rerunning the operation.
-
-## `403` Forbidden
-**Error:** `403`
-
-**Cause:** This error typically occurs when a role has an issue assuming another role.
-
-**Solution:** To resolve this error, ensure that the appropriate roles have been given and re-`apply` the Terraform.
+**Solution:** To resolve this error, try rerunning the operation. Additionally, please file an issue in the repository: https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/issues or contact HashiCorp support.
 
 ## Issues with the Service Catalog Product Version
-**Error:**
-
-**Cause:** This error occurs when the AWS Service Catalog Product version is out of date.
-
-**Solution:** To resolve this error, create a new version of the product and re-provision.
-
-It is important to create a new product version anytime the configuration has been modified. In doing this, you should be able to avoid this error.
+It is important to create a new product version anytime the configuration has been modified. In doing this, you should be able to avoid issues associated with Service Catalog Product Versions.
 
 ## Error Creating Team
 **Error:** `Error: Error creating team aws-service-catalog for organization <org-name>: resource not found`
 
-**Cause:** This error occurs when a `TFE_TOKEN` has not been set.
+**Cause:** This error occurs when a `TFE_TOKEN` has not been set, or the `tfc_organization` variable wasn't provided correctly.
 
-**Solution:** To resolve this error, set the `TFE_TOKEN` environment variable.
+**Solution:** Check that the `tfc_organization` value you provided exactly matches the name of your TFC organization. Also make sure you have set the `TFE_TOKEN` environment variable to a valid [API Token](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/api-tokens).
 
 For more information on authentication tokens, please refer to this [documentation](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/api-tokens).
 
 # Contributing
-
-## Pull Requests
-All pull requests require at least one approval from the [CODEOWNERS](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/blob/main/.github/CODEOWNERS). Before merge, all pull request checks must pass, including Go tests.
-
-## Bug Reports
-To file a bug report or to provide feedback on the TFC-RE, please [open a GitHub issue](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/issues). Please try to provide as much detail as possible so that we are able to help you as quickly as possible.
+For more information on how to contribute, please refer to the [Contributing Guide](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/blob/main/CONTRIBUTING.md).
 
 # Attributions
 1. [Terraform](https://github.com/hashicorp/terraform)
-2. [Terraform Registry](https://registry.terraform.io/providers/hashicorp/aws/latest)
-3. [AWS Service Catalog Engine for Terraform Open Source](https://github.com/aws-samples/service-catalog-engine-for-terraform-os)
-4. [AWS Service Catalog Documentation](https://docs.aws.amazon.com/servicecatalog/index.html)
-
---------------------
-## License
-[Mozilla Public License v2.0](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/LICENSE)
+2. [AWS Service Catalog Engine for Terraform Open Source](https://github.com/aws-samples/service-catalog-engine-for-terraform-os)
+3. [AWS Service Catalog Documentation](https://docs.aws.amazon.com/servicecatalog/index.html)
