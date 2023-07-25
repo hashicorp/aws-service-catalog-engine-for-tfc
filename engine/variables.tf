@@ -12,6 +12,12 @@ variable "tfc_team" {
   default     = "aws-service-catalog"
 }
 
+variable "enable_xray_tracing" {
+  type        = bool
+  description = "When set to true, AWS X-Ray tracing is enabled"
+  default     = true
+}
+
 variable "tfc_hostname" {
   type        = string
   description = "TFC hostname (defaults to TFC: app.terraform.io)"
@@ -28,10 +34,4 @@ variable "cloudwatch_log_retention_in_days" {
   type        = number
   default     = 90
   description = "Number of days you wish retain Cloudwatch logs for all the AWS resources in this configuration. These logs are invaluable for Terraform Cloud support staff in helping to diagnose any issues you may run into!"
-}
-
-variable "enable_xray_tracing" {
-  type        = bool
-  description = "When set to true, AWS X-Ray tracing is enabled"
-  default     = true
 }

@@ -72,6 +72,7 @@ resource "aws_iam_role" "example_product_launch_role" {
     Version = "2012-10-17"
     Statement = [
       {
+        # Allow Service Catalog to assume the role
         Action = "sts:AssumeRole"
         Effect = "Allow"
         Sid    = "AllowServiceCatalogToAssume"
@@ -80,6 +81,7 @@ resource "aws_iam_role" "example_product_launch_role" {
         }
       },
       {
+        # Allow the SendApply and ParameterParser lambda functions to assume the role so that they can download the provisioning artifact from S3
         Action = "sts:AssumeRole"
         Effect = "Allow"
         Principal = {

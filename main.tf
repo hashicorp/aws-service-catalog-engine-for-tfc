@@ -33,16 +33,25 @@ provider "tfe" {
   hostname = var.tfc_hostname
 }
 
-data "aws_caller_identity" "current" {}
-data "aws_region" "current" {}
+# This module provisions the Terraform Cloud Reference Engine
+module "terraform_cloud_reference_engine" {
+  source = "./engine"
 
+  tfc_organization = var.tfc_organization
+  tfc_team = var.tfc_team
+  tfc_aws_audience = var.tfc_aws_audience
+  tfc_hostname = var.tfc_hostname
+  cloudwatch_log_retention_in_days = var.cloudwatch_log_retention_in_days
+  enable_xray_tracing = var.enable_xray_tracing
+}
+
+# Creates an AWS Service Catalog Portfolio to house the example product
 resource "aws_servicecatalog_portfolio" "portfolio" {
   name          = "TFC Example Portfolio"
   description   = "Example Portfolio created via AWS Service Catalog Engine for TFC"
   provider_name = "HashiCorp Examples"
 }
 
-# Products
 resource "random_string" "random" {
   length  = 16
   special = false
@@ -69,16 +78,16 @@ module "example_product" {
   artifact_bucket_name = aws_s3_object.object.bucket
   artifact_object_key  = aws_s3_object.object.id
 
-  # ARNs of Lambda functions that need to assume the IAM Launch Role
-  parameter_parser_role_arn  = aws_iam_role.parameter_parser.arn
-  send_apply_lambda_role_arn = local.send_apply_lambda_role_arn
+  # ARNs of Lambda functions that need to be able to assume the IAM Launch Role
+  parameter_parser_role_arn  = module.terraform_cloud_reference_engine.parameter_parser_role_arn
+  send_apply_lambda_role_arn = module.terraform_cloud_reference_engine.send_apply_lambda_role_arn
 
   # AWS Service Catalog portfolio you would like to add this product to
   service_catalog_portfolio_ids = [aws_servicecatalog_portfolio.portfolio.id]
 
   # Variables for authentication to AWS via Dynamic Credentials
-  tfc_hostname     = var.tfc_hostname
-  tfc_organization = var.tfc_organization
-  tfc_provider_arn = aws_iam_openid_connect_provider.tfc_provider.arn
+  tfc_hostname     = module.terraform_cloud_reference_engine.tfc_hostname
+  tfc_organization = module.terraform_cloud_reference_engine.tfc_organization
+  tfc_provider_arn = module.terraform_cloud_reference_engine.oidc_provider_arn
 
 }
