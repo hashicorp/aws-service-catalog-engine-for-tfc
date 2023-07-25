@@ -13,7 +13,6 @@ resource "aws_lambda_function" "parameter_parser" {
   runtime = "go1.x"
 }
 
-
 data "aws_iam_policy_document" "parameter_parser_assume_policy" {
   statement {
     effect = "Allow"
@@ -37,7 +36,6 @@ resource "aws_iam_role_policy" "parameter_parser" {
   role   = aws_iam_role.parameter_parser.id
   policy = data.aws_iam_policy_document.parameter_parser.json
 }
-
 
 data "aws_iam_policy_document" "parameter_parser" {
   version = "2012-10-17"
@@ -63,7 +61,7 @@ resource "aws_iam_role_policy_attachment" "parameter_parser" {
 data "archive_file" "parameter_parser" {
   type        = "zip"
   output_path = "dist/parameter_parser.zip"
-  source_dir  = "lambda-functions/golang/terraform-parameter-parser"
+  source_file  = "${path.module}/lambda-functions/terraform-parameter-parser/main"
 }
 
 resource "aws_lambda_permission" "service_catalog_parameter_parser_allowance" {

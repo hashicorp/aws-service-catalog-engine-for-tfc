@@ -1,6 +1,8 @@
 # Copyright (c) HashiCorp, Inc.
 # SPDX-License-Identifier: MPL-2.0
 
+data "aws_caller_identity" "current" {}
+
 data "aws_iam_policy_document" "queue_key_policy" {
   version = "2012-10-17"
 
@@ -17,7 +19,6 @@ data "aws_iam_policy_document" "queue_key_policy" {
     }
 
     resources = ["*"]
-
   }
 
   statement {

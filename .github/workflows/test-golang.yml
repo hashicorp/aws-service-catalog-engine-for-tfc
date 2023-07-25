@@ -19,10 +19,10 @@ jobs:
         uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 # v4.0.0
         with:
           go-version: '1.19.2'
-          go-version-file: lambda-functions/golang/go.mod
+          go-version-file: engine/lambda-functions/go.mod
           cache: true
 
       # Run all the tests
       - name: Test
-        working-directory: lambda-functions/golang
+        working-directory: engine/lambda-functions
         run: go test -v ./...

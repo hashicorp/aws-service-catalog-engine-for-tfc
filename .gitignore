@@ -18,4 +18,4 @@ terraform.tfvars
 dist/
 
 # Golang files
-lambda-functions/golang/vendor/
+engine/engine/lambda-functions/vendor/

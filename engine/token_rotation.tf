@@ -105,7 +105,7 @@ resource "aws_iam_role_policy_attachment" "rotate_token_handler_lambda_execution
 data "archive_file" "rotate_token_handler" {
   type        = "zip"
   output_path = "dist/token_rotation_handler.zip"
-  source_file = "lambda-functions/golang/token-rotation/main"
+  source_file = "engine/lambda-functions/token-rotation/main"
 }
 
 # Lambda for rotating team tokens

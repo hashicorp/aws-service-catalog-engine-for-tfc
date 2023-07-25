@@ -98,23 +98,23 @@ locals {
   lambda_functions = {
     (local.send_apply_lambda_name) : {
       policy_document = data.aws_iam_policy_document.send_apply.json
-      source_file     = "lambda-functions/golang/send-apply/main"
+      source_file     = "${path.module}/lambda-functions/send-apply/main"
       timeout         = 120
       memory_size     = 1024
     }
     (local.send_destroy_lambda_name) : {
       policy_document = data.aws_iam_policy_document.send_destroy.json
-      source_file     = "lambda-functions/golang/send-destroy/main"
+      source_file     = "${path.module}/lambda-functions/send-destroy/main"
 
     }
     (local.poll_run_status_lambda_name) : {
       policy_document = data.aws_iam_policy_document.poll_run_status.json
-      source_file     = "lambda-functions/golang/poll-run-status/main"
+      source_file     = "${path.module}/lambda-functions/poll-run-status/main"
       timeout         = 30
     }
     (local.notify_run_result_lambda_name) : {
       policy_document = data.aws_iam_policy_document.notify_run_result.json
-      source_file     = "lambda-functions/golang/notify-run-result/main"
+      source_file     = "${path.module}/lambda-functions/notify-run-result/main"
     }
   }
 }
