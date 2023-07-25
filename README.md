@@ -88,7 +88,7 @@ To monitor token rotation, an AWS Admin can search for metrics related to the `T
 There are a few places where you can monitor your organization’s TFC runs and workspaces, but one of the easiest places to monitor them is under the “Runs” tab for a particular workspace. The “Runs” tab will contain each run for a particular workspace. Additionally, you can click into a workspace run from this view, allowing you to gain further insight into the state of the run and where and why it errored. This view also contains the raw log for a given run and its sentinel mocks. For more information on TFC runs, please refer to this [documentation](https://developer.hashicorp.com/terraform/cloud-docs/api-docs/run).
 
 # Uninstalling the Integration
-To uninstall the integration, you should first destroy any necessary information in AWS and then run the `terraform destroy` command. This will remove the integration.
+To uninstall the integration, you should first destroy any necessary information in AWS. Next, run the `terraform destroy` command. This will remove the integration.
 
 # Limitations
 
@@ -100,7 +100,6 @@ If you run into issues with the artifact files, ensure that the filename extensi
 
 # Maximum Configuration Version Size
 The maximum configuration version size supports files up to 950KB. Files larger than 950KB will result in a failure within AWS Service Catalog.
-
 
 ## Parameter Parser
 
@@ -117,7 +116,7 @@ If the provisioning step takes too long, the AWS Service Catalog will timeout. T
 
 **Cause:** This error occurs when a Lambda function times out.
 
-**Solution:** To resolve this error, try rerunning the operation. Additionally, please file an issue in the repository: https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/issues or contact HashiCorp support.
+**Solution:** To resolve this error, try rerunning the operation. Additionally, please file an issue in the [repository](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/issues), or contact HashiCorp support.
 
 ## Issues with the Service Catalog Product Version
 It is important to create a new product version anytime the configuration has been modified. In doing this, you should be able to avoid issues associated with Service Catalog Product Versions.
