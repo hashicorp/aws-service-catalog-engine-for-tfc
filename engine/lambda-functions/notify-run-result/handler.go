@@ -46,11 +46,13 @@ func (h NotifyRunResultHandler) HandleRequest(ctx context.Context, request Notif
 }
 
 func (h NotifyRunResultHandler) NotifyTerminateResult(ctx context.Context, tfeClient *tfe.Client, request NotifyRunResultRequest) (*NotifyRunResultResponse, error) {
-	// Delete the workspace
-	err := DeleteWorkspace(ctx, tfeClient, request)
-	if err != nil {
-		log.Default().Printf("failed to delete workspace: %v", err)
-		request.ErrorMessage = err.Error()
+	// If the termination was successful, delete the workspace
+	if request.ErrorMessage == "" {
+		err := DeleteWorkspace(ctx, tfeClient, request)
+		if err != nil {
+			log.Default().Printf("failed to delete workspace: %v", err)
+			request.ErrorMessage = err.Error()
+		}
 	}
 
 	var status = types.EngineWorkflowStatusSucceeded
@@ -62,7 +64,7 @@ func (h NotifyRunResultHandler) NotifyTerminateResult(ctx context.Context, tfeCl
 
 	log.Printf("Notifying terminate result %s\n", status)
 
-	_, err = h.serviceCatalog.NotifyTerminateProvisionedProductEngineWorkflowResult(
+	_, err := h.serviceCatalog.NotifyTerminateProvisionedProductEngineWorkflowResult(
 		ctx,
 		&sc.NotifyTerminateProvisionedProductEngineWorkflowResultInput{
 			WorkflowToken:    &request.WorkflowToken,

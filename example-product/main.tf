@@ -12,27 +12,46 @@ terraform {
 
 data "aws_caller_identity" "current" {}
 
-# # # #
-# THE TEMPLATE OF THE PRODUCT
+resource "random_string" "random" {
+  length  = 16
+  special = false
+  lower   = true
+  upper   = false
+}
 
-data "aws_s3_object" "artifact" {
-  bucket = var.artifact_bucket_name
-  key    = var.artifact_object_key
+# # # #
+# THE PROVISIONING ARTIFACT (TERRAFORM CONFIGURATION FILES)
+
+resource "aws_s3_bucket" "artifact_bucket" {
+  bucket = "service-catalog-example-product-${random_string.random.result}"
+}
+
+resource "aws_s3_object" "artifact" {
+  bucket = aws_s3_bucket.artifact_bucket.id
+  key    = "product.tar.gz"
+  source = "${path.module}/product.tar.gz"
+  etag   = filemd5("${path.module}/product.tar.gz")
 }
 
 # # # #
 # THE PRODUCT IN SERVICE CATALOG
 
 resource "aws_servicecatalog_product" "example" {
-  name  = var.product_name
+  name  = "service-catalog-example-product-${random_string.random.result}"
   owner = var.service_catalog_product_owner
   type  = "TERRAFORM_OPEN_SOURCE"
 
   provisioning_artifact_parameters {
     disable_template_validation = true
-    template_url                = "https://s3.amazonaws.com/${data.aws_s3_object.artifact.bucket}/${data.aws_s3_object.artifact.key}"
+    template_url                = "https://s3.amazonaws.com/${aws_s3_object.artifact.bucket}/${aws_s3_object.artifact.key}"
     type                        = "TERRAFORM_OPEN_SOURCE"
   }
+}
+
+locals {
+  _product_name_convert_snake_case_to_class_case = join("", [for word in split("_", aws_servicecatalog_product.example.name) : title(word)])
+  _product_name_convert_kebab_case_to_class_case = join("", [for word in split("-", local._product_name_convert_snake_case_to_class_case) : title(word)])
+  class_case_product_name                        = local._product_name_convert_kebab_case_to_class_case
 }
 
 resource "aws_servicecatalog_tag_option_resource_association" "example_product_managed_by" {
@@ -52,7 +71,7 @@ resource "aws_servicecatalog_tag_option_resource_association" "example_product_n
 
 resource "aws_servicecatalog_tag_option" "product_name" {
   key   = "ServiceCatalogProduct"
-  value = var.product_name
+  value = aws_servicecatalog_product.example.name
 }
 
 resource "aws_servicecatalog_product_portfolio_association" "example" {
@@ -61,12 +80,15 @@ resource "aws_servicecatalog_product_portfolio_association" "example" {
   product_id   = aws_servicecatalog_product.example.id
 }
 
+# # # #
+# THE PRODUCT'S LAUNCH CONSTRAINT AND IAM ROLE
+
 resource "aws_servicecatalog_constraint" "example" {
-  # need to wait a bit after the role is created as service catalog will immediately try to assume the role to test it.
+  # Need to wait a bit after the role is created as Service Catalog will immediately try to assume the role to test it.
   depends_on = [time_sleep.wait_for_launch_constraint_role_to_be_assumable]
 
   for_each     = local.unique_portfolio_ids
-  description  = "Launch constraint for the ${var.product_name} product."
+  description  = "Launch constraint for the ${aws_servicecatalog_product.example.name} product."
   portfolio_id = each.value
   product_id   = aws_servicecatalog_product.example.id
   type         = "LAUNCH"
@@ -96,7 +118,7 @@ resource "aws_iam_role" "example_product_launch_role" {
         }
       },
       {
-        # Allow the SendApply and ParameterParser lambda functions to assume the role so that they can download the provisioning artifact from S3
+        # Allow the SendApply and ParameterParser Lambda functions to assume the role so that they can download the provisioning artifact from S3
         Action = "sts:AssumeRole"
         Effect = "Allow"
         Principal = {
@@ -132,7 +154,6 @@ resource "aws_iam_role" "example_product_launch_role" {
 
 resource "time_sleep" "wait_for_launch_constraint_role_to_be_assumable" {
   depends_on = [aws_iam_role.example_product_launch_role, aws_iam_role_policy.example_product_launch_constraint_policy]
-
   create_duration = "15s"
 }
 

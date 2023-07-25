@@ -18,7 +18,7 @@ variable "service_catalog_product_owner" {
 
 variable "tfc_provider_arn" {
   type        = string
-  description = "Arn of the AWS IAM OpenID Connect Provider that establishes trust with TFC"
+  description = "ARN of the AWS IAM OpenID Connect Provider that establishes trust with TFC"
 }
 
 variable "tfc_hostname" {
@@ -29,28 +29,7 @@ variable "tfc_hostname" {
 
 variable "tfc_organization" {
   type        = string
-  description = "Name of the organization to manage infrastructure with in TFC"
-}
-
-variable "product_name" {
-  type        = string
-  description = "Name of the Service Catalog product"
-}
-
-locals {
-  _product_name_convert_snake_case_to_class_case = join("", [for word in split("_", var.product_name) : title(word)])
-  _product_name_convert_kebab_case_to_class_case = join("", [for word in split("-", local._product_name_convert_snake_case_to_class_case) : title(word)])
-  class_case_product_name                        = local._product_name_convert_kebab_case_to_class_case
-}
-
-variable "artifact_bucket_name" {
-  type        = string
-  description = "Name of bucket where product Terraform configuration is stored"
-}
-
-variable "artifact_object_key" {
-  type        = string
-  description = "Path to Terraform configuration within S3 bucket"
+  description = "Name of the organization to manage infrastructure within TFC"
 }
 
 variable "parameter_parser_role_arn" {

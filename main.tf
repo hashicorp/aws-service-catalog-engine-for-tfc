@@ -52,31 +52,9 @@ resource "aws_servicecatalog_portfolio" "portfolio" {
   provider_name = "HashiCorp Examples"
 }
 
-resource "random_string" "random" {
-  length  = 16
-  special = false
-  lower   = true
-  upper   = false
-}
-
-resource "aws_s3_bucket" "my_bucket" {
-  bucket = "service-catalog-example-product-${random_string.random.result}"
-}
-
-resource "aws_s3_object" "object" {
-  bucket = aws_s3_bucket.my_bucket.id
-  key    = "product.tar.gz"
-  source = "${path.module}/example-product/product.tar.gz"
-  etag   = filemd5("${path.module}/example-product/product.tar.gz")
-}
-
+# An example product
 module "example_product" {
-  source = "./service-catalog-product"
-
-  # Variables for the product name and configuration files (most likely, you'll want to modify these after you've tested things out)
-  product_name         = "service-catalog-example-product-${random_string.random.result}"
-  artifact_bucket_name = aws_s3_object.object.bucket
-  artifact_object_key  = aws_s3_object.object.id
+  source = "./example-product"
 
   # ARNs of Lambda functions that need to be able to assume the IAM Launch Role
   parameter_parser_role_arn  = module.terraform_cloud_reference_engine.parameter_parser_role_arn
