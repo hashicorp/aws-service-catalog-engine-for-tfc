@@ -26,7 +26,6 @@ For more information on TFC permissions, please refer to this [documentation](ht
 You'll also need to authenticate the AWS provider as you would normally, using one of the methods mentioned in the AWS provider documentation [here](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication-and-configuration).
 
 After authenticating with both AWS and Terraform Cloud, do the following:
-
 1. Copy `terraform.tfvars.example` to `terraform.tfvars` and set the organization name to your Terraform Cloud organization name.
 2. Run `terraform plan` to verify your setup, and then run `terraform apply` to apply your changes.
 
@@ -47,30 +46,7 @@ To better understand the TFC-RE architecture, please refer to the following diag
 ![The TFC-RE Flow](images/engine_flow.png)
 
 # Creating and Provisioning a Product in Service Catalog
-The TFC-RE creates an example product upon launch, however, if you’d prefer to create a new product using the Service Catalog UI, please refer to the steps outlined in this section. For more information on how to provision a product using Terraform Cloud and AWS Service Catalog, please refer to this **<insert documentation on how to do this, here>** documentation.
-
-## Create a Product
-
-1. To create a product in Service Catalog, do the following:
-    - Select the “Terraform Cloud” option.
-    - Set the product type to `TERRAFORM_CLOUD_SOURCE`.
-    - Set the provisioning artifact type as `TERRAFORM_CLOUD_SOURCE`.
-    - Upon initial setup, a `.tar.gz` file containing your Terraform Cloud configuration should have been created. Use this `tar` file as the provisioning artifact file. Alternatively, you can use an S3 bucket URL in place of the `tar` file.
-
-## Add a Launch Role
-Each and every product requires a launch constraint that indicates the IAM role that will be used to provision the product's resources. This role is known as the "launch role." For more information regarding launch roles, please refer to [this documentation](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/constraints-launch.html) on launch roles and launch constraints.
-
-## Grant Access to the Product
-In order to grant users access to the product(s) of choice and to allow those users to perform actions on that product, you’ll need to ensure that the product is within a portfolio that has the correct permissions. To do this, ensure that the user is a part of an IAM group, has the IAM role, or is an IAM user. For more information regarding IAM roles, please refer to [this documentation](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/getstarted-iamenduser.html) on Service Catalog End Users.
-
-Additionally, once this portfolio is set up, it can be shared with other accounts.
-
-## Provision the Product
-Once the user has been granted the necessary permissions on a portfolio that contains a product, the user should now be able to provision a product. Additionally, a user should also be able to:
-
-1. Update a provisioned product via Service Catalog, triggering a run in TFC.
-2. Terminate a provisioned product via Service Catalog, triggering a destroy run in TFC.
-3. Update the team token rotation frequency via AWS EventBridge, altering the frequency in which the TFC team token rotates.
+The TFC-RE creates an example product upon launch, however, if you’d prefer to create a new product using the Service Catalog UI, please refer to AWS' documentation.
 
 # Token Rotation
 
