@@ -40,6 +40,11 @@ If you run into TFC workspace issues, such as issues when creating TFC workspace
 
 **Solution:** Re-apply the engine's Terraform to reset the Team's permissions (thus re-granting it permissions to create and manage workspaces within your organization).
 
+### Issues with the Service Catalog Product Version
+If you run into AWS Service Catalog product issues, such as issues when provisioning a new product, it may mean that the product version needs to be updated.
+
+**Solution:** Create a new product version. It is important to note that anytime the configuration has been modified, the product version will need to be updated.
+
 ### Exceptions
 **Error:** `NoFilesToParseExceptionMessage`
 
@@ -51,9 +56,6 @@ If you run into TFC workspace issues, such as issues when creating TFC workspace
 **Cause:** This error occurs when a Lambda function times out.
 
 **Solution:** To resolve this error, try rerunning the operation. Additionally, please file an issue in the [repository](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/issues), or contact HashiCorp support.
-
-### Issues with the Service Catalog Product Version
-It is important to create a new product version anytime the configuration has been modified. In doing this, you should be able to avoid issues associated with Service Catalog Product Versions.
 
 ### Error Creating Team
 **Error:** `Error: Error creating team aws-service-catalog for organization <org-name>: resource not found`
