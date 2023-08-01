@@ -61,7 +61,7 @@ resource "aws_iam_role_policy_attachment" "parameter_parser" {
 data "archive_file" "parameter_parser" {
   type        = "zip"
   output_path = "dist/parameter_parser.zip"
-  source_file  = "${path.module}/lambda-functions/terraform-parameter-parser/main"
+  source_file = "${path.module}/lambda-functions/terraform-parameter-parser/main"
 }
 
 resource "aws_lambda_permission" "service_catalog_parameter_parser_allowance" {
