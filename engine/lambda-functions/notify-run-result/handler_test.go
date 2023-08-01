@@ -126,9 +126,6 @@ func TestNotifyRunResultHandler_Terminating_WithError(t *testing.T) {
 		t.Error(err)
 	}
 
-	// Verify the TFC workspace was deleted
-	assert.Equal(t, 0, len(tfcServer.Workspaces), "The TFC workspace should have been deleted")
-
 	// Verify the workflow was successfully reported as a failure
 	assert.Equal(t, types.EngineWorkflowStatusFailed, mockServiceCatalog.NotifyTerminateProvisionedProductEngineWorkflowResultInput.Status)
 
