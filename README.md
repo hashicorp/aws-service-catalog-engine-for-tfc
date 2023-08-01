@@ -12,7 +12,7 @@ Everything you need to get started using the Terraform Cloud engine is included 
 1. Authenticate with both AWS and Terraform Cloud:
    - Authenticate the AWS provider using one of the methods listed in the [AWS provider documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication-and-configuration).
    - Authenticate the TFE Terraform Provider using one of the methods listed in the [TFE Terraform documentation](https://registry.terraform.io/providers/hashicorp/tfe/0.11.2/docs#authentication). It is important to note that the user/token you use will need permissions to create Teams and other authentication tokens.
-         For more information on TFC permissions, please refer to this [documentation](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/permissions).
+     For more information on TFC permissions, please refer to this [documentation](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/permissions).
 2. Copy `terraform.tfvars.example` to `terraform.tfvars` and set the following values:
    - `tfc_organization` to the name of your Terraform Cloud organization.
    - `tfc_team` the name of the team that this configuration will create to manage this integration. This team's API Token will be used by Service Catalog to authenticate API calls to Terraform Cloud.
@@ -31,7 +31,7 @@ The TFC-RE creates an example product upon launch, however, if you’d prefer to
 ## Token Rotation
 
 ### Updating Token Rotation Frequency
-The Terraform Cloud team token associated with your account is automatically rotated every 30 days. However, the frequency in which the token rotation occurs can be overridden via the `token_rotation_interval_in_days` variable, which can be found [here](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/blob/main/variables.tf#L39).
+The Terraform Cloud team token associated with your account is automatically rotated every 30 days. However, the frequency in which the token rotation occurs can be overridden via the `token_rotation_interval_in_days` variable,  which can be found [here](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/blob/main/variables.tf#L39).
 
 ## Troubleshooting
 
