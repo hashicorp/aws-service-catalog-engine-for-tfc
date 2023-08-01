@@ -31,7 +31,7 @@ The TFC-RE creates an example product upon launch, however, if you’d prefer to
 ## Token Rotation
 
 ### Updating Token Rotation Frequency
-The Terraform Cloud team token associated with your account is automatically rotated every 30 days. However, the frequency in which the token rotation occurs can be overridden via the `token_rotation_interval_in_days` variable.
+The Terraform Cloud team token associated with your account is automatically rotated every 30 days. However, the frequency in which the token rotation occurs can be overridden via the `token_rotation_interval_in_days` variable, which can be found [here](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/blob/main/variables.tf#L39).
 
 ## Troubleshooting
 
