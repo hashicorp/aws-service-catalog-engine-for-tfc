@@ -8,7 +8,7 @@ To file a bug report or to provide feedback on the TFC-RE, please [open a GitHub
 
 ## Build the Code
 To build the Go code and Lambda Functions, do the following:
-1. `cd` into `lambda-functions/golang`.
+1. `cd` into `engine/lambda-functions/golang`.
 2. Run `make bin` to build the Lambda functions and install the necessary dependencies.
 
 Note: Any time you update a Lambda Function, you will need to build the code, as outlined above, to apply those changes.
