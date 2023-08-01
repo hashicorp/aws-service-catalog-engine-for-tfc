@@ -153,7 +153,7 @@ resource "aws_iam_role" "example_product_launch_role" {
 }
 
 resource "time_sleep" "wait_for_launch_constraint_role_to_be_assumable" {
-  depends_on = [aws_iam_role.example_product_launch_role, aws_iam_role_policy.example_product_launch_constraint_policy]
+  depends_on      = [aws_iam_role.example_product_launch_role, aws_iam_role_policy.example_product_launch_constraint_policy]
   create_duration = "15s"
 }
 

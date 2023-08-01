@@ -6,17 +6,17 @@ output "oidc_provider_arn" {
 }
 
 output "parameter_parser_role_arn" {
-  value  = aws_iam_role.parameter_parser.arn
+  value = aws_iam_role.parameter_parser.arn
 }
 
 output "send_apply_lambda_role_arn" {
-  value  = local.send_apply_lambda_role_arn
+  value = local.send_apply_lambda_role_arn
 }
 
 output "tfc_organization" {
-  value  = data.tfe_organization.organization.name
+  value = data.tfe_organization.organization.name
 }
 
 output "tfc_hostname" {
-  value     = var.tfc_hostname
+  value = var.tfc_hostname
 }
