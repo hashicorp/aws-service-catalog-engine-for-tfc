@@ -50,7 +50,7 @@ resource "aws_kms_key" "queue_key" {
 }
 
 resource "aws_sqs_queue" "terraform_engine_provision_operation_queue" {
-  name                       = "ServiceCatalogTerraformOSProvisionOperationQueue"
+  name                       = "ServiceCatalogTerraformCloudProvisionOperationQueue"
   visibility_timeout_seconds = 180
   kms_master_key_id          = aws_kms_key.queue_key.key_id
   redrive_policy = jsonencode({
@@ -60,7 +60,7 @@ resource "aws_sqs_queue" "terraform_engine_provision_operation_queue" {
 }
 
 resource "aws_sqs_queue" "terraform_engine_update_queue" {
-  name                       = "ServiceCatalogTerraformOSUpdateOperationQueue"
+  name                       = "ServiceCatalogTerraformCloudUpdateOperationQueue"
   visibility_timeout_seconds = 180
   kms_master_key_id          = aws_kms_key.queue_key.key_id
   redrive_policy = jsonencode({
@@ -70,7 +70,7 @@ resource "aws_sqs_queue" "terraform_engine_update_queue" {
 }
 
 resource "aws_sqs_queue" "terraform_engine_terminate_queue" {
-  name                       = "ServiceCatalogTerraformOSTerminateOperationQueue"
+  name                       = "ServiceCatalogTerraformCloudTerminateOperationQueue"
   visibility_timeout_seconds = 180
   kms_master_key_id          = aws_kms_key.queue_key.key_id
   redrive_policy = jsonencode({
@@ -80,7 +80,7 @@ resource "aws_sqs_queue" "terraform_engine_terminate_queue" {
 }
 
 resource "aws_sqs_queue" "terraform_engine_dlq" {
-  name              = "ServiceCatalogTerraformOSOperationsDLQ"
+  name              = "ServiceCatalogTerraformCloudOperationsDLQ"
   kms_master_key_id = aws_kms_key.queue_key.key_id
 }
 

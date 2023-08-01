@@ -39,12 +39,12 @@ resource "aws_s3_object" "artifact" {
 resource "aws_servicecatalog_product" "example" {
   name  = "service-catalog-example-product-${random_string.random.result}"
   owner = var.service_catalog_product_owner
-  type  = "TERRAFORM_OPEN_SOURCE"
+  type  = "TERRAFORM_CLOUD"
 
   provisioning_artifact_parameters {
     disable_template_validation = true
     template_url                = "https://s3.amazonaws.com/${aws_s3_object.artifact.bucket}/${aws_s3_object.artifact.key}"
-    type                        = "TERRAFORM_OPEN_SOURCE"
+    type                        = "TERRAFORM_CLOUD"
   }
 }
 
