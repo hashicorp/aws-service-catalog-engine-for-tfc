@@ -9,14 +9,14 @@ The AWS Service Catalog Engine for Terraform Cloud (TFC-RE) is an integration be
 ### Provision the Engine
 Everything you need to get started using the Terraform Cloud engine is included in this project's terraform configuration.
 
-- Authenticate with both AWS and Terraform Cloud:
-    1. Authenticate the AWS provider using one of the methods listed in the [AWS provider documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication-and-configuration).
-    2. Authenticate the TFE Terraform Provider using one of the methods listed in the [TFE Terraform documentation](https://registry.terraform.io/providers/hashicorp/tfe/0.11.2/docs#authentication). It is important to note that the user/token you use will need permissions to create Teams and other authentication tokens.
+1. Authenticate with both AWS and Terraform Cloud:
+   - Authenticate the AWS provider using one of the methods listed in the [AWS provider documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication-and-configuration).
+   - Authenticate the TFE Terraform Provider using one of the methods listed in the [TFE Terraform documentation](https://registry.terraform.io/providers/hashicorp/tfe/0.11.2/docs#authentication). It is important to note that the user/token you use will need permissions to create Teams and other authentication tokens.
          For more information on TFC permissions, please refer to this [documentation](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/permissions).
-- Copy `terraform.tfvars.example` to `terraform.tfvars` and set the following values:
-    1. `tfc_organization` to the name of your Terraform Cloud organization.
-    2. `tfc_team` the name of the team that this configuration will create to manage this integration. This team's API Token will be used by Service Catalog to authenticate API calls to Terraform Cloud.
-- Run `terraform plan` to verify your setup, and then run `terraform apply` to apply your changes.
+2. Copy `terraform.tfvars.example` to `terraform.tfvars` and set the following values:
+   - `tfc_organization` to the name of your Terraform Cloud organization.
+   - `tfc_team` the name of the team that this configuration will create to manage this integration. This team's API Token will be used by Service Catalog to authenticate API calls to Terraform Cloud.
+3. Run `terraform plan` to verify your setup, and then run `terraform apply` to apply your changes.
 
 ### Test the Engine
 Once you've applied the configuration, you should see a newly created AWS Service Catalog portfolio in [your AWS Service Catalog dashboard](https://console.aws.amazon.com/servicecatalog/home).
@@ -31,7 +31,7 @@ The TFC-RE creates an example product upon launch, however, if you’d prefer to
 ## Token Rotation
 
 ### Updating Token Rotation Frequency
-To enhance security, the Terraform Cloud team token associated with your account is automatically rotated every 30 days. However, the frequency in which the token rotation occurs is customizable. To update the rotation frequency, you'll need to update the Terraform Configuration itself. This can be done by updating the [`aws_cloudwatch_event_rule` resource](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/blob/main/token_rotation.tf#L198) within the TFC-RE and running `terraform apply` to apply these changes.
+The Terraform Cloud team token associated with your account is automatically rotated every 30 days. However, the frequency in which the token rotation occurs can be overridden via the `token_rotation_interval_in_days` variable.
 
 ## Troubleshooting
 

@@ -198,7 +198,7 @@ data "aws_iam_policy_document" "policy_for_rotate_team_token_state_machine" {
 resource "aws_cloudwatch_event_rule" "rotate_token_schedule" {
   name                = "ServiceCatalogTFCRotateToken"
   description         = "Schedule for Token Rotation"
-  schedule_expression = "rate(30 days)"
+  schedule_expression = "rate(${var.token_rotation_interval_in_days} days)"
 }
 
 resource "aws_cloudwatch_event_target" "token_rotation" {

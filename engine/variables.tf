@@ -35,3 +35,9 @@ variable "cloudwatch_log_retention_in_days" {
   default     = 90
   description = "Number of days you wish retain Cloudwatch logs for all the AWS resources in this configuration. These logs are invaluable for Terraform Cloud support staff in helping to diagnose any issues you may run into!"
 }
+
+variable "token_rotation_interval_in_days" {
+  type        = number
+  default     = 30
+  description = "Interval for automatic rotation of the Terraform Cloud API Token that Service Catalog uses to authenticate with Terraform Cloud. Default is 30 days."
+}

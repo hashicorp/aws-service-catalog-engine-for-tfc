@@ -33,7 +33,8 @@ provider "tfe" {
   hostname = var.tfc_hostname
 }
 
-# This module provisions the Terraform Cloud Reference Engine
+# This module provisions the Terraform Cloud Reference Engine. If you would like to provision the Reference Engine
+# without the example product, you can use this module in your own terraform configuration/workspace.
 module "terraform_cloud_reference_engine" {
   source = "./engine"
 
@@ -43,6 +44,7 @@ module "terraform_cloud_reference_engine" {
   tfc_hostname = var.tfc_hostname
   cloudwatch_log_retention_in_days = var.cloudwatch_log_retention_in_days
   enable_xray_tracing = var.enable_xray_tracing
+  token_rotation_interval_in_days = var.token_rotation_interval_in_days
 }
 
 # Creates an AWS Service Catalog Portfolio to house the example product

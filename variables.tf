@@ -35,3 +35,9 @@ variable "enable_xray_tracing" {
   description = "When set to true, AWS X-Ray tracing is enabled"
   default     = true
 }
+
+variable "token_rotation_interval_in_days" {
+  type        = number
+  default     = 30
+  description = "Interval for automatic rotation of the Terraform Cloud API Token that Service Catalog uses to authenticate with Terraform Cloud. Default is 30 days."
+}
