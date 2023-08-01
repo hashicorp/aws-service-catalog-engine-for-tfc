@@ -261,6 +261,9 @@ func (srv *MockTFC) handlePUT(w http.ResponseWriter, r *http.Request) {
 	if srv.HandleVarsPatchRequests(w, r) {
 		return
 	}
+	if srv.HandleWorkspacesPatchRequests(w, r) {
+		return
+	}
 
 	w.WriteHeader(404)
 }

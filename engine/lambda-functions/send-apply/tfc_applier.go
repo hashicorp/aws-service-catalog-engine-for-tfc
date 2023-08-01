@@ -21,7 +21,8 @@ const ProvisionedProductIdMetadataHeaderKey = "Tfp-Aws-Service-Catalog-Prv-Produ
 const ProductVersionMetadataHeaderKey = "Tfp-Aws-Service-Catalog-Product-Ver"
 
 type TFCApplier struct {
-	tfeClient *tfe.Client
+	tfeClient        *tfe.Client
+	terraformVersion string
 }
 
 func (h *SendApplyHandler) NewTFCApplier(ctx context.Context, request SendApplyRequest) (*TFCApplier, error) {
@@ -32,7 +33,10 @@ func (h *SendApplyHandler) NewTFCApplier(ctx context.Context, request SendApplyR
 	headers.Set(ProductVersionMetadataHeaderKey, request.ProvisionedArtifactId)
 
 	tfeClient, err := tfc.GetTFEClientWithHeaders(ctx, h.secretsManager, headers)
-	return &TFCApplier{tfeClient: tfeClient}, err
+	return &TFCApplier{
+		tfeClient:        tfeClient,
+		terraformVersion: h.terraformVersion,
+	}, err
 }
 
 func (applier *TFCApplier) FindOrCreateProject(ctx context.Context, organizationName string, name string) (*tfe.Project, error) {
@@ -128,6 +132,13 @@ func (applier *TFCApplier) FindWorkspaceByName(ctx context.Context, organization
 	}
 
 	return nil, nil
+}
+
+func (applier *TFCApplier) UpdateWorkspaceTerraformVersion(ctx context.Context, organizationName string, workspaceId string) error {
+	_, err := applier.tfeClient.Workspaces.Update(ctx, organizationName, workspaceId, tfe.WorkspaceUpdateOptions{
+		TerraformVersion: tfe.String(applier.terraformVersion),
+	})
+	return tfc.Error(err)
 }
 
 func (applier *TFCApplier) UpdateWorkspaceOIDCVariables(ctx context.Context, w *tfe.Workspace, launchRoleArn string) error {

@@ -75,6 +75,54 @@ func (srv *MockTFC) HandleWorkspacesPostRequests(w http.ResponseWriter, r *http.
 	return false
 }
 
+func (srv *MockTFC) HandleWorkspacesPatchRequests(w http.ResponseWriter, r *http.Request) bool {
+	// /api/v2/organizations/team-rocket-blast-off/workspaces/ws-2jmj7l5rSw0yVb_v => "", "api", "v2" "organizations" "team-rocket-blast-off" "workspaces" "ws-2jmj7l5rSw0yVb_v"
+	urlPathParts := strings.Split(r.URL.Path, "/")
+
+	if urlPathParts[3] == "organizations" && urlPathParts[5] == "workspaces" && urlPathParts[6] != "" {
+		workspaceId := urlPathParts[6]
+		workspace := srv.Workspaces[workspaceId]
+
+		if workspace == nil {
+			w.WriteHeader(404)
+			return true
+		}
+
+		reqWorkspace := &WorkspaceUpdateRequest{}
+		if err := json.NewDecoder(r.Body).Decode(&reqWorkspace); err != nil {
+			w.WriteHeader(500)
+			return true
+		}
+
+		workspace.TerraformVersion = reqWorkspace.Data.Attributes.TerraformVersion
+
+		body, err := json.Marshal(MakeWorkspaceResponse(workspace))
+		if err != nil {
+			w.WriteHeader(500)
+			return true
+		}
+		w.WriteHeader(200)
+		_, err = w.Write(body)
+		if err != nil {
+			log.Fatal(err)
+			return true
+		}
+		return true
+	}
+
+	return false
+}
+
+type WorkspaceUpdateRequest struct {
+	Data struct {
+		Id         int `json:"id"`
+		Attributes struct {
+			TerraformVersion string `json:"value"`
+		} `json:"attributes"`
+		Relationships struct{} `json:"relationships"`
+	} `json:"data"`
+}
+
 func (srv *MockTFC) HandleWorkspacesGetRequests(w http.ResponseWriter, r *http.Request) bool {
 	if r.URL.Path == fmt.Sprintf("/api/v2/organizations/%s/workspaces", srv.OrganizationName) {
 		workspaces := make([]*tfe.Workspace, 0, len(srv.Workspaces))

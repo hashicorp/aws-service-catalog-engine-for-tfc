@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-functions/shared/secretsmanager"
 	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-functions/shared/tracertag"
 	"log"
+	"os"
 )
 
 type SendApplyRequest struct {
@@ -62,11 +63,15 @@ func main() {
 	// Initialize the s3 downloader
 	s3Downloader := fileutils.NewS3DownloaderWithAssumedRole(initContext, sdkConfig)
 
+	// Get Terraform Version
+	terraformVersion := os.Getenv("TERRAFORM_VERSION")
+
 	// Create the handler
 	handler := &SendApplyHandler{
-		s3Downloader:   s3Downloader,
-		secretsManager: secretsManager,
-		region:         sdkConfig.Region,
+		s3Downloader:     s3Downloader,
+		secretsManager:   secretsManager,
+		region:           sdkConfig.Region,
+		terraformVersion: terraformVersion,
 	}
 
 	// Start the lambda using the handler

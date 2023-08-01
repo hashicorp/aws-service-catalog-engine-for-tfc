@@ -19,9 +19,6 @@ terraform {
 }
 
 provider "aws" {
-  # Configuration options
-  region = "us-west-2"
-
   default_tags {
     tags = {
       "Projects" = "aws-service-catalog-engine"

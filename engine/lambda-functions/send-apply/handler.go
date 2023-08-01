@@ -16,9 +16,10 @@ import (
 )
 
 type SendApplyHandler struct {
-	secretsManager secretsmanager.SecretsManager
-	s3Downloader   fileutils.S3Downloader
-	region         string
+	secretsManager   secretsmanager.SecretsManager
+	s3Downloader     fileutils.S3Downloader
+	region           string
+	terraformVersion string
 }
 
 func (h *SendApplyHandler) HandleRequest(ctx context.Context, request SendApplyRequest) (*SendApplyResponse, error) {
@@ -38,6 +39,12 @@ func (h *SendApplyHandler) HandleRequest(ctx context.Context, request SendApplyR
 	// Create or find the Workspace
 	workspaceName := identifiers.GetWorkspaceName(request.AwsAccountId, request.ProvisionedProductId)
 	w, err := applier.FindOrCreateWorkspace(ctx, request.TerraformOrganization, p, workspaceName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update Terraform Version
+	err = applier.UpdateWorkspaceTerraformVersion(ctx, request.TerraformOrganization, w.ID)
 	if err != nil {
 		return nil, err
 	}

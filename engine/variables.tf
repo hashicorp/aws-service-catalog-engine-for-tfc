@@ -39,5 +39,11 @@ variable "cloudwatch_log_retention_in_days" {
 variable "token_rotation_interval_in_days" {
   type        = number
   default     = 30
-  description = "Interval for automatic rotation of the Terraform Cloud API Token that Service Catalog uses to authenticate with Terraform Cloud. Default is 30 days."
+  description = "Interval for automatic rotation of the Terraform Cloud API Token that Service Catalog uses to authenticate with Terraform Cloud. Default is 30 days"
+}
+
+variable "terraform_version" {
+  type = string
+  default = "1.5.4"
+  description = "Version of Terraform Core to use in Terraform Cloud for all Service Catalog products"
 }

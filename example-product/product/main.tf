@@ -15,9 +15,7 @@ terraform {
   }
 }
 
-provider "aws" {
-  region = "us-west-2"
-}
+provider "aws" {}
 
 resource "random_string" "random" {
   length  = var.random_string_length

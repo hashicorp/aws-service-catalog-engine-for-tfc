@@ -105,7 +105,6 @@ locals {
     (local.send_destroy_lambda_name) : {
       policy_document = data.aws_iam_policy_document.send_destroy.json
       source_file     = "${path.module}/lambda-functions/send-destroy/main"
-
     }
     (local.poll_run_status_lambda_name) : {
       policy_document = data.aws_iam_policy_document.poll_run_status.json
@@ -191,6 +190,7 @@ resource "aws_lambda_function" "state_machine_lambda" {
   environment {
     variables = {
       TFE_CREDENTIALS_SECRET_ID = aws_secretsmanager_secret.team_token_values.arn
+      TERRAFORM_VERSION = var.terraform_version
     }
   }
 
