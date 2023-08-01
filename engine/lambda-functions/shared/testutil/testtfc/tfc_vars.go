@@ -75,6 +75,9 @@ func (srv *MockTFC) HandleVarsPatchRequests(w http.ResponseWriter, r *http.Reque
 	// /api/v2/workspaces/ws-2jmj7l5rSw0yVb_v/vars/var-rOOv9Dd => "", "api", "v2" "workspaces" "ws-2jmj7l5rSw0yVb_v" "vars" "var-rOOv9Dd"
 	urlPathParts := strings.Split(r.URL.Path, "/")
 
+	if len(urlPathParts) < 7 {
+		return false
+	}
 	if urlPathParts[3] == "workspaces" && urlPathParts[5] == "vars" && urlPathParts[6] != "" {
 		workspaceId := urlPathParts[4]
 		workspaceVars := srv.Vars[workspaceId]

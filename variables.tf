@@ -43,7 +43,7 @@ variable "token_rotation_interval_in_days" {
 }
 
 variable "terraform_version" {
-  type = string
-  default = "1.5.4"
+  type        = string
+  default     = "1.5.4"
   description = "Version of Terraform Core to use in Terraform Cloud for all Service Catalog products"
 }

@@ -190,7 +190,7 @@ resource "aws_lambda_function" "state_machine_lambda" {
   environment {
     variables = {
       TFE_CREDENTIALS_SECRET_ID = aws_secretsmanager_secret.team_token_values.arn
-      TERRAFORM_VERSION = var.terraform_version
+      TERRAFORM_VERSION         = var.terraform_version
     }
   }
 
