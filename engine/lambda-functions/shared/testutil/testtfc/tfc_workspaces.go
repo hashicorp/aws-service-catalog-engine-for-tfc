@@ -76,11 +76,11 @@ func (srv *MockTFC) HandleWorkspacesPostRequests(w http.ResponseWriter, r *http.
 }
 
 func (srv *MockTFC) HandleWorkspacesPatchRequests(w http.ResponseWriter, r *http.Request) bool {
-	// /api/v2/organizations/team-rocket-blast-off/workspaces/ws-2jmj7l5rSw0yVb_v => "", "api", "v2" "organizations" "team-rocket-blast-off" "workspaces" "ws-2jmj7l5rSw0yVb_v"
+	// /api/v2/workspaces/ws-2jmj7l5rSw0yVb_v => "", "api", "v2" "workspaces" "ws-2jmj7l5rSw0yVb_v"
 	urlPathParts := strings.Split(r.URL.Path, "/")
 
-	if urlPathParts[3] == "organizations" && urlPathParts[5] == "workspaces" && urlPathParts[6] != "" {
-		workspaceId := urlPathParts[6]
+	if urlPathParts[3] == "workspaces" && urlPathParts[4] != "" {
+		workspaceId := urlPathParts[4]
 		workspace := srv.Workspaces[workspaceId]
 
 		if workspace == nil {

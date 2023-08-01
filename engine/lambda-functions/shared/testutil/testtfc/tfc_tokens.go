@@ -17,6 +17,9 @@ func (srv *MockTFC) HandleTokensPostRequests(w http.ResponseWriter, r *http.Requ
 	// /api/v2/teams/team-roLYatraNNailuJ2/authentication-token => "", "api", "v2" "teams" "team-roLYatraNNailuJ2" "authentication-token"
 	urlPathParts := strings.Split(r.URL.Path, "/")
 
+	if len(urlPathParts) < 6 {
+		return false
+	}
 	if urlPathParts[3] == "teams" && urlPathParts[5] == "authentication-token" {
 		teamId := urlPathParts[4]
 
