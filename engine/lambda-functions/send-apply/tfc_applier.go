@@ -134,8 +134,8 @@ func (applier *TFCApplier) FindWorkspaceByName(ctx context.Context, organization
 	return nil, nil
 }
 
-func (applier *TFCApplier) UpdateWorkspaceTerraformVersion(ctx context.Context, organizationName string, workspaceId string) error {
-	_, err := applier.tfeClient.Workspaces.Update(ctx, organizationName, workspaceId, tfe.WorkspaceUpdateOptions{
+func (applier *TFCApplier) UpdateWorkspaceTerraformVersion(ctx context.Context, workspaceId string) error {
+	_, err := applier.tfeClient.Workspaces.UpdateByID(ctx, workspaceId, tfe.WorkspaceUpdateOptions{
 		TerraformVersion: tfe.String(applier.terraformVersion),
 	})
 	return tfc.Error(err)

@@ -44,7 +44,7 @@ func (h *SendApplyHandler) HandleRequest(ctx context.Context, request SendApplyR
 	}
 
 	// Update Terraform Version
-	err = applier.UpdateWorkspaceTerraformVersion(ctx, request.TerraformOrganization, w.ID)
+	err = applier.UpdateWorkspaceTerraformVersion(ctx, w.ID)
 	if err != nil {
 		return nil, err
 	}
