@@ -31,7 +31,13 @@ The TFC-RE creates an example product upon launch, however, if you’d prefer to
 ## Token Rotation
 
 ### Updating Token Rotation Frequency
-The Terraform Cloud team token associated with your account is automatically rotated every 30 days. However, the frequency in which the token rotation occurs can be overridden via the `token_rotation_interval_in_days` variable,  which can be found [here](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/blob/main/variables.tf#L39).
+The Terraform Cloud team token associated with your account is automatically rotated every 30 days. However, the frequency in which the token rotation occurs can be overridden via the `token_rotation_interval_in_days` variable, which can be found [here](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/blob/main/variables.tf#L39).
+
+## Terraform Version
+
+### Updating the Terraform Version
+The Terraform version can be set to a version of your choice by updating the `terraform_version` variable, which can be found [here](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/blob/main/engine/variables.tf#L45).
+We recommend that you use version 0.15 or higher, so that it remains compatible with the AWS provider.
 
 ## Troubleshooting
 
@@ -44,6 +50,16 @@ If you run into TFC workspace issues, such as issues when creating TFC workspace
 If you run into AWS Service Catalog product issues, such as issues when provisioning a new product, it may mean that the product version needs to be updated.
 
 **Solution:** Create a new product version. It is important to note that anytime the configuration has been modified, the product version will need to be updated.
+
+### Issues with Variable Sets
+Unlike variables, variable sets are not automatically purged. This may lead to an issue where a workspace's run will not apply properly because it contains an extraneous variable set.
+
+**Solution:** Remove the variable set and update the provisioned product within AWS Service Catalog.
+
+### Issues with Renaming Workspaces
+Workspaces created by the engine should not be renamed within TFC. When a provisioned product's workspace is renamed and then updated within AWS Service Catalog, a new workspace will be created for that provisioned product.
+
+**Solution:** To avoid conflicts, do not rename workspaces.
 
 ### Exceptions
 **Error:** `NoFilesToParseExceptionMessage`
