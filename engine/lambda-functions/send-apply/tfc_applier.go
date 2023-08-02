@@ -135,6 +135,7 @@ func (applier *TFCApplier) FindWorkspaceByName(ctx context.Context, organization
 }
 
 func (applier *TFCApplier) UpdateWorkspaceTerraformVersion(ctx context.Context, workspaceId string) error {
+	log.Default().Printf("Setting terraform version of %s to %s", workspaceId, applier.terraformVersion)
 	_, err := applier.tfeClient.Workspaces.UpdateByID(ctx, workspaceId, tfe.WorkspaceUpdateOptions{
 		TerraformVersion: tfe.String(applier.terraformVersion),
 	})
@@ -143,7 +144,6 @@ func (applier *TFCApplier) UpdateWorkspaceTerraformVersion(ctx context.Context, 
 
 func (applier *TFCApplier) UpdateWorkspaceOIDCVariables(ctx context.Context, w *tfe.Workspace, launchRoleArn string) error {
 	log.Default().Printf("Updating OIDC variables")
-
 	err := applier.FindOrCreateENVVariable(ctx, w, ProviderAuthVariableKey, "true", "Enable the Workload Identity integration for AWS.")
 	if err != nil {
 		return err
