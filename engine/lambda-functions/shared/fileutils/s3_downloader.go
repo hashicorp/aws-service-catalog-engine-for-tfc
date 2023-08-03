@@ -35,7 +35,7 @@ func NewS3DownloaderWithAssumedRole(ctx context.Context, sdkConfig aws.Config) S
 		S3ClientProvider: func(launchRoleArn string) (*s3.Client, error) {
 			// use default lambda execution role creds to retrieve configuration templates if launch role is not provided
 			if launchRoleArn == "" {
-				log.Print("Launch role is not provided. Using ServiceCatalogTFCParameterParserRole to fetch artifact.")
+				log.Print("Launch role is not provided. Using ServiceCatalogTerraformCloudParameterParserRole to fetch artifact.")
 				return s3.NewFromConfig(sdkConfig), nil
 			}
 
