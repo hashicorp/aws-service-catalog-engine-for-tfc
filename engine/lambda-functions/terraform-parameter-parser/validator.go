@@ -37,9 +37,11 @@ func ValidateInput(input TerraformParameterParserInput) error {
 		return err
 	}
 
-	// validate the format of LaunchRoleArn
-	if err := validateLaunchRoleArnIsSyntacticallyCorrect(input.LaunchRoleArn); err != nil {
-		return err
+	// validate the format of LaunchRoleArn (if it was provided)
+	if input.LaunchRoleArn != "" {
+		if err := validateLaunchRoleArnIsSyntacticallyCorrect(input.LaunchRoleArn); err != nil {
+			return err
+		}
 	}
 
 	// validate the Artifact
@@ -54,12 +56,6 @@ func validateRequiredKeysExist(input TerraformParameterParserInput) error {
 	if reflect.DeepEqual(input.Artifact, Artifact{}) {
 		return exceptions.ParserInvalidParameterException{
 			Message: fmt.Sprintf(RequiredKeyMissingOrEmptyErrorMessage, ArtifactKey),
-		}
-	}
-
-	if input.LaunchRoleArn == "" {
-		return exceptions.ParserInvalidParameterException{
-			Message: fmt.Sprintf(RequiredKeyMissingOrEmptyErrorMessage, LaunchRoleArnKey),
 		}
 	}
 
