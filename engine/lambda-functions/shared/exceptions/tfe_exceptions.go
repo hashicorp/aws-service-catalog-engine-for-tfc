@@ -14,7 +14,7 @@ func (e TFEUnauthorized) Error() string {
 }
 
 var TFEUnauthorizedToken = TFEUnauthorized{
-	Message: "The current authorization token is not valid. Please refer to the instructions in the README https://github.com/hashicorp/aws-service-catalog-engine-for-tfc to reset your authorization token",
+	Message: "The current authorization token is not valid. Please refer to the instructions in the README https://github.com/hashicorp/aws-service-catalog-engine-for-tfc to reset your Terraform Cloud API token",
 }
 
 type TFEException struct {

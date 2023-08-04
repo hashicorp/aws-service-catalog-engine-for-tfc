@@ -69,7 +69,7 @@ func (h *RotateTeamTokensHandler) RotateToken(ctx context.Context) error {
 	// Creates a new Team Token, replacing any existing token, once all the state machine executions have finished
 	tt, err := tfeClient.TeamTokens.Create(ctx, tfeCredentialsSecret.TeamId)
 	if err != nil {
-		return err
+		return tfc.Error(err)
 	}
 
 	// Store the team token in Secrets Manager

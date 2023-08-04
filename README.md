@@ -33,6 +33,17 @@ The TFC-RE creates an example product upon launch, however, if you’d prefer to
 ### Updating Token Rotation Frequency
 The Terraform Cloud team token associated with your account is automatically rotated every 30 days. However, the frequency in which the token rotation occurs can be overridden via the `token_rotation_interval_in_days` variable.
 
+### Reset Terraform Cloud Token
+If the API token in Secrets Manager becomes invalid for any reason, you can forcefully regenerate and reinstall a fresh API Token into Secrets Manager using the following script:
+
+```bash
+# Destroy the current team token
+terraform destroy --target=module.terraform_cloud_reference_engine.tfe_team_token.test_team_token
+
+# Re-apply the terraform to re-create the team token (the Secrets Manager secret will be updated as well)
+terraform apply
+```
+
 ## Troubleshooting
 
 ### Issues with Terraform Authentication

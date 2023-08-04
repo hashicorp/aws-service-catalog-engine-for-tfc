@@ -302,18 +302,6 @@ resource "aws_sfn_state_machine" "rotate_token_state_machine" {
           "BackoffRate": 2
         }
       ],
-      "Catch": [
-        {
-          "ErrorEquals": [ "States.TaskFailed" ],
-          "ResultPath": "$.errorInfo",
-          "Next": "Notify team token rotation failure"
-        },
-        {
-          "ErrorEquals": [ "States.Timeout" ],
-          "ResultPath": "$.errorInfo",
-          "Next": "Notify team token rotation failure"
-        }
-      ],
       "Next": "Are there any outstanding state machine executions?"
     },
     "Are there any outstanding state machine executions?": {
@@ -342,6 +330,18 @@ resource "aws_sfn_state_machine" "rotate_token_state_machine" {
       "Parameters": {
         "operation": "ROTATING"
       },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
       "Next": "Resume SQS processing"
     },
     "Resume SQS processing": {
@@ -350,11 +350,18 @@ resource "aws_sfn_state_machine" "rotate_token_state_machine" {
       "Parameters": {
         "operation": "RESUMING"
       },
-      "End": true
-    },
-    "Notify team token rotation failure": {
-      "Type": "Fail",
-      "Cause": "ServiceCatalogTerraformCloudRotateTokenHandler invocation failed. See the CloudWatch Logs for the ServiceCatalogTerraformCloudRotateTokenHandler in this StepFunctions state machine execution for more details",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
       "End": true
     }
   }
