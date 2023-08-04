@@ -37,7 +37,7 @@ The Terraform Cloud team token associated with your account is automatically rot
 
 ### Updating the Terraform Version
 The Terraform version can be set to a version of your choice by updating the `terraform_version` variable, which can be found [here](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/blob/main/engine/variables.tf#L45).
-We recommend that you use version 1.5.4 or higher, so that it remains compatible with the AWS provider.
+We recommend that you use version 1.5.4 or higher.
 
 ## Troubleshooting
 
