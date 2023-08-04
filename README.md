@@ -37,7 +37,7 @@ The Terraform Cloud team token associated with your account is automatically rot
 
 ### Updating the Terraform Version
 The Terraform version can be set to a version of your choice by updating the `terraform_version` variable, which can be found [here](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/blob/main/engine/variables.tf#L45).
-We recommend that you use version 1.0.15 or higher, so that it remains compatible with the AWS provider.
+We recommend that you use version 1.5.4 or higher, so that it remains compatible with the AWS provider.
 
 ## Troubleshooting
 
@@ -51,10 +51,10 @@ If you run into AWS Service Catalog product issues, such as issues when provisio
 
 **Solution:** Create a new product version. It is important to note that anytime the configuration has been modified, the product version will need to be updated.
 
-### Hub-and-Spoke Permission Requirements
-If you run into issues with the Launch Role associated with the Hub-and-Spoke account, it may mean that you do not have the permissions necessary to establish the required trust relationship.
+### Hub and Spoke Permission Requirements
+If you see that provisioning is failing in a specific spoke account, it may mean that the engine in the hub account hasn't been allowed to assume the launch role assigned to that product in the spoke account.
 
-**Solution:** Give permissions to the `SendApplyRole` and `ParameterParser` to establish the necessary relationship, as shown below:
+**Solution:** Allow the `SendApplyRole` and `ParameterParser` IAM roles to assume the launch role of the product in the spoke account by modifying the launch role's IAM trust relationship policy, as shown below:
 
 ```hcl
 {
