@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-functions/shared/tfc"
 	"github.com/hashicorp/go-tfe"
 	"log"
+	"fmt"
 )
 
 type NotifyRunResultHandler struct {
@@ -93,8 +94,9 @@ func (h NotifyRunResultHandler) NotifyProvisioningResult(ctx context.Context, tf
 	} else {
 		outputs, err = FetchRunOutputs(ctx, tfeClient, request)
 		if err != nil {
-			log.Default().Printf("failed to fetch run outputs: %v", err)
-			return nil, err
+			log.Default().Printf("failed to fetch run outputs, Cause: %v", err)
+			status = types.EngineWorkflowStatusFailed
+			failureReason = aws.String(fmt.Sprintf("Failed to fetch run outputs. If re-provisioning/updating the product fails, please file an issue in the repository: https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/issues or contact HashiCorp support. Cause: %v", err))
 		}
 	}
 
@@ -136,7 +138,9 @@ func (h NotifyRunResultHandler) NotifyUpdatingResult(ctx context.Context, tfeCli
 	} else {
 		outputs, err = FetchRunOutputs(ctx, tfeClient, request)
 		if err != nil {
-			return nil, err
+			log.Default().Printf("failed to fetch run outputs, Cause: %v", err)
+			status = types.EngineWorkflowStatusFailed
+			failureReason = aws.String(fmt.Sprintf("Failed to fetch run outputs. If updating the product fails, please file an issue in the repository: https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/issues or contact HashiCorp support. Cause: %v", err))
 		}
 	}
 
