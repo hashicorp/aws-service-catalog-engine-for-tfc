@@ -116,12 +116,12 @@ func GetCurrentStateVersionForApply(ctx context.Context, client *tfe.Client, app
 
 	var currentStateVersion *tfe.StateVersion
 	if len(a.StateVersions) == 0 {
-		log.Default().Printf("Falling back to fetching latest state version for workspace...", len(a.StateVersions))
+		log.Default().Print("Falling back to fetching latest state version for workspace...")
 
 		// If Run wasn't applied due to no changes being present in the Plan, fetch the latest State Version
 		currentStateVersion, err = client.StateVersions.ReadCurrent(ctx, workspace.ID)
 		if err == tfe.ErrResourceNotFound {
-			log.Default().Printf("No state versions found for workspace.", len(a.StateVersions))
+			log.Default().Print("No state versions found for workspace")
 			return nil, nil
 		}
 		return currentStateVersion, tfc.Error(err)
