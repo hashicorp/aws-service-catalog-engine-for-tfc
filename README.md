@@ -56,10 +56,56 @@ Unlike variables, variable sets are not automatically purged. This may lead to a
 
 **Solution:** Remove the variable set and update the provisioned product within AWS Service Catalog.
 
-### Issues with Renaming Workspaces
-Workspaces created by the engine should not be renamed within TFC. When a provisioned product's workspace is renamed and then updated within AWS Service Catalog, a new workspace will be created for that provisioned product.
+### Issues with Hub-and-Spoke Permissions
+If you run into issues with the Launch Role associated with the Hub-and-Spoke account, it may mean that you do not have the permissions necessary to establish the required trust relationship.
 
-**Solution:** To avoid conflicts, do not rename workspaces.
+**Solution:** Give permissions to the `SendApplyRole` and `ParameterParser` to establish the necessary relationship, as shown below:
+
+```hcl
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "GivePermissionsToServiceCatalog",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "servicecatalog.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+        },
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::012345678901:root"
+            },
+            "Action": "sts:AssumeRole",
+            "Condition": {
+                "StringLike": {
+                    "aws:PrincipalArn": [
+                        "arn:aws:iam::012345678901:role/ServiceCatalogEngineForTerraformCloudSendApplyRole",
+                        "arn:aws:iam::012345678901:role/ServiceCatalogTerraformCloudParameterParserRole"
+                    ]
+                }
+            }
+        },
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "arn:aws:iam::012345678901:oidc-provider/app.terraform.io"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "app.terraform.io:aud": "aws.workload.identity"
+                },
+                "StringLike": {
+                    "app.terraform.io:sub": "organization:organization-name:project:*:workspace:*:run_phase:*"
+                }
+            }
+        }
+    ]
+}
+```
 
 ### Exceptions
 **Error:** `NoFilesToParseExceptionMessage`
@@ -119,6 +165,9 @@ AWS Lambdas have a memory size constraint. This limitation can lead to issues wh
 
 ### Resource Timeouts
 If the provisioning step takes too long, the AWS Service Catalog will timeout. This can also cause the Terraform to timeout, as it has a 30-minute timeout limit. To resolve this timeout issue, try to rerun the provisioning step, or try re-`apply`ing the Terraform.
+
+### Issues with Renaming Workspaces
+Workspaces created by the engine should not be renamed within TFC. When a provisioned product's workspace is renamed and then updated within AWS Service Catalog, a new workspace will be created for that provisioned product. To avoid conflicts, it is recommended that you do not rename workspaces created by the engine.
 
 ## Uninstalling the Integration
 To uninstall the integration, you should first destroy any necessary information in AWS. Next, run the `terraform destroy` command. This will remove the integration.
