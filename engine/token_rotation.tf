@@ -353,11 +353,8 @@ resource "aws_sfn_state_machine" "rotate_token_state_machine" {
       "End": true
     },
     "Notify team token rotation failure": {
-      "Type": "Task",
-      "Resource": "${aws_lambda_function.rotate_token_handler.arn}",
-      "Parameters": {
-        "operation": "ERRORING"
-      },
+      "Type": "Fail",
+      "Cause": "ServiceCatalogTerraformCloudRotateTokenHandler returned an error. See CloudWatch Logs of ServiceCatalogTerraformCloudRotateTokenHandler in this StepFunctions state machine execution for details",
       "End": true
     }
   }

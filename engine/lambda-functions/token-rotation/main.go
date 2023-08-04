@@ -28,7 +28,6 @@ const (
 	Polling  Operation = "POLLING"
 	Rotating Operation = "ROTATING"
 	Resuming Operation = "RESUMING"
-	Erroring Operation = "ERRORING"
 )
 
 type RotateTeamTokensResponse struct {

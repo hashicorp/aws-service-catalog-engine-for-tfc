@@ -79,7 +79,6 @@ func (h *RotateTeamTokensHandler) HandleRequest(ctx context.Context, request Rot
 			return nil, err
 		}
 		return &RotateTeamTokensResponse{}, nil
-	case request.Operation == Erroring:
 	default:
 		log.Printf("Unknown serviceCatalogOperation: %s\n", request.Operation)
 		return nil, errors.New("unknown operation")
