@@ -12,7 +12,7 @@ Everything you need to get started using the Terraform Cloud engine is included 
 1. Authenticate with both AWS and Terraform Cloud:
    - Authenticate the AWS provider using one of the methods listed in the [AWS provider documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication-and-configuration).
    - Authenticate the TFE Terraform Provider using one of the methods listed in the [TFE Terraform documentation](https://registry.terraform.io/providers/hashicorp/tfe/0.11.2/docs#authentication). It is important to note that the user/token you use will need permissions to create Teams and other authentication tokens.
-         For more information on TFC permissions, please refer to this [documentation](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/permissions).
+     For more information on TFC permissions, please refer to this [documentation](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/permissions).
 2. Copy `terraform.tfvars.example` to `terraform.tfvars` and set the following values:
    - `tfc_organization` to the name of your Terraform Cloud organization.
    - `tfc_team` the name of the team that this configuration will create to manage this integration. This team's API Token will be used by Service Catalog to authenticate API calls to Terraform Cloud.
@@ -31,19 +31,78 @@ The TFC-RE creates an example product upon launch, however, if you’d prefer to
 ## Token Rotation
 
 ### Updating Token Rotation Frequency
-The Terraform Cloud team token associated with your account is automatically rotated every 30 days. However, the frequency in which the token rotation occurs can be overridden via the `token_rotation_interval_in_days` variable.
+The Terraform Cloud team token associated with your account is automatically rotated every 30 days. However, the frequency in which the token rotation occurs can be overridden via the `token_rotation_interval_in_days` variable, which can be found [here](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/blob/main/variables.tf#L39).
+
+## Terraform Version
+
+### Updating the Terraform Version
+The Terraform version can be set to a version of your choice by updating the `terraform_version` variable, which can be found [here](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/blob/main/engine/variables.tf#L45).
+We recommend that you use version 1.5.4 or higher.
 
 ## Troubleshooting
 
-### Issues with Terraform Authentication
+### Terraform Authentication
 If you run into TFC workspace issues, such as issues when creating TFC workspaces, it may mean that the [Team](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/teams) that has been created to launch products for your AWS Service Catalog account may not have the correct set of permissions on Terraform Cloud.
 
 **Solution:** Re-apply the engine's Terraform to reset the Team's permissions (thus re-granting it permissions to create and manage workspaces within your organization).
 
-### Issues with the Service Catalog Product Version
+### Service Catalog Product Version
 If you run into AWS Service Catalog product issues, such as issues when provisioning a new product, it may mean that the product version needs to be updated.
 
 **Solution:** Create a new product version. It is important to note that anytime the configuration has been modified, the product version will need to be updated.
+
+### Hub and Spoke Permission Requirements
+If you see that provisioning is failing in a specific spoke account, it may mean that the engine in the hub account hasn't been allowed to assume the launch role assigned to that product in the spoke account.
+
+**Solution:** Allow the `SendApplyRole` and `ParameterParser` IAM roles to assume the launch role of the product in the spoke account by modifying the launch role's IAM trust relationship policy, as shown below:
+
+```hcl
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "GivePermissionsToServiceCatalog",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "servicecatalog.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+        },
+        {
+            "Sid": "GivePermissionsToTerraformCloudReferenceEngine",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::012345678901:root"
+            },
+            "Action": "sts:AssumeRole",
+            "Condition": {
+                "StringLike": {
+                    "aws:PrincipalArn": [
+                        "arn:aws:iam::012345678901:role/ServiceCatalogEngineForTerraformCloudSendApplyRole",
+                        "arn:aws:iam::012345678901:role/ServiceCatalogTerraformCloudParameterParserRole"
+                    ]
+                }
+            }
+        },
+        {
+            "Sid": "AllowDynamicProviderCredentials",
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "arn:aws:iam::012345678901:oidc-provider/app.terraform.io"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "app.terraform.io:aud": "aws.workload.identity"
+                },
+                "StringLike": {
+                    "app.terraform.io:sub": "organization:organization-name:project:*:workspace:*:run_phase:*"
+                }
+            }
+        }
+    ]
+}
+```
 
 ### Exceptions
 **Error:** `NoFilesToParseExceptionMessage`
@@ -91,7 +150,7 @@ The Amazon SQS contains information regarding Service Catalog workloads. The Ama
 There are a few places where you can monitor your organization’s TFC runs and workspaces, but one of the easiest places to monitor them is under the “Runs” tab for a particular workspace. The “Runs” tab will contain each run for a particular workspace. Additionally, you can click into a workspace run from this view, allowing you to gain further insight into the state of the run and where and why it errored. This view also contains the raw log for a given run and its sentinel mocks. For more information on TFC runs, please refer to this [documentation](https://developer.hashicorp.com/terraform/cloud-docs/api-docs/run).
 
 ### Monitoring TFE Token Rotation
-To monitor token rotation, an AWS Admin can search for metrics related to the `TerraformEngineRotateToken` event rule in AWS CloudWatch.
+To monitor token rotation, an AWS Admin can search for metrics related to the `TerraformEngineRotateToken` event rule in AWS CloudWatch. We recommend that you set up an AWS CloudWatch alarm for token rotation in the event that an error occurs. For more information on CloudWatch alarms, please refer to this  AWS developer [documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html).
 
 ## Limitations
 
@@ -103,6 +162,12 @@ AWS Lambdas have a memory size constraint. This limitation can lead to issues wh
 
 ### Resource Timeouts
 If the provisioning step takes too long, the AWS Service Catalog will timeout. This can also cause the Terraform to timeout, as it has a 30-minute timeout limit. To resolve this timeout issue, try to rerun the provisioning step, or try re-`apply`ing the Terraform.
+
+### Renaming Workspaces
+Workspaces created by the engine should not be renamed within TFC. When a provisioned product's workspace is renamed and then updated within AWS Service Catalog, a new workspace will be created for that provisioned product. To avoid conflicts, it is recommended that you do not rename workspaces created by the engine.
+
+### Variable Sets
+Unlike variables, variable sets are not automatically purged. This may lead to an issue where a workspace's run will not apply properly because it contains an extraneous variable set. to resolve this, remove the variable set and update the provisioned product within AWS Service Catalog.
 
 ## Uninstalling the Integration
 To uninstall the integration, you should first destroy any necessary information in AWS. Next, run the `terraform destroy` command. This will remove the integration.
