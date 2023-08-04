@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 resource "aws_lambda_function" "parameter_parser" {
-  filename = data.archive_file.parameter_parser.output_path
+  filename      = data.archive_file.parameter_parser.output_path
   function_name = "ServiceCatalogTerraformCloudParameterParser"
   role          = aws_iam_role.parameter_parser.arn
   handler       = "main"
