@@ -49,6 +49,18 @@ data "aws_iam_policy_document" "parameter_parser" {
     resources = ["*"]
 
   }
+
+  statement {
+    sid = "allowFetchingArtifactsForParsing"
+
+    effect = "Allow"
+
+    actions = ["s3:Get*"]
+
+    resources = ["arn:aws:s3:::*"]
+
+  }
+
 }
 
 resource "aws_iam_role_policy_attachment" "parameter_parser" {

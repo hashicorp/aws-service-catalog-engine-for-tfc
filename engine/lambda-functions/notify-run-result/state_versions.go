@@ -38,12 +38,19 @@ func FetchRunOutputs(ctx context.Context, client *tfe.Client, request NotifyRunR
 		return nil, err
 	}
 
+	// If no state version was found, return nothing
+	if stateVersion == nil {
+		return nil, nil
+	}
+
 	// Get state version outputs
+	log.Default().Print("Fetching run outputs from state version...")
 	stateVersionOutputs, err := GetAllStateVersionOutputs(ctx, client, stateVersion.ID, 0)
 	if err != nil {
 		return nil, err
 	}
 
+	log.Default().Print("Mapping run outputs...")
 	var recordOutputs []types.RecordOutput
 	for _, stateVersionOutput := range stateVersionOutputs {
 		recordOutputs = append(recordOutputs, types.RecordOutput{
@@ -99,6 +106,8 @@ func GetCurrentStateVersionForApply(ctx context.Context, client *tfe.Client, app
 
 	log.Default().Printf("Apply status is currently: %s", a.Status)
 
+	log.Default().Printf("Found %d state versions for Apply", len(a.StateVersions))
+
 	// We expect there will be only one state version for the Apply. It is a has-many relationship due to
 	// legacy decisions, but all modern versions of Terraform should only have a single State Version.
 	if len(a.StateVersions) > 1 {
@@ -107,15 +116,15 @@ func GetCurrentStateVersionForApply(ctx context.Context, client *tfe.Client, app
 
 	var currentStateVersion *tfe.StateVersion
 	if len(a.StateVersions) == 0 {
+		log.Default().Print("Falling back to fetching latest state version for workspace...")
+
 		// If Run wasn't applied due to no changes being present in the Plan, fetch the latest State Version
 		currentStateVersion, err = client.StateVersions.ReadCurrent(ctx, workspace.ID)
-		if err != nil {
-			return nil, tfc.Error(err)
+		if err == tfe.ErrResourceNotFound {
+			log.Default().Print("No state versions found for workspace")
+			return nil, nil
 		}
-
-		if currentStateVersion == nil {
-			return nil, errors.New("the provisioned product had no state versions in Terraform Cloud. If re-provisioning the product fails, please file an issue in the repository: https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/issues or contact HashiCorp support")
-		}
+		return currentStateVersion, tfc.Error(err)
 	} else {
 		currentStateVersion = a.StateVersions[0]
 	}

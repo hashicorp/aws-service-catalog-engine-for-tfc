@@ -48,26 +48,6 @@ func TestValidateInputWithEmptyArtifactThrowsParserInvalidParameterException(t *
 	}
 }
 
-func TestValidateInputWithEmptyLaunchRoleArnThrowsParserInvalidParameterException(t *testing.T) {
-	// setup
-	input := TerraformParameterParserInput{
-		Artifact: Artifact{
-			Path: TestArtifactPath,
-			Type: TestArtifactType,
-		},
-		LaunchRoleArn: "",
-	}
-	expectedErrorMessage := fmt.Sprintf(RequiredKeyMissingOrEmptyErrorMessage, LaunchRoleArnKey)
-
-	// act
-	err := ValidateInput(input)
-
-	// assert
-	if !reflect.DeepEqual(err, exceptions.ParserInvalidParameterException{Message: expectedErrorMessage}) {
-		t.Errorf("Validator did not throw ParserInvalidParameterException with expected error message")
-	}
-}
-
 func TestValidateInputWithEmptyArtifactPathThrowsParserInvalidParameterException(t *testing.T) {
 	// setup
 	input := TerraformParameterParserInput{

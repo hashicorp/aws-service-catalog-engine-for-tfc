@@ -379,14 +379,15 @@ func TestNotifyRunResultHandler_Provisioning_MissingApply(t *testing.T) {
 
 	// Send the test request
 	_, err := testHandler.HandleRequest(context.Background(), testRequest)
-	// Verify that an error was returned so that the Lambda can be retried
-	assert.NotNil(t, err, "Error should have been returned by the Lambda")
+
+	// Verify the handler did not fail the request
+	assert.Nil(t, err, "the handler should not have returned an error")
+
+	// Verify that an error was sent to service catalog
+	assert.Equal(t, types.EngineWorkflowStatusFailed, mockServiceCatalog.NotifyProvisionProductEngineWorkflowResultInput.Status)
 
 	// Verify the TFC workspace was not deleted (like in the terminating workflow)
 	assert.Equal(t, 1, len(tfcServer.Workspaces), "The TFC workspace should have been deleted")
-
-	// Verify the workflow was not reported as a failure, so the lambda can be retried
-	assert.Nil(t, mockServiceCatalog.NotifyProvisionProductEngineWorkflowResultInput)
 }
 
 func TestNotifyRunResultHandler_Updating_Success(t *testing.T) {
