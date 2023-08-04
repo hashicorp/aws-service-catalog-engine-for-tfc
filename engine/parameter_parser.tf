@@ -2,9 +2,8 @@
 # SPDX-License-Identifier: MPL-2.0
 
 resource "aws_lambda_function" "parameter_parser" {
-  filename = data.archive_file.parameter_parser.output_path
-  # TODO: Rename after AWS has modified product type
-  function_name = "ServiceCatalogTerraformOSParameterParser"
+  filename      = data.archive_file.parameter_parser.output_path
+  function_name = "ServiceCatalogTerraformCloudParameterParser"
   role          = aws_iam_role.parameter_parser.arn
   handler       = "main"
 
@@ -27,12 +26,12 @@ data "aws_iam_policy_document" "parameter_parser_assume_policy" {
 }
 
 resource "aws_iam_role" "parameter_parser" {
-  name               = "ServiceCatalogTFCParameterParserRole"
+  name               = "ServiceCatalogTerraformCloudParameterParser"
   assume_role_policy = data.aws_iam_policy_document.parameter_parser_assume_policy.json
 }
 
 resource "aws_iam_role_policy" "parameter_parser" {
-  name   = "ServiceCatalogTFCParameterParserRolePolicy"
+  name   = "ServiceCatalogTerraformCloudParameterParserRolePolicy"
   role   = aws_iam_role.parameter_parser.id
   policy = data.aws_iam_policy_document.parameter_parser.json
 }

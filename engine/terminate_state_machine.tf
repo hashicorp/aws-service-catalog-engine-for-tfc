@@ -15,12 +15,12 @@ data "aws_iam_policy_document" "terminate_product_state_machine_assumed_policy" 
 }
 
 resource "aws_iam_role" "terminate_state_machine" {
-  name               = "ServiceCatalogTFCTerminateOperationStateMachineRole"
+  name               = "ServiceCatalogTerraformCloudTerminateOperationStateMachineRole"
   assume_role_policy = data.aws_iam_policy_document.terminate_product_state_machine_assumed_policy.json
 }
 
 resource "aws_iam_role_policy" "terminate_state_machine" {
-  name   = "ServiceCatalogTFCTerminateOperationStateMachineRolePolicy"
+  name   = "ServiceCatalogTerraformCloudTerminateOperationStateMachineRolePolicy"
   role   = aws_iam_role.terminate_state_machine.id
   policy = data.aws_iam_policy_document.terminate_state_machine.json
 }
@@ -78,12 +78,12 @@ data "aws_iam_policy_document" "terminate_state_machine" {
 }
 
 resource "aws_cloudwatch_log_group" "terminate_state_machine" {
-  name              = "ServiceCatalogTFCTerminateOperationStateMachine"
+  name              = "ServiceCatalogTerraformCloudTerminateOperationStateMachine"
   retention_in_days = var.cloudwatch_log_retention_in_days
 }
 
 resource "aws_sfn_state_machine" "terminate_state_machine" {
-  name     = "ServiceCatalogTFCTerminateOperationStateMachine"
+  name     = "ServiceCatalogTerraformCloudTerminateOperationStateMachine"
   role_arn = aws_iam_role.terminate_state_machine.arn
 
   logging_configuration {

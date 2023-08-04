@@ -15,12 +15,12 @@ data "aws_iam_policy_document" "manage_provisioned_product" {
 }
 
 resource "aws_iam_role" "provision_state_machine" {
-  name               = "ServiceCatalogTFCProvisionOperationStateMachineRole"
+  name               = "ServiceCatalogTerraformCloudProvisionOperationStateMachineRole"
   assume_role_policy = data.aws_iam_policy_document.manage_provisioned_product.json
 }
 
 resource "aws_iam_role_policy" "manage_provisioned_product_role_policy" {
-  name   = "ServiceCatalogTFCProvisionOperationStateMachineRolePolicy"
+  name   = "ServiceCatalogTerraformCloudProvisionOperationStateMachineRolePolicy"
   role   = aws_iam_role.provision_state_machine.id
   policy = data.aws_iam_policy_document.policy_for_manage_provisioned_product.json
 }
@@ -78,12 +78,12 @@ data "aws_iam_policy_document" "policy_for_manage_provisioned_product" {
 }
 
 resource "aws_cloudwatch_log_group" "provision_state_machine" {
-  name              = "ServiceCatalogTFCProvisionOperationStateMachine"
+  name              = "ServiceCatalogTerraformCloudProvisionOperationStateMachine"
   retention_in_days = var.cloudwatch_log_retention_in_days
 }
 
 resource "aws_sfn_state_machine" "provision_state_machine" {
-  name     = "ServiceCatalogTFCProvisionOperationStateMachine"
+  name     = "ServiceCatalogTerraformCloudProvisionOperationStateMachine"
   role_arn = aws_iam_role.provision_state_machine.arn
 
   logging_configuration {

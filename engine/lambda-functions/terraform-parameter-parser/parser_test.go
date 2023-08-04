@@ -6,9 +6,9 @@
 package main
 
 import (
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-functions/shared/exceptions"
 	"reflect"
 	"testing"
-	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-functions/shared/exceptions"
 )
 
 const PrimaryFileName1 = "main.tf"
@@ -284,7 +284,7 @@ func TestParseParametersFromConfigurationWithComprehensiveVariableFileHappy(t *t
 func TestParseParametersFromConfigurationWithNoFilesThrowsParserInvalidParameterException(t *testing.T) {
 	// setup
 	fileMap := make(map[string]string)
-	expectedErrorMessage := "No .tf files found. Nothing to parse. Make sure the root directory of the Terraform open source configuration file contains the .tf files for the root module."
+	expectedErrorMessage := "No .tf files found. Nothing to parse. Make sure the root directory of the Terraform Cloud configuration file contains the .tf files for the root module."
 
 	// act
 	_, err := ParseParametersFromConfiguration(fileMap)

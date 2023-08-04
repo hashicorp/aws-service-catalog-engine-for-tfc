@@ -11,15 +11,15 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-functions/shared/exceptions"
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/terraform-config-inspect/tfconfig"
-	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-functions/shared/exceptions"
 )
 
 const PrimaryModuleName = "PrimaryModule"
 const OverrideModuleName = "OverrideModule"
 const OverrideFileSuffix = "override.tf"
-const NoFilesToParseExceptionMessage = "No .tf files found. Nothing to parse. Make sure the root directory of the Terraform open source configuration file contains the .tf files for the root module."
+const NoFilesToParseExceptionMessage = "No .tf files found. Nothing to parse. Make sure the root directory of the Terraform Cloud configuration file contains the .tf files for the root module."
 
 // ParseParametersFromConfiguration - Takes Terraform configuration represented as a map from file name to string contents
 // parses out the variable blocks and returns slice of Parameter pointers
