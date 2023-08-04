@@ -41,22 +41,17 @@ We recommend that you use version 1.0.15 or higher, so that it remains compatibl
 
 ## Troubleshooting
 
-### Issues with Terraform Authentication
+### Terraform Authentication
 If you run into TFC workspace issues, such as issues when creating TFC workspaces, it may mean that the [Team](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/teams) that has been created to launch products for your AWS Service Catalog account may not have the correct set of permissions on Terraform Cloud.
 
 **Solution:** Re-apply the engine's Terraform to reset the Team's permissions (thus re-granting it permissions to create and manage workspaces within your organization).
 
-### Issues with the Service Catalog Product Version
+### Service Catalog Product Version
 If you run into AWS Service Catalog product issues, such as issues when provisioning a new product, it may mean that the product version needs to be updated.
 
 **Solution:** Create a new product version. It is important to note that anytime the configuration has been modified, the product version will need to be updated.
 
-### Issues with Variable Sets
-Unlike variables, variable sets are not automatically purged. This may lead to an issue where a workspace's run will not apply properly because it contains an extraneous variable set.
-
-**Solution:** Remove the variable set and update the provisioned product within AWS Service Catalog.
-
-### Issues with Hub-and-Spoke Permissions
+### Hub-and-Spoke Permission Requirements
 If you run into issues with the Launch Role associated with the Hub-and-Spoke account, it may mean that you do not have the permissions necessary to establish the required trust relationship.
 
 **Solution:** Give permissions to the `SendApplyRole` and `ParameterParser` to establish the necessary relationship, as shown below:
@@ -74,6 +69,7 @@ If you run into issues with the Launch Role associated with the Hub-and-Spoke ac
             "Action": "sts:AssumeRole"
         },
         {
+            "Sid": "GivePermissionsToTerraformCloudReferenceEngine",
             "Effect": "Allow",
             "Principal": {
                 "AWS": "arn:aws:iam::012345678901:root"
@@ -89,6 +85,7 @@ If you run into issues with the Launch Role associated with the Hub-and-Spoke ac
             }
         },
         {
+            "Sid": "AllowDynamicProviderCredentials",
             "Effect": "Allow",
             "Principal": {
                 "Federated": "arn:aws:iam::012345678901:oidc-provider/app.terraform.io"
@@ -166,8 +163,11 @@ AWS Lambdas have a memory size constraint. This limitation can lead to issues wh
 ### Resource Timeouts
 If the provisioning step takes too long, the AWS Service Catalog will timeout. This can also cause the Terraform to timeout, as it has a 30-minute timeout limit. To resolve this timeout issue, try to rerun the provisioning step, or try re-`apply`ing the Terraform.
 
-### Issues with Renaming Workspaces
+### Renaming Workspaces
 Workspaces created by the engine should not be renamed within TFC. When a provisioned product's workspace is renamed and then updated within AWS Service Catalog, a new workspace will be created for that provisioned product. To avoid conflicts, it is recommended that you do not rename workspaces created by the engine.
+
+### Variable Sets
+Unlike variables, variable sets are not automatically purged. This may lead to an issue where a workspace's run will not apply properly because it contains an extraneous variable set. to resolve this, remove the variable set and update the provisioned product within AWS Service Catalog.
 
 ## Uninstalling the Integration
 To uninstall the integration, you should first destroy any necessary information in AWS. Next, run the `terraform destroy` command. This will remove the integration.
