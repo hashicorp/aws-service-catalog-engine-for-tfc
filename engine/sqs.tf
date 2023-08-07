@@ -99,17 +99,6 @@ data "aws_iam_policy_document" "queue_policy" {
       aws_sqs_queue.terraform_engine_update_queue.arn
     ]
   }
-
-  statement {
-    sid    = "Enable AWS Service Catalog encryption/decryption permissions when sending message to queue"
-    effect = "Allow"
-    principals {
-      type        = "Service"
-      identifiers = ["servicecatalog.amazonaws.com"]
-    }
-    actions   = ["kms:DescribeKey", "kms:Decrypt", "kms:ReEncrypt", "kms:GenerateDataKey"]
-    resources = [aws_kms_key.queue_key.arn]
-  }
 }
 
 resource "aws_sqs_queue_policy" "queue_policy" {

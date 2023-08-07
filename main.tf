@@ -42,6 +42,7 @@ module "terraform_cloud_reference_engine" {
   cloudwatch_log_retention_in_days = var.cloudwatch_log_retention_in_days
   enable_xray_tracing              = var.enable_xray_tracing
   token_rotation_interval_in_days  = var.token_rotation_interval_in_days
+  terraform_version                = var.terraform_version
 }
 
 # Creates an AWS Service Catalog Portfolio to house the example product
