@@ -26,7 +26,7 @@ To test your newly provisioned Service Catalog Engine for Terraform Cloud, follo
 The example product mentioned above can be found [here](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/tree/main/example-product).
 
 ## Creating and Provisioning a Product in Service Catalog
-The TFC-RE creates an example product upon launch, however, if you’d prefer to create a new product using the Service Catalog UI, please refer to AWS' documentation.
+The TFC-RE creates an example product upon launch, however, if you’d prefer to create a new product using the AWS Service Catalog UI, please refer to AWS's developer documentation, which can be found [here](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/getstarted-terraform-engine-cloud.html).
 
 ## Token Rotation
 
