@@ -81,7 +81,7 @@ resource "aws_lambda_function" "provision_handler" {
   role          = aws_iam_role.provisioning_handler_lambda_execution.arn
   handler       = "main"
 
-  filename      = data.archive_file.provision_handler.output_path
+  filename         = data.archive_file.provision_handler.output_path
   source_code_hash = data.archive_file.provision_handler.output_base64sha256
 
   runtime = "go1.x"
@@ -170,7 +170,7 @@ resource "aws_lambda_function" "terminate_handler" {
   role          = aws_iam_role.terminate_handler_lambda_execution.arn
   handler       = "main"
 
-  filename      = data.archive_file.provision_handler.output_path
+  filename         = data.archive_file.provision_handler.output_path
   source_code_hash = data.archive_file.provision_handler.output_base64sha256
 
   runtime = "go1.x"
@@ -259,7 +259,7 @@ resource "aws_lambda_function" "update_handler" {
   role          = aws_iam_role.update_handler_lambda_execution.arn
   handler       = "main"
 
-  filename      = data.archive_file.provision_handler.output_path
+  filename         = data.archive_file.provision_handler.output_path
   source_code_hash = data.archive_file.provision_handler.output_base64sha256
 
   runtime = "go1.x"
