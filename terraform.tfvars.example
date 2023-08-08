@@ -1,0 +1,3 @@
+tfc_organization = "my-tfc-organization"
+tfc_team = "aws-service-catalog"
+token_rotation_interval_in_days = 30

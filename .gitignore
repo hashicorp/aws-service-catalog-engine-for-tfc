@@ -1,0 +1,21 @@
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+
+terraform.tfvars
+*.tfstate.lock.hcl
+
+.DS_Store
+.idea
+
+# Terraform artifacts
+dist/
+
+# Golang files
+engine/engine/lambda-functions/vendor/
