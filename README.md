@@ -21,12 +21,8 @@ Everything you need to get started using the Terraform Cloud engine is included 
 ### Test the Engine
 Once you've applied the configuration, you should see a newly created AWS Service Catalog portfolio in [your AWS Service Catalog dashboard](https://console.aws.amazon.com/servicecatalog/home).
 
-To test your newly provisioned Service Catalog Engine for Terraform Cloud, follow [the guide to granting access to portfolios](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/catalogs_portfolios_users.html). Navigate to the newly provisioned `"TFC Example Portfolio"` and grant access to a user of your choosing. Instruct the newly assigned "test user" to attempt to provision the included example product that this engine creates (it is already assigned to the `"TFC Example Portfolio"`).
-
-The example product mentioned above can be found [here](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/tree/main/example-product).
-
 ## Creating and Provisioning a Product in Service Catalog
-The TFC-RE creates an example product upon launch, however, if you’d prefer to create a new product using the AWS Service Catalog UI, please refer to AWS's developer documentation, which can be found [here](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/getstarted-terraform-engine-cloud.html).
+To create a new product using the AWS Service Catalog UI, please refer to AWS's developer documentation, which can be found [here](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/getstarted-terraform-engine-cloud.html).
 
 ## Token Rotation
 
