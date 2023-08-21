@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 output "oidc_provider_arn" {
-  value = aws_iam_openid_connect_provider.tfc_provider.arn
+  value = data.aws_iam_openid_connect_provider.tfc_provider.arn
 }
 
 output "parameter_parser_role_arn" {
