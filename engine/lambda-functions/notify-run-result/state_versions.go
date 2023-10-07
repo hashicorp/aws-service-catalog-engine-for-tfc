@@ -17,6 +17,7 @@ import (
 	"net/url"
 	"regexp"
 	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-functions/shared/tfc"
+	"sort"
 )
 
 func FetchRunOutputs(ctx context.Context, client *tfe.Client, request NotifyRunResultRequest) ([]types.RecordOutput, error) {
@@ -108,12 +109,6 @@ func GetCurrentStateVersionForApply(ctx context.Context, client *tfe.Client, app
 
 	log.Default().Printf("Found %d state versions for Apply", len(a.StateVersions))
 
-	// We expect there will be only one state version for the Apply. It is a has-many relationship due to
-	// legacy decisions, but all modern versions of Terraform should only have a single State Version.
-	if len(a.StateVersions) > 1 {
-		return nil, errors.New("too many state versions exist for this run to determine the current state version. If re-provisioning the product fails, please file an issue in the repository: https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/issues or contact HashiCorp support")
-	}
-
 	var currentStateVersion *tfe.StateVersion
 	if len(a.StateVersions) == 0 {
 		log.Default().Print("Falling back to fetching latest state version for workspace...")
@@ -125,11 +120,26 @@ func GetCurrentStateVersionForApply(ctx context.Context, client *tfe.Client, app
 			return nil, nil
 		}
 		return currentStateVersion, tfc.Error(err)
-	} else {
-		currentStateVersion = a.StateVersions[0]
 	}
 
-	return currentStateVersion, nil
+	// Fetch each of the Apply instance's State Versions
+	for i, stateVersion := range a.StateVersions {
+		loadedStateVersion, err := client.StateVersions.Read(ctx, stateVersion.ID)
+		if err != nil {
+			return nil, err
+		}
+		a.StateVersions[i] = loadedStateVersion
+	}
+
+	// Sort the state versions by creation date. In the current version of TFC, long Apply objects can sometimes return
+	// multiple state versions due to a bug. In order to maintain compatibility with TFE, we need to handle this bug by
+	// NOT relying on the fact that there should only be a single state version per Apply
+	sort.Slice(a.StateVersions, func(i, j int) bool {
+		return a.StateVersions[i].CreatedAt.Before(a.StateVersions[j].CreatedAt)
+	})
+
+	// Return the latest state version
+	return a.StateVersions[len(a.StateVersions)-1], nil
 }
 
 func GetAllStateVersionOutputs(ctx context.Context, client *tfe.Client, stateVersionID string, pageNumber int) ([]*tfe.StateVersionOutput, error) {

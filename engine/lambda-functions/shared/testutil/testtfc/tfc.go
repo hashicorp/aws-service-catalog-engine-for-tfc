@@ -48,6 +48,9 @@ type MockTFC struct {
 	// StateVersions is a map containing the all the StateVersions the mock TFC contains, the keys are the IDs of the Workspaces that own them
 	StateVersions map[string]*tfe.StateVersion
 
+	// StateVersions is a map containing the all the StateVersions the mock TFC contains, the keys are the IDs of the Apply that owns them
+	StateVersionsByApply map[string][]*tfe.StateVersion
+
 	// StateVersionOutputs is a map containing the all the StateVersionOutputs the mock TFC contains, the keys are the IDs of the StateVersion that own them
 	StateVersionOutputs map[string][]*tfe.StateVersionOutput
 
@@ -84,6 +87,7 @@ func NewMockTFC() *MockTFC {
 		Vars:                            map[string][]*tfe.Variable{},
 		Applies:                         map[string]*tfe.Apply{},
 		StateVersions:                   map[string]*tfe.StateVersion{},
+		StateVersionsByApply:            map[string][]*tfe.StateVersion{},
 		StateVersionOutputs:             map[string][]*tfe.StateVersionOutput{},
 		configurationVersionsById:       map[string]*tfe.ConfigurationVersion{},
 	}

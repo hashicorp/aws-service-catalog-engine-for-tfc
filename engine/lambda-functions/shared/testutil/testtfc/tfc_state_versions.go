@@ -12,13 +12,22 @@ import (
 	"encoding/json"
 	"strings"
 	"strconv"
+	"time"
 )
 
-func (srv *MockTFC) AddStateVersion(workspaceId string, stateVersion *tfe.StateVersion) *tfe.StateVersion {
-	stateVersion.ID = StateVersionId(workspaceId)
+func (srv *MockTFC) AddStateVersion(applyId string, stateVersion *tfe.StateVersion) *tfe.StateVersion {
+	stateVersion.ID = StateVersionId(applyId)
 
 	// Save the StateVersion to the mock server
-	srv.StateVersions[workspaceId] = stateVersion
+	srv.StateVersions[stateVersion.ID] = stateVersion
+
+	// Index the StateVersions by Apply Id so they can be fetched lated
+	stateVersions := make([]*tfe.StateVersion, 0)
+	if existingVars := srv.StateVersionsByApply[applyId]; existingVars != nil {
+		stateVersions = existingVars
+	}
+
+	srv.StateVersionsByApply[applyId] = append(stateVersions, stateVersion)
 
 	// Save the StateVersionOutputs, if they were set
 	if stateVersion.Outputs != nil {
@@ -52,7 +61,7 @@ func (srv *MockTFC) HandleStateVersionsGetRequests(w http.ResponseWriter, r *htt
 	}
 
 	// /api/v2/state-versions/sv-6DzZZJg0D_V0rcKz/outputs =>  "", "api", "v2", "state-versions", "sv-some-id", "outputs"
-	if urlPathParts[3] == "state-versions" && urlPathParts[5] == "outputs" {
+	if len(urlPathParts) > 5 && urlPathParts[3] == "state-versions" && urlPathParts[5] == "outputs" {
 		stateVersionId := urlPathParts[4]
 
 		stateVersionOutputs := srv.StateVersionOutputs[stateVersionId]
@@ -79,6 +88,26 @@ func (srv *MockTFC) HandleStateVersionsGetRequests(w http.ResponseWriter, r *htt
 		return true
 	}
 
+	// /api/v2/state-versions/sv-Ppz2mGCSVkJMCXXAe => "", "api", "v2", "state-versions", "sv-Ppz2mGCSVkJMCXXAe"
+	if urlPathParts[3] == "state-versions" && len(urlPathParts) == 5 {
+		stateVersionId := urlPathParts[4]
+
+		stateVersion := srv.StateVersions[stateVersionId]
+		if stateVersion == nil {
+			w.WriteHeader(404)
+			return true
+		}
+
+		body, err := json.Marshal(MakeGetStateVersionResponse(*stateVersion))
+		if err != nil {
+			w.WriteHeader(500)
+			return true
+		}
+		w.WriteHeader(200)
+		w.Write(body)
+		return true
+	}
+
 	return false
 }
 
@@ -93,6 +122,7 @@ func MakeGetStateVersionResponse(stateVersion tfe.StateVersion) map[string]inter
 			"type": "state-versions",
 			"attributes": map[string]interface{}{
 				"download-url": stateVersion.DownloadURL,
+				"created-at":   stateVersion.CreatedAt.UTC().Format(time.RFC3339),
 			},
 			"relationships": relationships,
 			"links": map[string]interface{}{

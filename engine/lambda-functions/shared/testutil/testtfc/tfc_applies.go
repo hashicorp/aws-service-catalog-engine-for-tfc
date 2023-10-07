@@ -12,9 +12,11 @@ import (
 	"net/http"
 )
 
-func (srv *MockTFC) AddApply(applyId string, apply *tfe.Apply) *tfe.Apply {
+func (srv *MockTFC) AddApply(apply *tfe.Apply) *tfe.Apply {
+	apply.ID = ApplyId()
+
 	// Save the Apply to the mock server
-	applyPath := fmt.Sprintf("/api/v2/applies/%s", applyId)
+	applyPath := fmt.Sprintf("/api/v2/applies/%s", apply.ID)
 	srv.Applies[applyPath] = apply
 
 	return apply
@@ -23,7 +25,7 @@ func (srv *MockTFC) AddApply(applyId string, apply *tfe.Apply) *tfe.Apply {
 func (srv *MockTFC) HandleAppliesGetRequests(w http.ResponseWriter, r *http.Request) bool {
 	apply := srv.Applies[r.URL.Path]
 	if apply != nil {
-		body, err := json.Marshal(MakeGetApplyResponse(*apply))
+		body, err := json.Marshal(srv.MakeGetApplyResponse(*apply))
 		if err != nil {
 			w.WriteHeader(500)
 			return true
@@ -36,10 +38,22 @@ func (srv *MockTFC) HandleAppliesGetRequests(w http.ResponseWriter, r *http.Requ
 	return false
 }
 
-func MakeGetApplyResponse(apply tfe.Apply) map[string]interface{} {
+func (srv *MockTFC) MakeGetApplyResponse(apply tfe.Apply) map[string]interface{} {
 	selfLink := fmt.Sprintf("/api/v2/applies/%s", apply.ID)
 
-	relationships := map[string]interface{}{}
+	stateVersionRelationships := []map[string]interface{}{}
+	for _, stateVersion := range srv.StateVersionsByApply[apply.ID] {
+		stateVersionRelationships = append(stateVersionRelationships, map[string]interface{}{
+			"id":   stateVersion.ID,
+			"type": "state-versions",
+		})
+	}
+
+	relationships := map[string]interface{}{
+		"state-versions": map[string]interface{}{
+			"data": stateVersionRelationships,
+		},
+	}
 
 	return map[string]interface{}{
 		"data": map[string]interface{}{
