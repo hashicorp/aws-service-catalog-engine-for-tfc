@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/go-tfe"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 func TestNotifyRunResultHandler_Terminating_Success(t *testing.T) {
@@ -142,19 +143,10 @@ func TestNotifyRunResultHandler_Provisioning_Success(t *testing.T) {
 	defer tfcServer.Stop()
 
 	// Add a workspace to the TFC instance
-	testWorkspace := tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "the-best-workspace"})
-
-	// Add a Run
-	tfcServer.AddRun("run-forrest-run", testtfc.RunFactoryParameters{
-		RunStatus: tfe.RunApplied,
-		Apply: &tfe.Apply{
-			ID: "apply-ran-ed",
-		},
-	})
+	tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "the-best-workspace"})
 
 	// Add an Apply
-	tfcServer.AddApply("apply-ran-ed", &tfe.Apply{
-		ID:                   "apply-ran-ed",
+	testApply := tfcServer.AddApply(&tfe.Apply{
 		LogReadURL:           "some-log-read-url",
 		ResourceAdditions:    1337,
 		ResourceChanges:      42,
@@ -163,15 +155,36 @@ func TestNotifyRunResultHandler_Provisioning_Success(t *testing.T) {
 		StatusTimestamps:     nil,
 	})
 
-	testStateVersionOutput := tfe.StateVersionOutput{
+	testStateVersionOutput := &tfe.StateVersionOutput{
 		Name:      "super_valuable_information_about_your_infra",
 		Sensitive: true,
 		Type:      "string",
 		Value:     "supervaluableinfo",
 	}
 
-	tfcServer.AddStateVersion(testWorkspace.ID, &tfe.StateVersion{
-		Outputs: []*tfe.StateVersionOutput{&testStateVersionOutput},
+	// Add a state version that contains no outputs
+	tfcServer.AddStateVersion(testApply.ID, &tfe.StateVersion{
+		Outputs:   []*tfe.StateVersionOutput{{}},
+		CreatedAt: time.Now().Add(-time.Minute * 2),
+	})
+
+	// Add a more recent state version that contains the output
+	tfcServer.AddStateVersion(testApply.ID, &tfe.StateVersion{
+		Outputs:   []*tfe.StateVersionOutput{testStateVersionOutput},
+		CreatedAt: time.Now().Add(-time.Minute * 1),
+	})
+
+	// Add an even older state version (this will help ensure that we are testing that state versions are sorted by
+	// CreatedAt in order to find the most recent state version)
+	tfcServer.AddStateVersion(testApply.ID, &tfe.StateVersion{
+		Outputs:   []*tfe.StateVersionOutput{{}},
+		CreatedAt: time.Now().Add(-time.Minute * 3),
+	})
+
+	// Add a Run
+	tfcServer.AddRun("run-forrest-run", testtfc.RunFactoryParameters{
+		RunStatus: tfe.RunApplied,
+		Apply:     testApply,
 	})
 
 	// Create tfe client that will send requests to the mock TFC instance
@@ -239,25 +252,22 @@ func TestNotifyRunResultHandler_Provisioning_Success_WithMoreThan100StateVersion
 	defer tfcServer.Stop()
 
 	// Add a workspace to the TFC instance
-	testWorkspace := tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "the-best-workspace"})
-
-	// Add a Run
-	tfcServer.AddRun("run-forrest-run", testtfc.RunFactoryParameters{
-		RunStatus: tfe.RunApplied,
-		Apply: &tfe.Apply{
-			ID: "apply-ran-ed",
-		},
-	})
+	tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "the-best-workspace"})
 
 	// Add an Apply
-	tfcServer.AddApply("apply-ran-ed", &tfe.Apply{
-		ID:                   "apply-ran-ed",
+	testApply := tfcServer.AddApply(&tfe.Apply{
 		LogReadURL:           "some-log-read-url",
 		ResourceAdditions:    1337,
 		ResourceChanges:      42,
 		ResourceDestructions: 21,
 		Status:               tfe.ApplyFinished,
 		StatusTimestamps:     nil,
+	})
+
+	// Add a Run
+	tfcServer.AddRun("run-forrest-run", testtfc.RunFactoryParameters{
+		RunStatus: tfe.RunApplied,
+		Apply:     testApply,
 	})
 
 	// Create a state version with a large number of outputs
@@ -273,7 +283,7 @@ func TestNotifyRunResultHandler_Provisioning_Success_WithMoreThan100StateVersion
 		stateVersionOutputs = append(stateVersionOutputs, testStateVersionOutput)
 	}
 
-	tfcServer.AddStateVersion(testWorkspace.ID, &tfe.StateVersion{
+	tfcServer.AddStateVersion(testApply.ID, &tfe.StateVersion{
 		Outputs: stateVersionOutputs,
 	})
 
@@ -396,18 +406,10 @@ func TestNotifyRunResultHandler_Updating_Success(t *testing.T) {
 	defer tfcServer.Stop()
 
 	// Add a workspace to the TFC instance
-	testWorkspace := tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "the-best-workspace"})
-
-	// Add a Run
-	tfcServer.AddRun("run-forrest-run", testtfc.RunFactoryParameters{
-		RunStatus: tfe.RunApplied,
-		Apply: &tfe.Apply{
-			ID: "apply-ran-ed",
-		},
-	})
+	tfcServer.AddWorkspace("123456789042-amazingly-great-product-instance", testtfc.WorkspaceFactoryParameters{Name: "the-best-workspace"})
 
 	// Add an Apply
-	tfcServer.AddApply("apply-ran-ed", &tfe.Apply{
+	testApply := tfcServer.AddApply(&tfe.Apply{
 		ID:                   "apply-ran-ed",
 		LogReadURL:           "some-log-read-url",
 		ResourceAdditions:    1337,
@@ -417,6 +419,12 @@ func TestNotifyRunResultHandler_Updating_Success(t *testing.T) {
 		StatusTimestamps:     nil,
 	})
 
+	// Add a Run
+	tfcServer.AddRun("run-forrest-run", testtfc.RunFactoryParameters{
+		RunStatus: tfe.RunApplied,
+		Apply:     testApply,
+	})
+
 	testStateVersionOutput := tfe.StateVersionOutput{
 		Name:      "super_valuable_information_about_your_infra",
 		Sensitive: true,
@@ -424,7 +432,7 @@ func TestNotifyRunResultHandler_Updating_Success(t *testing.T) {
 		Value:     "supervaluableinfo",
 	}
 
-	tfcServer.AddStateVersion(testWorkspace.ID, &tfe.StateVersion{
+	tfcServer.AddStateVersion(testApply.ID, &tfe.StateVersion{
 		Outputs: []*tfe.StateVersionOutput{&testStateVersionOutput},
 	})
 
