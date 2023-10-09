@@ -21,7 +21,7 @@ func (srv *MockTFC) AddStateVersion(applyId string, stateVersion *tfe.StateVersi
 	// Save the StateVersion to the mock server
 	srv.StateVersions[stateVersion.ID] = stateVersion
 
-	// Index the StateVersions by Apply Id so they can be fetched lated
+	// Index the StateVersions by Apply Id so they can be fetched later
 	stateVersions := make([]*tfe.StateVersion, 0)
 	if existingVars := srv.StateVersionsByApply[applyId]; existingVars != nil {
 		stateVersions = existingVars
