@@ -175,7 +175,7 @@ func TestNotifyRunResultHandler_Provisioning_Success(t *testing.T) {
 	})
 
 	// Add an even older state version (this will help ensure that we are testing that state versions are sorted by
-	// CreatedAt in order to find the most recent state version
+	// CreatedAt in order to find the most recent state version)
 	tfcServer.AddStateVersion(testApply.ID, &tfe.StateVersion{
 		Outputs:   []*tfe.StateVersionOutput{{}},
 		CreatedAt: time.Now().Add(-time.Minute * 3),
