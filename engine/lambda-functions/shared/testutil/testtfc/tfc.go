@@ -48,7 +48,7 @@ type MockTFC struct {
 	// StateVersions is a map containing the all the StateVersions the mock TFC contains, the keys are the IDs of the Workspaces that own them
 	StateVersions map[string]*tfe.StateVersion
 
-	// StateVersions is a map containing the all the StateVersions the mock TFC contains, the keys are the IDs of the Apply that owns them
+	// StateVersions is a map containing all the StateVersions the mock TFC contains, where the keys are the IDs of the Apply that owns them
 	StateVersionsByApply map[string][]*tfe.StateVersion
 
 	// StateVersionOutputs is a map containing the all the StateVersionOutputs the mock TFC contains, the keys are the IDs of the StateVersion that own them
