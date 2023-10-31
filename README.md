@@ -1,5 +1,5 @@
 # AWS Service Catalog Engine for Terraform Cloud
-The AWS Service Catalog Engine for Terraform Cloud (TFC-RE) is an integration between AWS Service Catalog and Terraform Cloud that allows users to provision Service Catalog products using TFC. This integration gives administrators governance and visibility into their Terraform workloads, and allows Service Catalog administrators to delegate cloud resource provisioning responsibilities to users within their organizations.
+The AWS Service Catalog Engine for Terraform Cloud (TFC-RE) is an integration between AWS Service Catalog and Terraform Cloud/Enterprise that allows users to provision Service Catalog products using TFC. This integration gives administrators governance and visibility into their Terraform workloads, and allows Service Catalog administrators to delegate cloud resource provisioning responsibilities to users within their organizations.
 
 ## Getting Started
 
@@ -16,6 +16,7 @@ Everything you need to get started using the Terraform Cloud engine is included 
 2. Copy `terraform.tfvars.example` to `terraform.tfvars` and set the following values:
    - `tfc_organization` to the name of your Terraform Cloud organization.
    - `tfc_team` the name of the team that this configuration will create to manage this integration. This team's API Token will be used by Service Catalog to authenticate API calls to Terraform Cloud.
+   - (Only if using Terraform Enterprise) `tfc_hostname` is the Terraform Enterprise hostname to connect to.
 3. Run `terraform plan` to verify your setup, and then run `terraform apply` to apply your changes.
 
 ### Test the Engine
