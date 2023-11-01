@@ -1,5 +1,5 @@
 # AWS Service Catalog Engine for Terraform Cloud
-The AWS Service Catalog Engine for Terraform Cloud (TFC-RE) is an integration between AWS Service Catalog and Terraform Cloud/Enterprise that allows users to provision Service Catalog products using TFC. This integration gives administrators governance and visibility into their Terraform workloads, and allows Service Catalog administrators to delegate cloud resource provisioning responsibilities to users within their organizations.
+The AWS Service Catalog Engine for Terraform Cloud (TFC-RE) is an integration between AWS Service Catalog and Terraform Cloud/Enterprise that allows users to provision Service Catalog products using Terraform Cloud/Enterprise. This integration gives administrators governance and visibility into their Terraform workloads, and allows Service Catalog administrators to delegate cloud resource provisioning responsibilities to users within their organizations.
 
 ## Getting Started
 
@@ -12,7 +12,7 @@ Everything you need to get started using the Terraform Cloud engine is included 
 1. Authenticate with both AWS and Terraform Cloud:
    - Authenticate the AWS provider using one of the methods listed in the [AWS provider documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication-and-configuration).
    - Authenticate the TFE Terraform Provider using one of the methods listed in the [TFE Terraform documentation](https://registry.terraform.io/providers/hashicorp/tfe/0.11.2/docs#authentication). It is important to note that the user/token you use will need permissions to create Teams and other authentication tokens.
-     For more information on TFC permissions, please refer to this [documentation](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/permissions).
+     For more information on Terraform Cloud/Enterprise permissions, please refer to this [documentation](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/permissions).
 2. Copy `terraform.tfvars.example` to `terraform.tfvars` and set the following values:
    - `tfc_organization` to the name of your Terraform Cloud organization.
    - `tfc_team` the name of the team that this configuration will create to manage this integration. This team's API Token will be used by Service Catalog to authenticate API calls to Terraform Cloud.
@@ -133,7 +133,7 @@ If you see that provisioning is failing in a specific spoke account, it may mean
 
 **Cause:** This error occurs when a `TFE_TOKEN` has not been set, or the `tfc_organization` variable wasn't provided correctly.
 
-**Solution:** Check that the `tfc_organization` value you provided exactly matches the name of your TFC organization. Also make sure you have set the `TFE_TOKEN` environment variable to a valid [API Token](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/api-tokens).
+**Solution:** Check that the `tfc_organization` value you provided exactly matches the name of your Terraform Cloud/Enterprise organization. Also make sure you have set the `TFE_TOKEN` environment variable to a valid [API Token](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/api-tokens).
 
 For more information on authentication tokens, please refer to this [documentation](https://developer.hashicorp.com/terraform/cloud-docs/users-teams-organizations/api-tokens).
 
@@ -156,10 +156,10 @@ For more insight into a particular Lambda function, leveraging the AWS Lambda se
 #### Amazon SQS
 The Amazon SQS contains information regarding Service Catalog workloads. The Amazon SQS service can provide information regarding Lambda triggers, tagging, access policies, and more for a given queue. It also contains the dead-letter queue. Each queue has its own “message retention period,” which is the duration that the messages will be kept. The message retention period is configurable, and is set to 4 days by default for the TFC-RE. For more information on Amazon SQS, please refer to this AWS developer [documentation](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html), and for more information on setting queue attributes, please refer to this AWS developer [documentation](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SetQueueAttributes.html).
 
-### Monitoring with TFC
+### Monitoring in Terraform Cloud/Enterprise
 
 #### Run Outputs
-There are a few places where you can monitor your organization’s TFC runs and workspaces, but one of the easiest places to monitor them is under the “Runs” tab for a particular workspace. The “Runs” tab will contain each run for a particular workspace. Additionally, you can click into a workspace run from this view, allowing you to gain further insight into the state of the run and where and why it errored. This view also contains the raw log for a given run and its sentinel mocks. For more information on TFC runs, please refer to this [documentation](https://developer.hashicorp.com/terraform/cloud-docs/api-docs/run).
+There are a few places where you can monitor your organization’s runs and workspaces, but one of the easiest places to monitor them is under the “Runs” tab for a particular workspace. The “Runs” tab will contain each run for a particular workspace. Additionally, you can click into a workspace run from this view, allowing you to gain further insight into the state of the run and where and why it errored. This view also contains the raw log for a given run and its sentinel mocks. For more information on TFC runs, please refer to this [documentation](https://developer.hashicorp.com/terraform/cloud-docs/api-docs/run).
 
 ### Monitoring TFE Token Rotation
 To monitor token rotation, an AWS Admin can search for metrics related to the `TerraformEngineRotateToken` event rule in AWS CloudWatch. We recommend that you set up an AWS CloudWatch alarm for token rotation in the event that an error occurs. For more information on CloudWatch alarms, please refer to this  AWS developer [documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html).
@@ -173,7 +173,7 @@ The maximum configuration version size supports files up to 950KB. Files larger 
 AWS Lambdas have a memory size constraint. This limitation can lead to issues when attempting to parse large provisioning artifacts, namely artifacts that are over 500 KB.
 
 ### Renaming Workspaces
-Workspaces created by the engine should not be renamed within TFC. When a provisioned product's workspace is renamed and then updated within AWS Service Catalog, a new workspace will be created for that provisioned product. To avoid conflicts, it is recommended that you do not rename workspaces created by the engine.
+Workspaces created by the engine should not be renamed within Terraform Cloud/Enteprise. When a provisioned product's workspace is renamed and then updated within AWS Service Catalog, a new workspace will be created for that provisioned product. To avoid conflicts, it is recommended that you do not rename workspaces created by the engine.
 
 ### Variable Sets
 Unlike variables, variable sets are not automatically purged. This may lead to an issue where a workspace's run will not apply properly because it contains an extraneous variable set. to resolve this, remove the variable set and update the provisioned product within AWS Service Catalog.
