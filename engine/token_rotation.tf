@@ -117,7 +117,7 @@ resource "aws_lambda_function" "rotate_token_handler" {
 
   source_code_hash = data.archive_file.rotate_token_handler.output_base64sha256
 
-  runtime = "provided.al2"
+  runtime       = "provided.al2"
   architectures = ["arm64"]
 
   environment {

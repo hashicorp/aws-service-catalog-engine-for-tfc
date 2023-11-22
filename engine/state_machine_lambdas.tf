@@ -196,7 +196,7 @@ resource "aws_lambda_function" "state_machine_lambda" {
 
   source_code_hash = data.archive_file.state_machine_lambda_executable[each.key].output_base64sha256
 
-  runtime = "provided.al2"
+  runtime       = "provided.al2"
   architectures = ["arm64"]
 
   depends_on = [aws_cloudwatch_log_group.lambda_cloudwatch_log_group]

@@ -9,7 +9,7 @@ resource "aws_lambda_function" "parameter_parser" {
 
   source_code_hash = data.archive_file.parameter_parser.output_base64sha256
 
-  runtime = "provided.al2"
+  runtime       = "provided.al2"
   architectures = ["arm64"]
 }
 
