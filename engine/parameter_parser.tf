@@ -5,11 +5,12 @@ resource "aws_lambda_function" "parameter_parser" {
   filename      = data.archive_file.parameter_parser.output_path
   function_name = "ServiceCatalogTerraformCloudParameterParser"
   role          = aws_iam_role.parameter_parser.arn
-  handler       = "main"
+  handler       = "bootstrap"
 
   source_code_hash = data.archive_file.parameter_parser.output_base64sha256
 
-  runtime = "go1.x"
+  runtime = "provided.al2"
+  architectures = ["arm64"]
 }
 
 data "aws_iam_policy_document" "parameter_parser_assume_policy" {
@@ -72,7 +73,7 @@ resource "aws_iam_role_policy_attachment" "parameter_parser" {
 data "archive_file" "parameter_parser" {
   type        = "zip"
   output_path = "dist/parameter_parser.zip"
-  source_file = "${path.module}/lambda-functions/terraform-parameter-parser/main"
+  source_file = "${path.module}/lambda-functions/terraform-parameter-parser/bootstrap"
 }
 
 resource "aws_lambda_permission" "service_catalog_parameter_parser_allowance" {

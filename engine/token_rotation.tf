@@ -105,7 +105,7 @@ resource "aws_iam_role_policy_attachment" "rotate_token_handler_lambda_execution
 data "archive_file" "rotate_token_handler" {
   type        = "zip"
   output_path = "dist/token_rotation_handler.zip"
-  source_file = "engine/lambda-functions/token-rotation/main"
+  source_file = "engine/lambda-functions/token-rotation/bootstrap"
 }
 
 # Lambda for rotating team tokens
@@ -113,11 +113,12 @@ resource "aws_lambda_function" "rotate_token_handler" {
   filename      = data.archive_file.rotate_token_handler.output_path
   function_name = "ServiceCatalogTerraformCloudRotateTokenHandler"
   role          = aws_iam_role.rotate_token_handler_lambda_execution.arn
-  handler       = "main"
+  handler       = "bootstrap"
 
   source_code_hash = data.archive_file.rotate_token_handler.output_base64sha256
 
-  runtime = "go1.x"
+  runtime = "provided.al2"
+  architectures = ["arm64"]
 
   environment {
     variables = {

@@ -7,10 +7,10 @@ BIN_PATH ?= bin
 default: bin
 .PHONY: bin
 bin:
-	GOOS=linux GOARCH=amd64 go build -o "notify-run-result/main" ./notify-run-result
-	GOOS=linux GOARCH=amd64 go build -o "poll-run-status/main" ./poll-run-status
-	GOOS=linux GOARCH=amd64 go build -o "provisioning-operations-handler/main" ./provisioning-operations-handler
-	GOOS=linux GOARCH=amd64 go build -o "send-apply/main" ./send-apply
-	GOOS=linux GOARCH=amd64 go build -o "send-destroy/main" ./send-destroy
-	GOOS=linux GOARCH=amd64 go build -o "terraform-parameter-parser/main" ./terraform-parameter-parser
-	GOOS=linux GOARCH=amd64 go build -o "token-rotation/main" ./token-rotation
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -tags lambda.norpc -o "poll-run-status/bootstrap" ./poll-run-status
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -tags lambda.norpc -o "notify-run-result/bootstrap" ./notify-run-result
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -tags lambda.norpc -o "provisioning-operations-handler/bootstrap" ./provisioning-operations-handler
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -tags lambda.norpc -o "send-apply/bootstrap" ./send-apply
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -tags lambda.norpc -o "send-destroy/bootstrap" ./send-destroy
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -tags lambda.norpc -o "terraform-parameter-parser/bootstrap" ./terraform-parameter-parser
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -tags lambda.norpc -o "token-rotation/bootstrap" ./token-rotation

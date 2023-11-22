@@ -98,22 +98,22 @@ locals {
   lambda_functions = {
     (local.send_apply_lambda_name) : {
       policy_document = data.aws_iam_policy_document.send_apply.json
-      source_file     = "${path.module}/lambda-functions/send-apply/main"
+      source_file     = "${path.module}/lambda-functions/send-apply/bootstrap"
       timeout         = 120
       memory_size     = 1024
     }
     (local.send_destroy_lambda_name) : {
       policy_document = data.aws_iam_policy_document.send_destroy.json
-      source_file     = "${path.module}/lambda-functions/send-destroy/main"
+      source_file     = "${path.module}/lambda-functions/send-destroy/bootstrap"
     }
     (local.poll_run_status_lambda_name) : {
       policy_document = data.aws_iam_policy_document.poll_run_status.json
-      source_file     = "${path.module}/lambda-functions/poll-run-status/main"
+      source_file     = "${path.module}/lambda-functions/poll-run-status/bootstrap"
       timeout         = 30
     }
     (local.notify_run_result_lambda_name) : {
       policy_document = data.aws_iam_policy_document.notify_run_result.json
-      source_file     = "${path.module}/lambda-functions/notify-run-result/main"
+      source_file     = "${path.module}/lambda-functions/notify-run-result/bootstrap"
     }
   }
 }
@@ -183,7 +183,7 @@ resource "aws_lambda_function" "state_machine_lambda" {
   function_name = each.key
   filename      = data.archive_file.state_machine_lambda_executable[each.key].output_path
   role          = aws_iam_role.state_machine_lambda[each.key].arn
-  handler       = "main"
+  handler       = "bootstrap"
   timeout       = lookup(local.lambda_functions[each.key], "timeout", local.default_lambda_function_timeout)
   memory_size   = lookup(local.lambda_functions[each.key], "memory_size", local.default_lambda_function_memory_size)
 
@@ -196,7 +196,8 @@ resource "aws_lambda_function" "state_machine_lambda" {
 
   source_code_hash = data.archive_file.state_machine_lambda_executable[each.key].output_base64sha256
 
-  runtime = "go1.x"
+  runtime = "provided.al2"
+  architectures = ["arm64"]
 
   depends_on = [aws_cloudwatch_log_group.lambda_cloudwatch_log_group]
 }

@@ -4,7 +4,7 @@
 data "archive_file" "provision_handler" {
   type        = "zip"
   output_path = "dist/provisioning_operations_handler.zip"
-  source_file = "${path.module}/lambda-functions/provisioning-operations-handler/main"
+  source_file = "${path.module}/lambda-functions/provisioning-operations-handler/bootstrap"
 }
 
 # Lambda for provisioning products
@@ -79,12 +79,13 @@ resource "aws_iam_role_policy_attachment" "provision_handler_lambda_execution" {
 resource "aws_lambda_function" "provision_handler" {
   function_name = "ServiceCatalogTerraformCloudProvisionHandlerLambda"
   role          = aws_iam_role.provisioning_handler_lambda_execution.arn
-  handler       = "main"
+  handler       = "bootstrap"
 
   filename         = data.archive_file.provision_handler.output_path
   source_code_hash = data.archive_file.provision_handler.output_base64sha256
 
-  runtime = "go1.x"
+  runtime = "provided.al2"
+  architectures = ["arm64"]
 
   environment {
     variables = {
@@ -168,12 +169,14 @@ data "aws_iam_policy_document" "policy_for_terminate_handler" {
 resource "aws_lambda_function" "terminate_handler" {
   function_name = "ServiceCatalogTerraformCloudTerminateHandlerLambda"
   role          = aws_iam_role.terminate_handler_lambda_execution.arn
-  handler       = "main"
+  handler       = "bootstrap"
 
   filename         = data.archive_file.provision_handler.output_path
   source_code_hash = data.archive_file.provision_handler.output_base64sha256
 
-  runtime = "go1.x"
+
+  runtime = "provided.al2"
+  architectures = ["arm64"]
 
   environment {
     variables = {
@@ -257,12 +260,13 @@ data "aws_iam_policy_document" "policy_for_update_handler" {
 resource "aws_lambda_function" "update_handler" {
   function_name = "ServiceCatalogTerraformCloudUpdateHandlerLambda"
   role          = aws_iam_role.update_handler_lambda_execution.arn
-  handler       = "main"
+  handler       = "bootstrap"
 
   filename         = data.archive_file.provision_handler.output_path
   source_code_hash = data.archive_file.provision_handler.output_base64sha256
 
-  runtime = "go1.x"
+  runtime = "provided.al2"
+  architectures = ["arm64"]
 
   environment {
     variables = {
