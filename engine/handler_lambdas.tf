@@ -174,7 +174,6 @@ resource "aws_lambda_function" "terminate_handler" {
   filename         = data.archive_file.provision_handler.output_path
   source_code_hash = data.archive_file.provision_handler.output_base64sha256
 
-
   runtime       = "provided.al2"
   architectures = ["arm64"]
 
