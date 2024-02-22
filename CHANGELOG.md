@@ -1,3 +1,8 @@
+# v1.0.3 (02/22/2024)
+
+## Bug Fixes
+* [#23](https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/issues/23) thanks [@yukikgiants](https://github.com/yukikgiants)! - Fix invalid path error when trying to use engine directory as a standalone module.
+
 # v1.0.2 (11/28/2023)
 
 ## Improvements
