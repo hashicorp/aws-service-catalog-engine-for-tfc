@@ -47,8 +47,8 @@ module "terraform_cloud_reference_engine" {
 
 # Creates an AWS Service Catalog Portfolio to house the example product
 resource "aws_servicecatalog_portfolio" "portfolio" {
-  name          = "TFC Example Portfolio"
-  description   = "Example Portfolio created via AWS Service Catalog Engine for TFC"
+  name          = "HCP Terraform Example Portfolio"
+  description   = "Example Portfolio created via AWS Service Catalog Engine for HCP Terraform"
   provider_name = "HashiCorp Examples"
 }
 
