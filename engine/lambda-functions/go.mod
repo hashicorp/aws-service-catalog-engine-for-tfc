@@ -1,6 +1,8 @@
 module github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-functions
 
-go 1.19
+go 1.23
+
+toolchain go1.24.7
 
 require (
 	github.com/aws/aws-lambda-go v1.41.0
@@ -16,7 +18,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.18.10
 	github.com/aws/smithy-go v1.13.5
 	github.com/google/uuid v1.3.0
-	github.com/hashicorp/go-retryablehttp v0.7.7
+	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/hashicorp/go-tfe v1.22.0
 	github.com/hashicorp/hcl/v2 v2.0.0
 	github.com/hashicorp/terraform-config-inspect v0.0.0-20230522202058-dbe9bfcbfe7a
