@@ -2,8 +2,6 @@ module github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-fun
 
 go 1.23
 
-toolchain go1.24.7
-
 require (
 	github.com/aws/aws-lambda-go v1.41.0
 	github.com/aws/aws-sdk-go-v2 v1.18.1
