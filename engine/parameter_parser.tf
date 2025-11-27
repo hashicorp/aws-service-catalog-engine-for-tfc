@@ -27,14 +27,14 @@ data "aws_iam_policy_document" "parameter_parser_assume_policy" {
 }
 
 resource "aws_iam_role" "parameter_parser" {
-  name               = "ServiceCatalogTerraformCloudParameterParser"
+  name_prefix        = "ServiceCatalogTerraformParameterParser"
   assume_role_policy = data.aws_iam_policy_document.parameter_parser_assume_policy.json
 }
 
 resource "aws_iam_role_policy" "parameter_parser" {
-  name   = "ServiceCatalogTerraformCloudParameterParserRolePolicy"
-  role   = aws_iam_role.parameter_parser.id
-  policy = data.aws_iam_policy_document.parameter_parser.json
+  name_prefix = "ServiceCatalogTerraformParameterParser"
+  role        = aws_iam_role.parameter_parser.id
+  policy      = data.aws_iam_policy_document.parameter_parser.json
 }
 
 data "aws_iam_policy_document" "parameter_parser" {

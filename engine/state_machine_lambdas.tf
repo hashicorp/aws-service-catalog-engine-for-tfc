@@ -90,10 +90,10 @@ locals {
   default_lambda_function_timeout     = 60
   default_lambda_function_memory_size = 128
 
-  send_apply_lambda_name        = "ServiceCatalogEngineForTerraformCloudSendApply"
-  send_destroy_lambda_name      = "ServiceCatalogEngineForTerraformCloudSendDestroy"
-  poll_run_status_lambda_name   = "ServiceCatalogEngineForTerraformCloudPollRunStatus"
-  notify_run_result_lambda_name = "ServiceCatalogEngineForTerraformCloudNotifyRunResult"
+  send_apply_lambda_name        = "ServiceCatalogEngineForTerraformSendApply"
+  send_destroy_lambda_name      = "ServiceCatalogEngineForTerraformSendDestroy"
+  poll_run_status_lambda_name   = "ServiceCatalogEngineForTerraformPollRunStatus"
+  notify_run_result_lambda_name = "ServiceCatalogEngineForTerraformNotifyRunResult"
 
   lambda_functions = {
     (local.send_apply_lambda_name) : {
@@ -135,7 +135,7 @@ data "aws_iam_policy_document" "basic_lambda_assume_role_policy" {
 resource "aws_iam_role" "state_machine_lambda" {
   for_each = local.lambda_functions
 
-  name               = "${each.key}Role"
+  name_prefix        = each.key
   assume_role_policy = data.aws_iam_policy_document.basic_lambda_assume_role_policy.json
 }
 
@@ -156,9 +156,9 @@ resource "aws_iam_role_policy_attachment" "lambda_xray_write_only_access" {
 resource "aws_iam_role_policy" "state_machine_lambda_policy" {
   for_each = local.lambda_functions
 
-  name   = "${each.key}RolePolicy"
-  role   = aws_iam_role.state_machine_lambda[each.key].name
-  policy = each.value.policy_document
+  name_prefix = each.key
+  role        = aws_iam_role.state_machine_lambda[each.key].name
+  policy      = each.value.policy_document
 }
 
 data "archive_file" "state_machine_lambda_executable" {

@@ -15,14 +15,14 @@ data "aws_iam_policy_document" "update_product_state_machine_assumed_policy" {
 }
 
 resource "aws_iam_role" "update_state_machine" {
-  name               = "ServiceCatalogTerraformCloudUpdateOperationStateMachineRole"
+  name_prefix        = "ServiceCatalogTerraformUpdateSSM"
   assume_role_policy = data.aws_iam_policy_document.update_product_state_machine_assumed_policy.json
 }
 
 resource "aws_iam_role_policy" "update_state_machine" {
-  name   = "ServiceCatalogTerraformCloudUpdateOperationStateMachineRolePolicy"
-  role   = aws_iam_role.update_state_machine.id
-  policy = data.aws_iam_policy_document.update_state_machine.json
+  name_prefix = "ServiceCatalogTerraformUpdateSSM"
+  role        = aws_iam_role.update_state_machine.id
+  policy      = data.aws_iam_policy_document.update_state_machine.json
 }
 
 data "aws_iam_policy_document" "update_state_machine" {

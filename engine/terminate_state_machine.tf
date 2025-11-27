@@ -15,14 +15,14 @@ data "aws_iam_policy_document" "terminate_product_state_machine_assumed_policy" 
 }
 
 resource "aws_iam_role" "terminate_state_machine" {
-  name               = "ServiceCatalogTerraformCloudTerminateOperationStateMachineRole"
+  name_prefix        = "ServiceCatalogTerraformTerminateSM"
   assume_role_policy = data.aws_iam_policy_document.terminate_product_state_machine_assumed_policy.json
 }
 
 resource "aws_iam_role_policy" "terminate_state_machine" {
-  name   = "ServiceCatalogTerraformCloudTerminateOperationStateMachineRolePolicy"
-  role   = aws_iam_role.terminate_state_machine.id
-  policy = data.aws_iam_policy_document.terminate_state_machine.json
+  name_prefix = "ServiceCatalogTerraformTerminateSM"
+  role        = aws_iam_role.terminate_state_machine.id
+  policy      = data.aws_iam_policy_document.terminate_state_machine.json
 }
 
 
