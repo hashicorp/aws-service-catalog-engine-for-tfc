@@ -23,7 +23,7 @@ resource "random_string" "random" {
 # THE PROVISIONING ARTIFACT (TERRAFORM CONFIGURATION FILES)
 
 resource "aws_s3_bucket" "artifact_bucket" {
-  bucket = "service-catalog-example-product-${random_string.random.result}"
+  bucket_prefix = "service-catalog-example-product"
 }
 
 resource "aws_s3_object" "artifact" {

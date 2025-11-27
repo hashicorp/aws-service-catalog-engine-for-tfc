@@ -90,10 +90,10 @@ locals {
   default_lambda_function_timeout     = 60
   default_lambda_function_memory_size = 128
 
-  send_apply_lambda_name        = "ServiceCatalogEngineForTerraformSendApply"
-  send_destroy_lambda_name      = "ServiceCatalogEngineForTerraformSendDestroy"
-  poll_run_status_lambda_name   = "ServiceCatalogEngineForTerraformPollRunStatus"
-  notify_run_result_lambda_name = "ServiceCatalogEngineForTerraformNotifyRunResult"
+  send_apply_lambda_name        = "ServiceCatalogTerraformSendApply"
+  send_destroy_lambda_name      = "ServiceCatalogTerraformSendDestroy"
+  poll_run_status_lambda_name   = "ServiceCatalogTerraformPollRunStatus"
+  notify_run_result_lambda_name = "ServiceCatalogTerraformNotifyRunResult"
 
   lambda_functions = {
     (local.send_apply_lambda_name) : {

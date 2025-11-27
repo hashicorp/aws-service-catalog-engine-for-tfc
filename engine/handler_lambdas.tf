@@ -23,12 +23,12 @@ data "aws_iam_policy_document" "provision_handler" {
 }
 
 resource "aws_iam_role" "provisioning_handler_lambda_execution" {
-  name               = "ServiceCatalogTerraformCloudProvisionHandlerRole"
+  name_prefix               = "ServiceCatalogTerraformProvisionHandlr"
   assume_role_policy = data.aws_iam_policy_document.provision_handler.json
 }
 
 resource "aws_iam_role_policy" "provision_handler_lambda_execution_role_policy" {
-  name   = "ServiceCatalogTerraformCloudProvisionHandlerPolicy"
+  name_prefix   = "ServiceCatalogTerraformProvisionHandlr"
   role   = aws_iam_role.provisioning_handler_lambda_execution.id
   policy = data.aws_iam_policy_document.policy_for_provision_handler.json
 }
@@ -119,12 +119,12 @@ data "aws_iam_policy_document" "terminate_handler" {
 }
 
 resource "aws_iam_role" "terminate_handler_lambda_execution" {
-  name               = "ServiceCatalogTerraformCloudTerminateHandlerRole"
+  name_prefix               = "ServiceCatalogTerraformTerminateHandlr"
   assume_role_policy = data.aws_iam_policy_document.terminate_handler.json
 }
 
 resource "aws_iam_role_policy" "terminate_handler_lambda_execution_role_policy" {
-  name   = "ServiceCatalogTerraformCloudTerminateHandlerPolicy"
+  name_prefix   = "ServiceCatalogTerraformTerminateHandlr"
   role   = aws_iam_role.terminate_handler_lambda_execution.id
   policy = data.aws_iam_policy_document.policy_for_terminate_handler.json
 }
@@ -209,12 +209,12 @@ data "aws_iam_policy_document" "update_handler" {
 }
 
 resource "aws_iam_role" "update_handler_lambda_execution" {
-  name               = "ServiceCatalogTerraformCloudUpdateHandlerRole"
+  name_prefix               = "ServiceCatalogTerraformUpdateHandlr"
   assume_role_policy = data.aws_iam_policy_document.update_handler.json
 }
 
 resource "aws_iam_role_policy" "update_handler_lambda_execution_role_policy" {
-  name   = "ServiceCatalogTerraformCloudUpdateHandlerPolicy"
+  name_prefix   = "ServiceCatalogTerraformUpdateHandlr"
   role   = aws_iam_role.update_handler_lambda_execution.id
   policy = data.aws_iam_policy_document.policy_for_update_handler.json
 }
