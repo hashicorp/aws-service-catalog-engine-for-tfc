@@ -1,4 +1,4 @@
-# Copyright (c) HashiCorp, Inc.
+# Copyright IBM Corp. 2023, 2025
 # SPDX-License-Identifier: MPL-2.0
 
 # Data source used to grab the TLS certificate for Terraform Cloud:

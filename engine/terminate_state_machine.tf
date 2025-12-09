@@ -1,4 +1,4 @@
-# Copyright (c) HashiCorp, Inc.
+# Copyright IBM Corp. 2023, 2025
 # SPDX-License-Identifier: MPL-2.0
 
 data "aws_iam_policy_document" "terminate_product_state_machine_assumed_policy" {
