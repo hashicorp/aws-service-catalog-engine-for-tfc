@@ -47,3 +47,10 @@ variable "terraform_version" {
   default     = "1.5.4"
   description = "Version of Terraform Core to use in Terraform Cloud for all Service Catalog products"
 }
+
+
+variable "oidc_provider_arn" {
+  type        = string
+  description = "OIDC provider ARN"
+  
+}

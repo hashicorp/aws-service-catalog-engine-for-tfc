@@ -47,3 +47,9 @@ variable "terraform_version" {
   default     = "1.5.4"
   description = "Version of Terraform Core to use in Terraform Cloud for all Service Catalog products"
 }
+
+variable "region" {
+  type        = string
+  default     = "us-east-1"
+  description = "AWS region to deploy resources into"
+}

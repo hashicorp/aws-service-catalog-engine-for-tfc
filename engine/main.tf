@@ -13,3 +13,13 @@ terraform {
     }
   }
 }
+
+provider "aws" {
+  default_tags {
+    tags = {
+      "Projects" = "aws-service-catalog-engine"
+    }
+  }
+
+  region = var.region
+}
