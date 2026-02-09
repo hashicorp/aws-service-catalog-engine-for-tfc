@@ -15,12 +15,12 @@ data "aws_iam_policy_document" "terminate_product_state_machine_assumed_policy" 
 }
 
 resource "aws_iam_role" "terminate_state_machine" {
-  name               = "ServiceCatalogTerraformCloudTerminateOperationStateMachineRole"
+  name               = "SCTFCTerminateStateMachineRole${var.name_suffix}"
   assume_role_policy = data.aws_iam_policy_document.terminate_product_state_machine_assumed_policy.json
 }
 
 resource "aws_iam_role_policy" "terminate_state_machine" {
-  name   = "ServiceCatalogTerraformCloudTerminateOperationStateMachineRolePolicy"
+  name   = "SCTFCTerminateStateMachinePolicy${var.name_suffix}"
   role   = aws_iam_role.terminate_state_machine.id
   policy = data.aws_iam_policy_document.terminate_state_machine.json
 }

@@ -23,7 +23,7 @@ data "aws_iam_policy_document" "provision_handler" {
 }
 
 resource "aws_iam_role" "provisioning_handler_lambda_execution" {
-  name               = "ServiceCatalogTerraformCloudProvisionHandlerRole"
+  name               = "ServiceCatalogTerraformCloudProvisionHandlerRole${var.name_suffix}"
   assume_role_policy = data.aws_iam_policy_document.provision_handler.json
 }
 
@@ -119,7 +119,7 @@ data "aws_iam_policy_document" "terminate_handler" {
 }
 
 resource "aws_iam_role" "terminate_handler_lambda_execution" {
-  name               = "ServiceCatalogTerraformCloudTerminateHandlerRole"
+  name               = "ServiceCatalogTerraformCloudTerminateHandlerRole${var.name_suffix}"
   assume_role_policy = data.aws_iam_policy_document.terminate_handler.json
 }
 
@@ -209,7 +209,7 @@ data "aws_iam_policy_document" "update_handler" {
 }
 
 resource "aws_iam_role" "update_handler_lambda_execution" {
-  name               = "ServiceCatalogTerraformCloudUpdateHandlerRole"
+  name               = "ServiceCatalogTerraformCloudUpdateHandlerRole${var.name_suffix}"
   assume_role_policy = data.aws_iam_policy_document.update_handler.json
 }
 

@@ -15,7 +15,7 @@ data "aws_iam_policy_document" "rotate_token_handler" {
 }
 
 resource "aws_iam_role" "rotate_token_handler_lambda_execution" {
-  name               = "ServiceCatalogTerraformCloudRotateTokenHandlerRole"
+  name               = "ServiceCatalogTerraformCloudRotateTokenHandlerRole${var.name_suffix}"
   assume_role_policy = data.aws_iam_policy_document.rotate_token_handler.json
 }
 
@@ -110,8 +110,9 @@ data "archive_file" "rotate_token_handler" {
 
 # Lambda for rotating team tokens
 resource "aws_lambda_function" "rotate_token_handler" {
+  count         = var.create_tfc_team ? 1 : 0
   filename      = data.archive_file.rotate_token_handler.output_path
-  function_name = "ServiceCatalogTerraformCloudRotateTokenHandler"
+  function_name = "ServiceCatalogTerraformCloudRotateTokenHandler${var.name_suffix}"
   role          = aws_iam_role.rotate_token_handler_lambda_execution.arn
   handler       = "bootstrap"
 
@@ -128,7 +129,7 @@ resource "aws_lambda_function" "rotate_token_handler" {
       PROVISIONING_FUNCTION_NAME     = aws_lambda_function.provision_handler.function_name,
       UPDATING_FUNCTION_NAME         = aws_lambda_function.update_handler.function_name,
       TERMINATING_FUNCTION_NAME      = aws_lambda_function.terminate_handler.function_name,
-      TEAM_ID                        = tfe_team.provisioning_team.id,
+      TEAM_ID                        = tfe_team.provisioning_team[0].id,
       TFE_CREDENTIALS_SECRET_ID      = aws_secretsmanager_secret.team_token_values.arn
     }
   }
@@ -148,18 +149,20 @@ data "aws_iam_policy_document" "rotate_team_token" {
 }
 
 resource "aws_iam_role" "rotate_token_state_machine" {
-  name               = "ServiceCatalogTerraformCloudTokenRotationStateMachineRole"
+  name               = "SCTFCTokenRotationStateMachineRole${var.name_suffix}"
   assume_role_policy = data.aws_iam_policy_document.rotate_team_token.json
 }
 
 resource "aws_iam_role_policy" "rotate_team_token_state_machine_role_policy" {
-  name   = "ServiceCatalogTerraformCloudTokenRotationStateMachineRolePolicy"
+  count  = var.create_tfc_team ? 1 : 0
+  name   = "SCTFCTokenRotationStateMachinePolicy${var.name_suffix}"
   role   = aws_iam_role.rotate_token_state_machine.id
-  policy = data.aws_iam_policy_document.policy_for_rotate_team_token_state_machine.json
+  policy = data.aws_iam_policy_document.policy_for_rotate_team_token_state_machine[0].json
 }
 
 
 data "aws_iam_policy_document" "policy_for_rotate_team_token_state_machine" {
+  count   = var.create_tfc_team ? 1 : 0
   version = "2012-10-17"
 
   statement {
@@ -169,8 +172,7 @@ data "aws_iam_policy_document" "policy_for_rotate_team_token_state_machine" {
 
     actions = ["lambda:InvokeFunction"]
 
-    resources = [aws_lambda_function.rotate_token_handler.arn]
-
+    resources = [aws_lambda_function.rotate_token_handler[0].arn]
   }
 
   statement {
@@ -191,25 +193,26 @@ data "aws_iam_policy_document" "policy_for_rotate_team_token_state_machine" {
     ]
 
     resources = ["*"]
-
   }
 }
 
 # Resources for rotating the team token every 30 days
 resource "aws_cloudwatch_event_rule" "rotate_token_schedule" {
-  name                = "ServiceCatalogTerraformCloudRotateToken"
+  count               = var.create_tfc_team ? 1 : 0
+  name                = "ServiceCatalogTerraformCloudRotateToken${var.name_suffix}"
   description         = "Schedule for Token Rotation"
   schedule_expression = "rate(${var.token_rotation_interval_in_days} days)"
 }
 
 resource "aws_cloudwatch_event_target" "token_rotation" {
-  rule     = aws_cloudwatch_event_rule.rotate_token_schedule.name
-  arn      = aws_sfn_state_machine.rotate_token_state_machine.id
+  count    = var.create_tfc_team ? 1 : 0
+  rule     = aws_cloudwatch_event_rule.rotate_token_schedule[0].name
+  arn      = aws_sfn_state_machine.rotate_token_state_machine[0].id
   role_arn = aws_iam_role.token_rotation_event_role.arn
 }
 
 resource "aws_iam_role" "token_rotation_event_role" {
-  name               = "ServiceCatalogTerraformCloudTokenRotationEventRole"
+  name               = "ServiceCatalogTerraformCloudTokenRotationEventRole${var.name_suffix}"
   assume_role_policy = data.aws_iam_policy_document.token_rotation_event_role_policy_document.json
 }
 data "aws_iam_policy_document" "token_rotation_event_role_policy_document" {
@@ -228,144 +231,143 @@ data "aws_iam_policy_document" "token_rotation_event_role_policy_document" {
 }
 
 resource "aws_iam_role_policy" "token_rotation_state_machine_event_role_policy" {
-  name = "ServiceCatalogTerraformCloudTokenRotationEventPolicy"
-  role = aws_iam_role.token_rotation_event_role.id
+  count = var.create_tfc_team ? 1 : 0
+  name  = "ServiceCatalogTerraformCloudTokenRotationEventPolicy${var.name_suffix}"
+  role  = aws_iam_role.token_rotation_event_role.id
 
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "states:StartExecution"
-      ],
-      "Resource": [
-        "${aws_sfn_state_machine.rotate_token_state_machine.arn}"
-      ]
-    }
-  ]
-}
-EOF
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "states:StartExecution"
+        ]
+        Resource = [
+          aws_sfn_state_machine.rotate_token_state_machine[0].arn
+        ]
+      }
+    ]
+  })
 }
 
 resource "aws_cloudwatch_log_group" "rotate_token_state_machine" {
-  name = "ServiceCatalogTerraformCloudTokenRotationStateMachine"
+  count = var.create_tfc_team ? 1 : 0
+  name  = "ServiceCatalogTerraformCloudTokenRotationStateMachine${var.name_suffix}"
 }
 
 resource "aws_sfn_state_machine" "rotate_token_state_machine" {
-  name     = "ServiceCatalogTerraformCloudTokenRotationStateMachine"
+  count    = var.create_tfc_team ? 1 : 0
+  name     = "ServiceCatalogTerraformCloudTokenRotationStateMachine${var.name_suffix}"
   role_arn = aws_iam_role.rotate_token_state_machine.arn
   logging_configuration {
     level                  = "ALL"
     include_execution_data = true
-    log_destination        = "${aws_cloudwatch_log_group.rotate_token_state_machine.arn}:*"
+    log_destination        = "${aws_cloudwatch_log_group.rotate_token_state_machine[0].arn}:*"
   }
 
   tracing_configuration {
     enabled = true
   }
 
-  definition = <<EOF
-{
-  "Comment": "A state machine that manages the team token rotation experience.",
-  "StartAt": "Pause SQS processing",
-  "States": {
-    "Pause SQS processing": {
-      "Type": "Task",
-      "Resource": "${aws_lambda_function.rotate_token_handler.arn}",
-      "Parameters": {
-        "operation": "PAUSING"
+  definition = jsonencode({
+    Comment = "A state machine that manages the team token rotation experience.",
+    StartAt = "Pause SQS processing",
+    States = {
+      "Pause SQS processing" = {
+        Type = "Task",
+        Resource = aws_lambda_function.rotate_token_handler[0].arn,
+        Parameters = {
+          operation = "PAUSING"
+        },
+        Next = "Wait for all state machine executions to finish"
       },
-      "Next": "Wait for all state machine executions to finish"
-    },
-    "Wait for all state machine executions to finish": {
-      "Type": "Wait",
-      "Seconds": 10,
-      "Next": "Poll state machine executions"
-    },
-    "Poll state machine executions": {
-      "Type": "Task",
-      "Resource": "${aws_lambda_function.rotate_token_handler.arn}",
-      "Parameters": {
-        "operation": "POLLING"
+      "Wait for all state machine executions to finish" = {
+        Type    = "Wait",
+        Seconds = 10,
+        Next    = "Poll state machine executions"
       },
-      "ResultPath": "$.pollStateMachinesResult",
-      "Retry": [
-        {
-          "ErrorEquals": [
-            "Lambda.ServiceException",
-            "Lambda.AWSLambdaException",
-            "Lambda.SdkClientException"
-          ],
-          "IntervalSeconds": 2,
-          "MaxAttempts": 6,
-          "BackoffRate": 2
-        }
-      ],
-      "Next": "Are there any outstanding state machine executions?"
-    },
-    "Are there any outstanding state machine executions?": {
-      "Type": "Choice",
-      "Comment": "Looks-up the current status of the command invocation and delegates accordingly to handle it",
-      "Choices": [
-        {
-          "And": [
-            {
-              "Variable": "$.pollStateMachinesResult.stateMachineExecutionCount",
-              "NumericEquals": 0
-            },
-            {
-              "Variable": "$.pollStateMachinesResult.eventSourceMappingStatus",
-              "StringEquals": "Disabled"
-            }
-          ],
-          "Next": "Rotate team token"
-        }
-      ],
-      "Default": "Wait for all state machine executions to finish"
-    },
-    "Rotate team token": {
-      "Type": "Task",
-      "Resource": "${aws_lambda_function.rotate_token_handler.arn}",
-      "Parameters": {
-        "operation": "ROTATING"
+      "Poll state machine executions" = {
+        Type     = "Task",
+        Resource = aws_lambda_function.rotate_token_handler[0].arn,
+        Parameters = {
+          operation = "POLLING"
+        },
+        ResultPath = "$.pollStateMachinesResult",
+        Retry = [
+          {
+            ErrorEquals = [
+              "Lambda.ServiceException",
+              "Lambda.AWSLambdaException",
+              "Lambda.SdkClientException"
+            ],
+            IntervalSeconds = 2,
+            MaxAttempts     = 6,
+            BackoffRate     = 2
+          }
+        ],
+        Next = "Are there any outstanding state machine executions?"
       },
-      "Retry": [
-        {
-          "ErrorEquals": [
-            "Lambda.ServiceException",
-            "Lambda.AWSLambdaException",
-            "Lambda.SdkClientException"
-          ],
-          "IntervalSeconds": 2,
-          "MaxAttempts": 6,
-          "BackoffRate": 2
-        }
-      ],
-      "Next": "Resume SQS processing"
-    },
-    "Resume SQS processing": {
-      "Type": "Task",
-      "Resource": "${aws_lambda_function.rotate_token_handler.arn}",
-      "Parameters": {
-        "operation": "RESUMING"
+      "Are there any outstanding state machine executions?" = {
+        Type    = "Choice",
+        Comment = "Looks-up the current status of the command invocation and delegates accordingly to handle it",
+        Choices = [
+          {
+            And = [
+              {
+                Variable      = "$.pollStateMachinesResult.stateMachineExecutionCount",
+                NumericEquals = 0
+              },
+              {
+                Variable     = "$.pollStateMachinesResult.eventSourceMappingStatus",
+                StringEquals = "Disabled"
+              }
+            ],
+            Next = "Rotate team token"
+          }
+        ],
+        Default = "Wait for all state machine executions to finish"
       },
-      "Retry": [
-        {
-          "ErrorEquals": [
-            "Lambda.ServiceException",
-            "Lambda.AWSLambdaException",
-            "Lambda.SdkClientException"
-          ],
-          "IntervalSeconds": 2,
-          "MaxAttempts": 6,
-          "BackoffRate": 2
-        }
-      ],
-      "End": true
+      "Rotate team token" = {
+        Type     = "Task",
+        Resource = aws_lambda_function.rotate_token_handler[0].arn,
+        Parameters = {
+          operation = "ROTATING"
+        },
+        Retry = [
+          {
+            ErrorEquals = [
+              "Lambda.ServiceException",
+              "Lambda.AWSLambdaException",
+              "Lambda.SdkClientException"
+            ],
+            IntervalSeconds = 2,
+            MaxAttempts     = 6,
+            BackoffRate     = 2
+          }
+        ],
+        Next = "Resume SQS processing"
+      },
+      "Resume SQS processing" = {
+        Type     = "Task",
+        Resource = aws_lambda_function.rotate_token_handler[0].arn,
+        Parameters = {
+          operation = "RESUMING"
+        },
+        Retry = [
+          {
+            ErrorEquals = [
+              "Lambda.ServiceException",
+              "Lambda.AWSLambdaException",
+              "Lambda.SdkClientException"
+            ],
+            IntervalSeconds = 2,
+            MaxAttempts     = 6,
+            BackoffRate     = 2
+          }
+        ],
+        End = true
+      }
     }
-  }
-}
-EOF
+  })
 }

@@ -55,21 +55,25 @@ locals {
 }
 
 resource "aws_servicecatalog_tag_option_resource_association" "example_product_managed_by" {
+  count         = var.create_tag_options ? 1 : 0
   resource_id   = aws_servicecatalog_product.example.id
-  tag_option_id = aws_servicecatalog_tag_option.product_managed_by.id
+  tag_option_id = aws_servicecatalog_tag_option.product_managed_by[0].id
 }
 
 resource "aws_servicecatalog_tag_option" "product_managed_by" {
+  count = var.create_tag_options ? 1 : 0
   key   = "ManagedBy"
   value = "tfc"
 }
 
 resource "aws_servicecatalog_tag_option_resource_association" "example_product_name" {
+  count         = var.create_tag_options ? 1 : 0
   resource_id   = aws_servicecatalog_product.example.id
-  tag_option_id = aws_servicecatalog_tag_option.product_name.id
+  tag_option_id = aws_servicecatalog_tag_option.product_name[0].id
 }
 
 resource "aws_servicecatalog_tag_option" "product_name" {
+  count = var.create_tag_options ? 1 : 0
   key   = "ServiceCatalogProduct"
   value = aws_servicecatalog_product.example.name
 }

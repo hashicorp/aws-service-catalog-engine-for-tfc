@@ -47,3 +47,27 @@ variable "terraform_version" {
   default     = "1.5.4"
   description = "Version of Terraform Core to use in Terraform Cloud for all Service Catalog products"
 }
+
+variable "name_suffix" {
+  type        = string
+  default     = ""
+  description = "Optional suffix to append to resource names for uniqueness across regions (e.g., '-us-east-1')"
+}
+
+variable "create_oidc_provider" {
+  type        = bool
+  default     = true
+  description = "Whether to create the OIDC provider. Set to false for additional regions to avoid duplicates."
+}
+
+variable "create_tfc_team" {
+  type        = bool
+  default     = true
+  description = "Whether to create the TFC team and token. Set to false for additional regions to avoid duplicates."
+}
+
+variable "oidc_provider_arn" {
+  type        = string
+  default     = ""
+  description = "ARN of existing OIDC provider to use when create_oidc_provider is false"
+}

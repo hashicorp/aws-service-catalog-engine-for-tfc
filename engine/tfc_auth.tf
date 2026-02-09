@@ -7,6 +7,7 @@ data "tfe_organization" "organization" {
 }
 
 resource "tfe_team" "provisioning_team" {
+  count        = var.create_tfc_team ? 1 : 0
   name         = var.tfc_team
   organization = data.tfe_organization.organization.name
   organization_access {
@@ -16,18 +17,20 @@ resource "tfe_team" "provisioning_team" {
 }
 
 resource "tfe_team_token" "test_team_token" {
-  team_id = tfe_team.provisioning_team.id
+  count   = var.create_tfc_team ? 1 : 0
+  team_id = tfe_team.provisioning_team[0].id
 }
 
 resource "aws_secretsmanager_secret" "team_token_values" {
-  name = "terraform-cloud-credentials-for-service-catalog-engine"
+  name = "terraform-cloud-credentials-for-service-catalog-engine${var.name_suffix}"
 }
 
 resource "aws_secretsmanager_secret_version" "tfc_credentials" {
+  count  = var.create_tfc_team ? 1 : 0
   secret_id = aws_secretsmanager_secret.team_token_values.id
   secret_string = jsonencode({
     hostname = var.tfc_hostname
-    id       = tfe_team.provisioning_team.id
-    token    = tfe_team_token.test_team_token.token
+    id       = tfe_team.provisioning_team[0].id
+    token    = tfe_team_token.test_team_token[0].token
   })
 }

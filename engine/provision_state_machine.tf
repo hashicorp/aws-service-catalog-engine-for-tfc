@@ -15,12 +15,12 @@ data "aws_iam_policy_document" "manage_provisioned_product" {
 }
 
 resource "aws_iam_role" "provision_state_machine" {
-  name               = "ServiceCatalogTerraformCloudProvisionOperationStateMachineRole"
+  name               = "SCTFCProvisionStateMachineRole${var.name_suffix}"
   assume_role_policy = data.aws_iam_policy_document.manage_provisioned_product.json
 }
 
 resource "aws_iam_role_policy" "manage_provisioned_product_role_policy" {
-  name   = "ServiceCatalogTerraformCloudProvisionOperationStateMachineRolePolicy"
+  name   = "SCTFCProvisionStateMachinePolicy${var.name_suffix}"
   role   = aws_iam_role.provision_state_machine.id
   policy = data.aws_iam_policy_document.policy_for_manage_provisioned_product.json
 }

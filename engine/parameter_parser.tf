@@ -27,7 +27,7 @@ data "aws_iam_policy_document" "parameter_parser_assume_policy" {
 }
 
 resource "aws_iam_role" "parameter_parser" {
-  name               = "ServiceCatalogTerraformCloudParameterParser"
+  name               = "ServiceCatalogTerraformCloudParameterParser${var.name_suffix}"
   assume_role_policy = data.aws_iam_policy_document.parameter_parser_assume_policy.json
 }
 

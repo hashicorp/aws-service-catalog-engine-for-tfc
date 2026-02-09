@@ -15,12 +15,12 @@ data "aws_iam_policy_document" "update_product_state_machine_assumed_policy" {
 }
 
 resource "aws_iam_role" "update_state_machine" {
-  name               = "ServiceCatalogTerraformCloudUpdateOperationStateMachineRole"
+  name               = "SCTFCUpdateStateMachineRole${var.name_suffix}"
   assume_role_policy = data.aws_iam_policy_document.update_product_state_machine_assumed_policy.json
 }
 
 resource "aws_iam_role_policy" "update_state_machine" {
-  name   = "ServiceCatalogTerraformCloudUpdateOperationStateMachineRolePolicy"
+  name   = "SCTFCUpdateStateMachinePolicy${var.name_suffix}"
   role   = aws_iam_role.update_state_machine.id
   policy = data.aws_iam_policy_document.update_state_machine.json
 }

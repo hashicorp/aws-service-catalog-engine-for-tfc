@@ -41,3 +41,10 @@ variable "send_apply_lambda_role_arn" {
   type        = string
   description = "ARN of the IAM Role that the Send Apply Lambda Function uses to trigger applies in Terraform Cloud"
 }
+
+variable "create_tag_options" {
+  type        = bool
+  description = "Whether to create Service Catalog tag options. Set to false for additional regions to avoid duplicates."
+  default     = true
+}
+

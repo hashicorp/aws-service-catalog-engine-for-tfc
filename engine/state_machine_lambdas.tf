@@ -90,10 +90,10 @@ locals {
   default_lambda_function_timeout     = 60
   default_lambda_function_memory_size = 128
 
-  send_apply_lambda_name        = "ServiceCatalogEngineForTerraformCloudSendApply"
-  send_destroy_lambda_name      = "ServiceCatalogEngineForTerraformCloudSendDestroy"
-  poll_run_status_lambda_name   = "ServiceCatalogEngineForTerraformCloudPollRunStatus"
-  notify_run_result_lambda_name = "ServiceCatalogEngineForTerraformCloudNotifyRunResult"
+  send_apply_lambda_name        = "SCTFCSendApply"
+  send_destroy_lambda_name      = "SCTFCSendDestroy"
+  poll_run_status_lambda_name   = "SCTFCPollRunStatus"
+  notify_run_result_lambda_name = "SCTFCNotifyRunResult"
 
   lambda_functions = {
     (local.send_apply_lambda_name) : {
@@ -135,7 +135,7 @@ data "aws_iam_policy_document" "basic_lambda_assume_role_policy" {
 resource "aws_iam_role" "state_machine_lambda" {
   for_each = local.lambda_functions
 
-  name               = "${each.key}Role"
+  name               = "${each.key}Role${var.name_suffix}"
   assume_role_policy = data.aws_iam_policy_document.basic_lambda_assume_role_policy.json
 }
 
@@ -156,7 +156,7 @@ resource "aws_iam_role_policy_attachment" "lambda_xray_write_only_access" {
 resource "aws_iam_role_policy" "state_machine_lambda_policy" {
   for_each = local.lambda_functions
 
-  name   = "${each.key}RolePolicy"
+  name   = "${each.key}RolePolicy${var.name_suffix}"
   role   = aws_iam_role.state_machine_lambda[each.key].name
   policy = each.value.policy_document
 }
@@ -173,14 +173,14 @@ data "archive_file" "state_machine_lambda_executable" {
 resource "aws_cloudwatch_log_group" "lambda_cloudwatch_log_group" {
   for_each = local.lambda_functions
 
-  name              = "/aws/lambda/${each.key}"
+  name              = "/aws/lambda/${each.key}${var.name_suffix}"
   retention_in_days = var.cloudwatch_log_retention_in_days
 }
 
 resource "aws_lambda_function" "state_machine_lambda" {
   for_each = local.lambda_functions
 
-  function_name = each.key
+  function_name = "${each.key}${var.name_suffix}"
   filename      = data.archive_file.state_machine_lambda_executable[each.key].output_path
   role          = aws_iam_role.state_machine_lambda[each.key].arn
   handler       = "bootstrap"
