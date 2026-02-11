@@ -15,7 +15,9 @@ terraform {
   }
 }
 
-provider "aws" {}
+provider "aws" {
+    region = var.region
+}
 
 resource "random_string" "random" {
   length  = var.random_string_length
@@ -31,6 +33,11 @@ variable "random_string_length" {
   type        = number
   description = "Length of the random string to append to the bucket name"
   default     = 16
+}
+
+variable "region" {
+  type        = string
+  description = "region to deploy the product to, regardless of the region the portfolio is defined"
 }
 
 output "bucket_name" {
