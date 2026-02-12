@@ -8,8 +8,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-functions/shared/fileutils"
+
 	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-functions/shared/exceptions"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-functions/shared/fileutils"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-functions/shared/tfparser"
 )
 
 const ArtifactFetchAccessDeniedErrorMessage = "Access denied while downloading artifact from %s: %s"
@@ -24,7 +26,7 @@ func (h *TerraformParameterParserHandler) fetchArtifact(ctx context.Context, req
 			exceptions.ParserAccessDeniedException{Message: fmt.Sprintf(ArtifactFetchAccessDeniedErrorMessage, request.Artifact.Path, err.Error())}
 	}
 
-	fileMap, err := UnzipArchive(sourceProductConfig)
+	fileMap, err := tfparser.UnzipArchive(sourceProductConfig)
 	if err != nil {
 		return fileMap,
 			exceptions.ParserInvalidParameterException{Message: fmt.Sprintf(UnzipFailureErrorMessage, request.Artifact.Path, err.Error())}

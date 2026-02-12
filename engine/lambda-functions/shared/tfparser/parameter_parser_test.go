@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
-package main
+package tfparser
 
 import (
 	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-functions/shared/exceptions"
@@ -294,3 +294,5 @@ func TestParseParametersFromConfigurationWithNoFilesThrowsParserInvalidParameter
 		t.Errorf("Validator did not throw ParserInvalidParameterException with expected error message")
 	}
 }
+
+// Made with Bob

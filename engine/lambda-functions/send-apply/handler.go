@@ -80,7 +80,11 @@ func (h *SendApplyHandler) HandleRequest(ctx context.Context, request SendApplyR
 	}
 
 	// Create override files for injecting AWS default tags
-	providerOverrides, _ := CreateAWSProviderOverrides(h.region, request.Tags, request.TracerTag)
+	// Pass the tar archive so we can parse providers and create overrides for aliased providers
+	providerOverrides, err := CreateAWSProviderOverrides(sourceProductConfig, h.region, request.Tags, request.TracerTag)
+	if err != nil {
+		return nil, err
+	}
 
 	// Inject AWS default tags, via the override file, into the tar file
 	modifiedProductConfig, err := InjectOverrides(sourceProductConfig, []ConfigurationOverride{*providerOverrides})

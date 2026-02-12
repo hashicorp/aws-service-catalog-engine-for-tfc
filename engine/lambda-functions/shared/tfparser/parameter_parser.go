@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
-package main
+package tfparser
 
 import (
 	"encoding/json"
@@ -166,3 +166,5 @@ func mergeParameters(primaryParameter *Parameter, overrideParameter *Parameter) 
 
 	return mergedParameter
 }
+
+// Made with Bob
