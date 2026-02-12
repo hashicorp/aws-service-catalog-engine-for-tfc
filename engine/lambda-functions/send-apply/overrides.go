@@ -55,64 +55,75 @@ func CreateAWSProviderOverrides(tarArchive *os.File, region string, tags []AWSTa
 	// Build provider overrides map
 	providerOverrides := make(map[string]interface{})
 
-	// Check if there are any AWS providers (default or aliased)
-	hasAWSProviders := false
+	// Count AWS providers (default and aliased separately)
+	// Filter out providers that are only from required_providers (no actual configuration)
+	// A provider with no alias and no region is likely just from required_providers
+	var defaultProvider *tfparser.Provider
+	aliasedProviders := []*tfparser.Provider{}
+	hasDefaultProviderConfig := false
+	
 	for _, provider := range providers {
 		if provider.Name == "aws" {
-			hasAWSProviders = true
-			break
-		}
-	}
-
-	// If no AWS providers found, create override for default AWS provider
-	if !hasAWSProviders {
-		log.Default().Print("no AWS providers found in configuration, creating override for default provider")
-		providerOverrides["aws"] = map[string]interface{}{
-			"region": region,
-			"default_tags": map[string]interface{}{
-				"tags": formattedTags,
-			},
-		}
-	} else {
-		// Create overrides for each AWS provider found
-		for _, provider := range providers {
-			if provider.Name == "aws" {
-				providerConfig := map[string]interface{}{
-					"default_tags": map[string]interface{}{
-						"tags": formattedTags,
-					},
+			// Check if this is a real provider configuration (has alias or region)
+			if provider.Alias == "" && provider.Region == "" {
+				// This is likely just from required_providers, not an actual provider block
+				// Only count it if we don't find any other default provider
+				if defaultProvider == nil {
+					defaultProvider = provider
 				}
-
-				// Only override region if it wasn't defined in the configuration
-				if provider.Region == "" {
-					providerConfig["region"] = region
-					if provider.Alias != "" {
-						log.Default().Printf("creating override for aliased AWS provider: aws.%s (region not defined, using %s)", provider.Alias, region)
-					} else {
-						log.Default().Printf("creating override for default AWS provider (region not defined, using %s)", region)
-					}
-				} else {
-					if provider.Alias != "" {
-						log.Default().Printf("creating override for aliased AWS provider: aws.%s (keeping existing region: %s)", provider.Alias, provider.Region)
-					} else {
-						log.Default().Printf("creating override for default AWS provider (keeping existing region: %s)", provider.Region)
-					}
-				}
-
-				// If provider has an alias, add it to the config
-				if provider.Alias != "" {
-					providerConfig["alias"] = provider.Alias
-				}
-
-				// Use "aws" for default provider, "aws.alias" for aliased providers
-				providerKey := "aws"
-				if provider.Alias != "" {
-					providerKey = "aws." + provider.Alias
-				}
-				providerOverrides[providerKey] = providerConfig
+			} else if provider.Alias == "" {
+				// This is a real default provider configuration
+				defaultProvider = provider
+				hasDefaultProviderConfig = true
+			} else {
+				// This is an aliased provider
+				aliasedProviders = append(aliasedProviders, provider)
 			}
 		}
 	}
+	
+	// If we only have a default provider from required_providers (no real config), treat it as no provider
+	if defaultProvider != nil && !hasDefaultProviderConfig && len(aliasedProviders) > 0 {
+		defaultProvider = nil
+	}
+
+	// Determine if we should create a region override
+	shouldOverrideRegion := false
+	
+	if defaultProvider == nil && len(aliasedProviders) == 0 {
+		// No providers declared - create default provider with region
+		log.Default().Print("no AWS providers found in configuration, creating override for default provider")
+		shouldOverrideRegion = true
+	} else if defaultProvider != nil && len(aliasedProviders) == 0 {
+		// Only a single unaliased provider - override region if not set
+		if defaultProvider.Region == "" {
+			log.Default().Printf("creating override for default AWS provider (region not defined, using %s)", region)
+			shouldOverrideRegion = true
+		} else {
+			log.Default().Printf("creating override for default AWS provider (keeping existing region: %s)", defaultProvider.Region)
+		}
+	} else if defaultProvider == nil && len(aliasedProviders) > 0 {
+		// Only aliased provider(s) exist, no default provider - create default provider with region
+		// This ensures there's a default provider available for resources that don't specify an alias
+		log.Default().Printf("only aliased AWS provider(s) found, creating default provider with region %s", region)
+		shouldOverrideRegion = true
+	} else {
+		// Multiple providers or mix of aliased and unaliased - don't override region
+		log.Default().Print("multiple AWS providers found, skipping region override but adding tags")
+	}
+
+	// Create override for default provider only (never for aliased providers)
+	providerConfig := map[string]interface{}{
+		"default_tags": map[string]interface{}{
+			"tags": formattedTags,
+		},
+	}
+	
+	if shouldOverrideRegion {
+		providerConfig["region"] = region
+	}
+	
+	providerOverrides["aws"] = providerConfig
 
 	// The keys need to be strings, the values can be
 	// any serializable value

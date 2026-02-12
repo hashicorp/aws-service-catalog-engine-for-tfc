@@ -40,7 +40,7 @@ func TestUnzipFile(t *testing.T) {
 		t.Error("failed to map output file", err)
 	}
 	if !reflect.DeepEqual(fileMap, expectedFileMap) {
-		t.Error("decompressed file contained different results than source")
+		t.Errorf("decompressed file contained different results than source. Expected: %v, Got: %v", expectedFileMap, fileMap)
 	}
 }
 

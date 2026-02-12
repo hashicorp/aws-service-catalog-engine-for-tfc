@@ -18,7 +18,7 @@ const TestArtifactType = "AWS_S3"
 const TestLaunchRoleArn = "arn:aws:iam::829064435212:role/SCLaunchRole"
 const TestS3BucketArtifactPath = "../../../example-product/product.tar.gz"
 const TestS3BucketArtifactFileName = "main.tf"
-const TestS3BucketArtifactFileContent = "\"bucket_name\" {\n  type = string\n}\nprovider \"aws\" {\n}\nresource \"aws_s3_bucket\" \"bucket\" {\n  bucket = var.bucket_name\n}\noutput regional_domain_name {\n  value = aws_s3_bucket.bucket.bucket_regional_domain_name\n}"
+const TestS3BucketArtifactFileContent = "# Copyright (c) HashiCorp, Inc.\n# SPDX-License-Identifier: MPL-2.0\n\nterraform {\n  required_providers {\n    aws = {\n      source  = \"hashicorp/aws\"\n      version = \"4.63.0\"\n    }\n\n    random = {\n      source  = \"hashicorp/random\"\n      version = \"3.5.1\"\n    }\n  }\n}\n\nprovider \"aws\" {}\n\nresource \"random_string\" \"random\" {\n  length  = var.random_string_length\n  special = false\n  upper   = false\n}\n\nresource \"aws_s3_bucket\" \"my-bucket\" {\n  bucket = \"aws-tfc-service-catalog-example-${random_string.random.result}\"\n}\n\nvariable \"random_string_length\" {\n  type        = number\n  description = \"Length of the random string to append to the bucket name\"\n  default     = 16\n}\n\noutput \"bucket_name\" {\n  value = aws_s3_bucket.my-bucket.bucket\n}"
 
 func TestConfigFetcherFetchHappy(t *testing.T) {
 	// setup
@@ -50,8 +50,8 @@ func TestConfigFetcherFetchHappy(t *testing.T) {
 		t.Errorf("Expected file %s was not parsed", TestS3BucketArtifactFileName)
 	}
 
-	if reflect.DeepEqual(fileContent, TestS3BucketArtifactFileContent) {
-		t.Errorf("File content for %s is not as expected", TestS3BucketArtifactFileName)
+	if !reflect.DeepEqual(fileContent, TestS3BucketArtifactFileContent) {
+		t.Errorf("File content for %s is not as expected.\nExpected:\n%q\nGot:\n%q", TestS3BucketArtifactFileName, TestS3BucketArtifactFileContent, fileContent)
 	}
 }
 
@@ -85,7 +85,7 @@ func TestConfigFetcherFetchWithEmptyLaunchRoleHappy(t *testing.T) {
 		t.Errorf("Expected file %s was not parsed", TestS3BucketArtifactFileName)
 	}
 
-	if reflect.DeepEqual(fileContent, TestS3BucketArtifactFileContent) {
-		t.Errorf("File content for %s is not as expected", TestS3BucketArtifactFileName)
+	if !reflect.DeepEqual(fileContent, TestS3BucketArtifactFileContent) {
+		t.Errorf("File content for %s is not as expected.\nExpected:\n%q\nGot:\n%q", TestS3BucketArtifactFileName, TestS3BucketArtifactFileContent, fileContent)
 	}
 }

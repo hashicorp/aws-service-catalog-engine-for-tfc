@@ -50,7 +50,8 @@ func parseProviderMapFromFileMap(fileMap map[string]string, moduleName string) m
 
 	for fileName, fileContents := range fileMap {
 		log.Printf("Parsing file %s as HCL for providers", fileName)
-		file, _ := parser.ParseHCL([]byte(fileContents), fileName)
+		fileBytes := []byte(fileContents)
+		file, _ := parser.ParseHCL(fileBytes, fileName)
 		if file == nil {
 			log.Panicf("Failed to parse file %s as HCL", fileName)
 			continue
@@ -58,7 +59,7 @@ func parseProviderMapFromFileMap(fileMap map[string]string, moduleName string) m
 		tfconfig.LoadModuleFromFile(file, mod)
 
 		// Extract region from provider blocks in the HCL body
-		extractRegionsFromHCL(file.Body, providerRegions)
+		extractRegionsFromHCL(file.Body, fileBytes, providerRegions)
 	}
 
 	// Parse required providers (from terraform.required_providers block)
@@ -107,7 +108,7 @@ func parseProviderMapFromFileMap(fileMap map[string]string, moduleName string) m
 }
 
 // extractRegionsFromHCL extracts region attributes from provider blocks in HCL body
-func extractRegionsFromHCL(body hcl.Body, providerRegions map[string]string) {
+func extractRegionsFromHCL(body hcl.Body, fileBytes []byte, providerRegions map[string]string) {
 	content, _, diags := body.PartialContent(&hcl.BodySchema{
 		Blocks: []hcl.BlockHeaderSchema{
 			{
@@ -142,11 +143,23 @@ func extractRegionsFromHCL(body hcl.Body, providerRegions map[string]string) {
 
 			// Look for region attribute
 			if regionAttr, ok := attrs["region"]; ok {
+				var region string
+				
+				// Try to evaluate as a literal value first
 				val, diags := regionAttr.Expr.Value(nil)
 				if !diags.HasErrors() && val.Type() == cty.String {
-					region := val.AsString()
-
-					// Store with appropriate key
+					// It's a literal string, use the evaluated value (without quotes)
+					region = val.AsString()
+				} else {
+					// It's a variable reference or other expression, extract raw text
+					exprRange := regionAttr.Expr.Range()
+					if exprRange.Start.Byte >= 0 && exprRange.End.Byte <= len(fileBytes) {
+						region = string(fileBytes[exprRange.Start.Byte:exprRange.End.Byte])
+					}
+				}
+				
+				// Store the region if we successfully extracted it
+				if region != "" {
 					key := providerName
 					if alias != "" {
 						key = providerName + "." + alias

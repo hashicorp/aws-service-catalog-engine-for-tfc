@@ -79,6 +79,26 @@ provider "aws" {
 }
 `
 
+const ProviderFileContentWithVariableRegion = `
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+}
+
+variable "aws_region" {
+  type = string
+  default = "us-east-1"
+}
+`
+
 func TestParseProvidersFromConfigurationHappy(t *testing.T) {
 	// setup
 	fileMap := make(map[string]string)
@@ -266,6 +286,56 @@ func TestParseProvidersFromConfigurationWithNoFilesThrowsParserInvalidParameterE
 	// assert
 	if !reflect.DeepEqual(err, exceptions.ParserInvalidParameterException{Message: expectedErrorMessage}) {
 		t.Errorf("Parser did not throw ParserInvalidParameterException with expected error message")
+	}
+}
+
+func TestParseProvidersFromConfigurationWithVariableRegion(t *testing.T) {
+	// setup
+	fileMap := make(map[string]string)
+	fileMap["main.tf"] = ProviderFileContentWithVariableRegion
+
+	expectedResultMap := make(map[string]*Provider)
+
+	expectedProvider := &Provider{
+		Name:    "aws",
+		Alias:   "",
+		Version: "~> 5.0",
+		Source:  "hashicorp/aws",
+		Region:  "var.aws_region", // Should capture the variable reference
+	}
+
+	expectedResultMap["aws"] = expectedProvider
+
+	// act
+	actualResult, err := ParseProvidersFromConfiguration(fileMap)
+
+	// assert
+	if err != nil {
+		t.Errorf("Unexpected error returned. %v", err)
+	}
+
+	// assert the number of providers parsed is as expected
+	if len(actualResult) != len(expectedResultMap) {
+		t.Errorf("The number of providers contained in the result is %v, not %v as expected", len(actualResult), len(expectedResultMap))
+	}
+
+	// assert the content of parsed providers is as expected
+	for _, actualProvider := range actualResult {
+		expectedProvider, ok := expectedResultMap[actualProvider.Name]
+
+		if ok {
+			if !reflect.DeepEqual(actualProvider, expectedProvider) {
+				t.Errorf("Parsed provider with name %v is not the same as expected. Got: %+v, Expected: %+v", actualProvider.Name, actualProvider, expectedProvider)
+			}
+			delete(expectedResultMap, actualProvider.Name)
+		} else {
+			t.Errorf("Parsed provider with name %v is not expected", actualProvider.Name)
+		}
+	}
+
+	// assert all providers were parsed
+	if len(expectedResultMap) != 0 {
+		t.Errorf("Not all expected providers were parsed. Remaining: %v", expectedResultMap)
 	}
 }
 

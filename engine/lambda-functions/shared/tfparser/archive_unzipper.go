@@ -35,7 +35,6 @@ func getGzipReader(bytesReader io.Reader) (io.Reader, error) {
 	if err != nil {
 		return bytes.NewReader([]byte{}), err
 	}
-	defer gzipReader.Close()
 
 	return gzipReader, nil
 }
