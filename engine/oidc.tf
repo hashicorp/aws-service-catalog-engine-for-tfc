@@ -1,9 +1,14 @@
 # Copyright (c) HashiCorp, Inc.
 # SPDX-License-Identifier: MPL-2.0
 
+data "aws_iam_openid_connect_provider" "tfc_provider" {
+  count = var.provision_oidc_provider ? 0 : 1
+  url = "https://${var.tfc_hostname}"
+}
+
 # If provision_oidc_provider is true (default), the module will create an OIDC provider in AWS using the TLS certificate from the Terraform Cloud hostname. If provision_oidc_provider is false, the module will use the ARN provided in tfc_provider_arn.
 locals {
-  oidc_provider_arn = var.provision_oidc_provider ? aws_iam_openid_connect_provider.tfc_provider[0].arn : var.tfc_provider_arn
+  oidc_provider_arn = var.provision_oidc_provider ? aws_iam_openid_connect_provider.tfc_provider[0].arn : data.aws_iam_openid_connect_provider.tfc_provider[0].arn
 }
 
 # Data source used to grab the TLS certificate for Terraform Cloud:

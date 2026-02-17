@@ -44,7 +44,6 @@ module "terraform_cloud_reference_engine" {
   token_rotation_interval_in_days  = var.token_rotation_interval_in_days
   terraform_version                = var.terraform_version
   provision_oidc_provider          = var.provision_oidc_provider
-  tfc_provider_arn                 = var.tfc_provider_arn
 }
 
 # Creates an AWS Service Catalog Portfolio to house the example product

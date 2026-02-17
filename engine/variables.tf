@@ -53,9 +53,3 @@ variable "provision_oidc_provider" {
   default     = true
   description = "When set to true, the module will create an AWS IAM OIDC Provider that establishes trust with TFC. If you have already created an OIDC provider for TFC, set this variable to false and provide the ARN of the existing provider via the tfc_provider_arn variable."
 }
-
-variable "tfc_provider_arn" {
-  type        = string
-  default     = null
-  description = "ARN of an existing AWS IAM OIDC Provider for TFC. Required when provision_oidc_provider is false."
-}
