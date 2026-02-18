@@ -3,7 +3,7 @@
 
 data "aws_iam_openid_connect_provider" "tfc_provider" {
   count = var.provision_oidc_provider ? 0 : 1
-  url = "https://${var.tfc_hostname}"
+  url   = "https://${var.tfc_hostname}"
 }
 
 # If provision_oidc_provider is true (default), the module will create an OIDC provider in AWS using the TLS certificate from the Terraform Cloud hostname. If provision_oidc_provider is false, the module will use the ARN provided in tfc_provider_arn.
