@@ -17,7 +17,7 @@ provider "aws" {
 }
 
 provider "aws" {
-  alias  = "eu"
+  alias = "eu"
 }
 
 resource "aws_instance" "example" {
