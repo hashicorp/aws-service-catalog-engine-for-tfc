@@ -47,3 +47,10 @@ variable "terraform_version" {
   default     = "1.5.4"
   description = "Version of Terraform Core to use in Terraform Cloud for all Service Catalog products"
 }
+
+variable "provision_oidc_provider" {
+  type        = bool
+  default     = true
+  description = "When set to true, the module will create an AWS IAM OIDC Provider that establishes trust with TFC. If you have already created an OIDC provider for TFC, set this variable to false and the existing arn will be pulled in via the tfc_provider data source in oidc.tf."
+}
+

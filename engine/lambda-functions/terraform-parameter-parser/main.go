@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-functions/shared/awsconfig"
 	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-functions/shared/fileutils"
+	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-functions/shared/tfparser"
 )
 
 type TerraformParameterParserInput struct {
@@ -18,7 +19,7 @@ type TerraformParameterParserInput struct {
 }
 
 type TerraformParameterParserResponse struct {
-	Parameters []*Parameter `json:"parameters"`
+	Parameters []*tfparser.Parameter `json:"parameters"`
 }
 
 func main() {
@@ -48,6 +49,6 @@ func (h *TerraformParameterParserHandler) HandleRequest(ctx context.Context, eve
 		return TerraformParameterParserResponse{}, fileMapErr
 	}
 
-	parameters, parseParametersErr := ParseParametersFromConfiguration(fileMap)
+	parameters, parseParametersErr := tfparser.ParseParametersFromConfiguration(fileMap)
 	return TerraformParameterParserResponse{Parameters: parameters}, parseParametersErr
 }

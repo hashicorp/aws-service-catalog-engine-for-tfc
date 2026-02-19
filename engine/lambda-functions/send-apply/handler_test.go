@@ -10,6 +10,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"reflect"
+	"testing"
+
 	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-functions/shared/fileutils"
 	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-functions/shared/identifiers"
 	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-functions/shared/testutil/s3"
@@ -18,10 +23,6 @@ import (
 	"github.com/hashicorp/aws-service-catalog-engine-for-tfc/engine/lambda-functions/shared/tracertag"
 	"github.com/hashicorp/go-tfe"
 	"github.com/stretchr/testify/assert"
-	"io"
-	"os"
-	"testing"
-	"reflect"
 )
 
 func TestSendApplyHandler_Success(t *testing.T) {
@@ -87,8 +88,8 @@ func TestSendApplyHandler_Success(t *testing.T) {
 				t.Error(err)
 			}
 
-			// Verify region was set
-			assert.Equal(t, "narnia-west-2", providerOverride.Provider.AWS.Region)
+			// Region SHOULD be set since default provider exists without region
+			assert.Equal(t, "narnia-west-2", providerOverride.Provider.AWS.Region, "region should be overridden when default provider exists without region")
 
 			// Verify billing tags were set
 			tags := providerOverride.Provider.AWS.DefaultTags.Tags
@@ -115,6 +116,530 @@ func TestSendApplyHandler_Success(t *testing.T) {
 	assert.Equal(t, testRequest.ProductId, serviceCatalogMetadata.ProductId)
 	assert.Equal(t, testRequest.ProvisionedProductId, serviceCatalogMetadata.ProvisionedProductId)
 	assert.Equal(t, testRequest.ProvisionedArtifactId, serviceCatalogMetadata.ProductVersion)
+}
+
+func TestSendApplyHandler_Success_WithAliasedProviders(t *testing.T) {
+	// Create mock TFC instance
+	tfcServer := testtfc.NewMockTFC()
+	defer tfcServer.Stop()
+
+	mockSecretsManager := &secretsmanager.MockSecretsManager{
+		Hostname: tfcServer.Address,
+		TeamId:   "team-4123nlol",
+		Token:    "supers3cret",
+	}
+
+	// Create mock S3 downloader with artifact containing aliased providers
+	const MockArtifactPath = "test-artifacts/artifact-with-aliased-and-nonaliased-providers.tar.gz"
+	mockDownloader := &s3.MockDownloader{
+		MockArtifactPath: MockArtifactPath,
+	}
+
+	// Create a test instance of the Lambda function
+	testHandler := &SendApplyHandler{
+		secretsManager: mockSecretsManager,
+		s3Downloader:   mockDownloader,
+		region:         "narnia-west-2",
+	}
+
+	// Create test request
+	testRequest := SendApplyRequest{
+		AwsAccountId:          "123456789042",
+		TerraformOrganization: tfcServer.OrganizationName,
+		ProvisionedProductId:  "amazingly-great-product-instance",
+		Artifact: Artifact{
+			Path: "s3://wowzers-this-is-some/fake/artifact/path",
+			Type: "beeg-test",
+		},
+		LaunchRoleArn: "arn:::some/fake/role/arn",
+		ProductId:     "id-4-number-1-best-product",
+		Tags:          make([]AWSTag, 0),
+		TracerTag: tracertag.TracerTag{
+			TracerTagKey:   "test-tracer-tag-key",
+			TracerTagValue: "test-trace-tag-value",
+		},
+	}
+
+	// Send the test request
+	_, err := testHandler.HandleRequest(context.Background(), testRequest)
+	// Verify no errors were returned
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check uploaded artifact contains overrides
+	entries := GetArtifactEntryNames(t, tfcServer.UploadedArtifact())
+
+	checkedProviderOverrides := false
+	for _, entry := range entries {
+		if entry.FileName == "provider_override.tf.json" {
+			checkedProviderOverrides = true
+
+			// Parse the override JSON
+			var overrideData map[string]interface{}
+			err := json.Unmarshal([]byte(entry.FileContents), &overrideData)
+			if err != nil {
+				t.Error(err)
+			}
+
+			// Verify the provider section exists
+			providerSection, ok := overrideData["provider"].(map[string]interface{})
+			if !ok {
+				t.Error("provider section not found in override file")
+			}
+
+			// Verify ONLY default AWS provider override exists (no aliased provider overrides)
+			assert.Equal(t, 1, len(providerSection), "should only have one provider override (default aws)")
+			
+			defaultAws, ok := providerSection["aws"].(map[string]interface{})
+			if !ok {
+				t.Error("default aws provider override not found")
+			}
+			
+			// Region should NOT be overridden since default provider has region defined (us-east-1)
+			assert.Nil(t, defaultAws["region"], "region should not be overridden when default provider has region set")
+
+			// Verify aliased provider overrides do NOT exist (they should be excluded)
+			_, hasWest := providerSection["aws.west"]
+			assert.False(t, hasWest, "aws.west provider override should not exist")
+			
+			_, hasEu := providerSection["aws.eu"]
+			assert.False(t, hasEu, "aws.eu provider override should not exist")
+
+			// Verify default provider has the tracer tag
+			defaultTags, ok := defaultAws["default_tags"].(map[string]interface{})
+			if !ok {
+				t.Error("default_tags not found for default provider")
+			}
+			tags, ok := defaultTags["tags"].(map[string]interface{})
+			if !ok {
+				t.Error("tags not found for default provider")
+			}
+			tracerTag, ok := tags["test-tracer-tag-key"]
+			if !ok {
+				t.Error("tracer tag not found for default provider")
+			}
+			assert.Equal(t, "test-trace-tag-value", tracerTag)
+		}
+	}
+
+	assert.True(t, checkedProviderOverrides, "provider_override.tf.json file should be present in the uploaded artifact")
+}
+
+func TestSendApplyHandler_Success_WithVariableRegion(t *testing.T) {
+	// Create mock TFC instance
+	tfcServer := testtfc.NewMockTFC()
+	defer tfcServer.Stop()
+
+	mockSecretsManager := &secretsmanager.MockSecretsManager{
+		Hostname: tfcServer.Address,
+		TeamId:   "team-4123nlol",
+		Token:    "supers3cret",
+	}
+	// Create mock S3 downloader with artifact containing a provider with region to a variable
+	const MockArtifactPath = "test-artifacts/artifact-with-variable-region.tar.gz"
+	mockDownloader := &s3.MockDownloader{
+		MockArtifactPath: MockArtifactPath,
+	}
+
+	// Create a test instance of the Lambda function
+	testHandler := &SendApplyHandler{
+		secretsManager: mockSecretsManager,
+		s3Downloader:   mockDownloader,
+		region:         "narnia-west-2",
+	}
+
+	// Create test request
+	testRequest := SendApplyRequest{
+		AwsAccountId:          "123456789042",
+		TerraformOrganization: tfcServer.OrganizationName,
+		ProvisionedProductId:  "amazingly-great-product-instance",
+		Artifact: Artifact{
+			Path: "s3://wowzers-this-is-some/fake/artifact/path",
+			Type: "beeg-test",
+		},
+		LaunchRoleArn: "arn:::some/fake/role/arn",
+		ProductId:     "id-4-number-1-best-product",
+		Tags:          make([]AWSTag, 0),
+		TracerTag: tracertag.TracerTag{
+			TracerTagKey:   "test-tracer-tag-key",
+			TracerTagValue: "test-trace-tag-value",
+		},
+	}
+
+	// Send the test request
+	_, err := testHandler.HandleRequest(context.Background(), testRequest)
+	// Verify no errors were returned
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check uploaded artifact contains overrides for all providers
+	entries := GetArtifactEntryNames(t, tfcServer.UploadedArtifact())
+
+	checkedProviderOverrides := false
+	for _, entry := range entries {
+		if entry.FileName == "provider_override.tf.json" {
+			checkedProviderOverrides = true
+
+			// Parse the override JSON
+			var overrideData map[string]interface{}
+			err := json.Unmarshal([]byte(entry.FileContents), &overrideData)
+			if err != nil {
+				t.Error(err)
+			}
+
+			// Verify the provider section exists
+			providerSection, ok := overrideData["provider"].(map[string]interface{})
+			if !ok {
+				t.Error("provider section not found in override file")
+			}
+
+			// Verify default AWS provider override exists
+			defaultAws, ok := providerSection["aws"].(map[string]interface{})
+			if !ok {
+				t.Error("default aws provider override not found")
+			}
+			// Region should NOT be overridden since it's defined in the config (us-east-1)
+			assert.Nil(t, defaultAws["region"])
+
+			// Verify all providers have the tracer tag
+			for providerKey, providerConfig := range providerSection {
+				config := providerConfig.(map[string]interface{})
+				defaultTags, ok := config["default_tags"].(map[string]interface{})
+				if !ok {
+					t.Errorf("default_tags not found for provider %s", providerKey)
+					continue
+				}
+				tags, ok := defaultTags["tags"].(map[string]interface{})
+				if !ok {
+					t.Errorf("tags not found for provider %s", providerKey)
+					continue
+				}
+				tracerTag, ok := tags["test-tracer-tag-key"]
+				if !ok {
+					t.Errorf("tracer tag not found for provider %s", providerKey)
+					continue
+				}
+				assert.Equal(t, "test-trace-tag-value", tracerTag)
+			}
+		}
+	}
+
+	assert.True(t, checkedProviderOverrides, "provider_override.tf.json file should be present in the uploaded artifact")
+}
+
+func TestSendApplyHandler_Success_WithNoProvider(t *testing.T) {
+	// Create mock TFC instance
+	tfcServer := testtfc.NewMockTFC()
+	defer tfcServer.Stop()
+
+	mockSecretsManager := &secretsmanager.MockSecretsManager{
+		Hostname: tfcServer.Address,
+		TeamId:   "team-4123nlol",
+		Token:    "supers3cret",
+	}
+
+	// Create mock S3 downloader with artifact containing no providers
+	const MockArtifactPath = "test-artifacts/artifact-with-no-provider.tar.gz"
+	mockDownloader := &s3.MockDownloader{
+		MockArtifactPath: MockArtifactPath,
+	}
+
+	// Create a test instance of the Lambda function
+	testHandler := &SendApplyHandler{
+		secretsManager: mockSecretsManager,
+		s3Downloader:   mockDownloader,
+		region:         "narnia-west-2",
+	}
+
+	// Create test request
+	testRequest := SendApplyRequest{
+		AwsAccountId:          "123456789042",
+		TerraformOrganization: tfcServer.OrganizationName,
+		ProvisionedProductId:  "amazingly-great-product-instance",
+		Artifact: Artifact{
+			Path: "s3://wowzers-this-is-some/fake/artifact/path",
+			Type: "beeg-test",
+		},
+		LaunchRoleArn: "arn:::some/fake/role/arn",
+		ProductId:     "id-4-number-1-best-product",
+		Tags:          make([]AWSTag, 0),
+		TracerTag: tracertag.TracerTag{
+			TracerTagKey:   "test-tracer-tag-key",
+			TracerTagValue: "test-trace-tag-value",
+		},
+	}
+
+	// Send the test request
+	_, err := testHandler.HandleRequest(context.Background(), testRequest)
+	// Verify no errors were returned
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check uploaded artifact contains overrides for all providers
+	entries := GetArtifactEntryNames(t, tfcServer.UploadedArtifact())
+
+	checkedProviderOverrides := false
+	for _, entry := range entries {
+		if entry.FileName == "provider_override.tf.json" {
+			checkedProviderOverrides = true
+
+			// Parse the override JSON
+			var overrideData map[string]interface{}
+			err := json.Unmarshal([]byte(entry.FileContents), &overrideData)
+			if err != nil {
+				t.Error(err)
+			}
+
+			// Verify the provider section exists
+			providerSection, ok := overrideData["provider"].(map[string]interface{})
+			if !ok {
+				t.Error("provider section not found in override file")
+			}
+
+			// Verify default AWS provider override exists
+			defaultAws, ok := providerSection["aws"].(map[string]interface{})
+			if !ok {
+				t.Error("default aws provider override not found")
+			}
+			// Region should be overridden since it's defined in the config (us-east-1)
+			assert.Equal(t, "narnia-west-2", defaultAws["region"])
+
+			// Verify all providers have the tracer tag
+			for providerKey, providerConfig := range providerSection {
+				config := providerConfig.(map[string]interface{})
+				defaultTags, ok := config["default_tags"].(map[string]interface{})
+				if !ok {
+					t.Errorf("default_tags not found for provider %s", providerKey)
+					continue
+				}
+				tags, ok := defaultTags["tags"].(map[string]interface{})
+				if !ok {
+					t.Errorf("tags not found for provider %s", providerKey)
+					continue
+				}
+				tracerTag, ok := tags["test-tracer-tag-key"]
+				if !ok {
+					t.Errorf("tracer tag not found for provider %s", providerKey)
+					continue
+				}
+				assert.Equal(t, "test-trace-tag-value", tracerTag)
+			}
+		}
+	}
+
+	assert.True(t, checkedProviderOverrides, "provider_override.tf.json file should be present in the uploaded artifact")
+}
+
+func TestSendApplyHandler_Success_WithOnlyAliasedProviderNoRegion(t *testing.T) {
+	// Create mock TFC instance
+	tfcServer := testtfc.NewMockTFC()
+	defer tfcServer.Stop()
+
+	mockSecretsManager := &secretsmanager.MockSecretsManager{
+		Hostname: tfcServer.Address,
+		TeamId:   "team-4123nlol",
+		Token:    "supers3cret",
+	}
+
+	// Create mock S3 downloader with artifact containing only an aliased provider without region
+	const MockArtifactPath = "test-artifacts/artifact-with-only-aliased-provider-no-region.tar.gz"
+	mockDownloader := &s3.MockDownloader{
+		MockArtifactPath: MockArtifactPath,
+	}
+
+	// Create a test instance of the Lambda function
+	testHandler := &SendApplyHandler{
+		secretsManager: mockSecretsManager,
+		s3Downloader:   mockDownloader,
+		region:         "narnia-west-2",
+	}
+
+	// Create test request
+	testRequest := SendApplyRequest{
+		AwsAccountId:          "123456789042",
+		TerraformOrganization: tfcServer.OrganizationName,
+		ProvisionedProductId:  "amazingly-great-product-instance",
+		Artifact: Artifact{
+			Path: "s3://wowzers-this-is-some/fake/artifact/path",
+			Type: "beeg-test",
+		},
+		LaunchRoleArn: "arn:::some/fake/role/arn",
+		ProductId:     "id-4-number-1-best-product",
+		Tags:          make([]AWSTag, 0),
+		TracerTag: tracertag.TracerTag{
+			TracerTagKey:   "test-tracer-tag-key",
+			TracerTagValue: "test-trace-tag-value",
+		},
+	}
+
+	// Send the test request
+	_, err := testHandler.HandleRequest(context.Background(), testRequest)
+	// Verify no errors were returned
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check uploaded artifact contains overrides
+	entries := GetArtifactEntryNames(t, tfcServer.UploadedArtifact())
+
+	checkedProviderOverrides := false
+	for _, entry := range entries {
+		if entry.FileName == "provider_override.tf.json" {
+			checkedProviderOverrides = true
+
+			// Parse the override JSON
+			var overrideData map[string]interface{}
+			err := json.Unmarshal([]byte(entry.FileContents), &overrideData)
+			if err != nil {
+				t.Error(err)
+			}
+
+			// Verify the provider section exists
+			providerSection, ok := overrideData["provider"].(map[string]interface{})
+			if !ok {
+				t.Error("provider section not found in override file")
+			}
+
+			// Verify ONLY default AWS provider override exists
+			assert.Equal(t, 1, len(providerSection), "should only have one provider override (default aws)")
+			
+			defaultAws, ok := providerSection["aws"].(map[string]interface{})
+			if !ok {
+				t.Error("default aws provider override not found")
+			}
+			
+			// Region SHOULD be overridden since only aliased provider exists without region
+			assert.Equal(t, "narnia-west-2", defaultAws["region"], "region should be overridden when only aliased provider without region exists")
+
+			// Verify aliased provider override does NOT exist
+			_, hasWest := providerSection["aws.west"]
+			assert.False(t, hasWest, "aws.west provider override should not exist")
+
+			// Verify default provider has the tracer tag
+			defaultTags, ok := defaultAws["default_tags"].(map[string]interface{})
+			if !ok {
+				t.Error("default_tags not found for default provider")
+			}
+			tags, ok := defaultTags["tags"].(map[string]interface{})
+			if !ok {
+				t.Error("tags not found for default provider")
+			}
+			tracerTag, ok := tags["test-tracer-tag-key"]
+			if !ok {
+				t.Error("tracer tag not found for default provider")
+			}
+			assert.Equal(t, "test-trace-tag-value", tracerTag)
+		}
+	}
+
+	assert.True(t, checkedProviderOverrides, "provider_override.tf.json file should be present in the uploaded artifact")
+}
+
+func TestSendApplyHandler_Success_WithDefaultProviderNoRegionSet(t *testing.T) {
+	// Create mock TFC instance
+	tfcServer := testtfc.NewMockTFC()
+	defer tfcServer.Stop()
+
+	mockSecretsManager := &secretsmanager.MockSecretsManager{
+		Hostname: tfcServer.Address,
+		TeamId:   "team-4123nlol",
+		Token:    "supers3cret",
+	}
+
+	// Create mock S3 downloader with artifact containing no providers
+	const MockArtifactPath = "test-artifacts/artifact-with-default-provider-no-region-set.tar.gz"
+	mockDownloader := &s3.MockDownloader{
+		MockArtifactPath: MockArtifactPath,
+	}
+
+	// Create a test instance of the Lambda function
+	testHandler := &SendApplyHandler{
+		secretsManager: mockSecretsManager,
+		s3Downloader:   mockDownloader,
+		region:         "narnia-west-2",
+	}
+
+	// Create test request
+	testRequest := SendApplyRequest{
+		AwsAccountId:          "123456789042",
+		TerraformOrganization: tfcServer.OrganizationName,
+		ProvisionedProductId:  "amazingly-great-product-instance",
+		Artifact: Artifact{
+			Path: "s3://wowzers-this-is-some/fake/artifact/path",
+			Type: "beeg-test",
+		},
+		LaunchRoleArn: "arn:::some/fake/role/arn",
+		ProductId:     "id-4-number-1-best-product",
+		Tags:          make([]AWSTag, 0),
+		TracerTag: tracertag.TracerTag{
+			TracerTagKey:   "test-tracer-tag-key",
+			TracerTagValue: "test-trace-tag-value",
+		},
+	}
+
+	// Send the test request
+	_, err := testHandler.HandleRequest(context.Background(), testRequest)
+	// Verify no errors were returned
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check uploaded artifact contains overrides for all providers
+	entries := GetArtifactEntryNames(t, tfcServer.UploadedArtifact())
+
+	checkedProviderOverrides := false
+	for _, entry := range entries {
+		if entry.FileName == "provider_override.tf.json" {
+			checkedProviderOverrides = true
+
+			// Parse the override JSON
+			var overrideData map[string]interface{}
+			err := json.Unmarshal([]byte(entry.FileContents), &overrideData)
+			if err != nil {
+				t.Error(err)
+			}
+
+			// Verify the provider section exists
+			providerSection, ok := overrideData["provider"].(map[string]interface{})
+			if !ok {
+				t.Error("provider section not found in override file")
+			}
+
+			// Verify default AWS provider override exists
+			defaultAws, ok := providerSection["aws"].(map[string]interface{})
+			if !ok {
+				t.Error("default aws provider override not found")
+			}
+			// Region should be overridden since it's defined in the config (us-east-1)
+			assert.Equal(t, "narnia-west-2", defaultAws["region"])
+
+			// Verify all providers have the tracer tag
+			for providerKey, providerConfig := range providerSection {
+				config := providerConfig.(map[string]interface{})
+				defaultTags, ok := config["default_tags"].(map[string]interface{})
+				if !ok {
+					t.Errorf("default_tags not found for provider %s", providerKey)
+					continue
+				}
+				tags, ok := defaultTags["tags"].(map[string]interface{})
+				if !ok {
+					t.Errorf("tags not found for provider %s", providerKey)
+					continue
+				}
+				tracerTag, ok := tags["test-tracer-tag-key"]
+				if !ok {
+					t.Errorf("tracer tag not found for provider %s", providerKey)
+					continue
+				}
+				assert.Equal(t, "test-trace-tag-value", tracerTag)
+			}
+		}
+	}
+
+	assert.True(t, checkedProviderOverrides, "provider_override.tf.json file should be present in the uploaded artifact")
 }
 
 func TestSendApplyHandler_Success_UpdatingExistingWorkspace(t *testing.T) {

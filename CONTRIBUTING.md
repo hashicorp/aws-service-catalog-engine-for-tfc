@@ -12,3 +12,7 @@ To build the Go code and Lambda Functions, do the following:
 2. Run `make bin` to build the Lambda functions and install the necessary dependencies.
 
 Note: Any time you update a Lambda Function, you will need to build the code, as outlined above, to apply those changes.
+
+## Releases
+
+For information on how to create a new release of this module, see [RELEASING.md](RELEASING.md).

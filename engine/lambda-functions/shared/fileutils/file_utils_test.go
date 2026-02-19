@@ -6,11 +6,12 @@
 package fileutils
 
 import (
-	"os"
-	"testing"
-	"reflect"
-	"io"
 	"archive/tar"
+	"io"
+	"os"
+	"reflect"
+	"strings"
+	"testing"
 )
 
 func TestUnzipFile(t *testing.T) {
@@ -40,7 +41,7 @@ func TestUnzipFile(t *testing.T) {
 		t.Error("failed to map output file", err)
 	}
 	if !reflect.DeepEqual(fileMap, expectedFileMap) {
-		t.Error("decompressed file contained different results than source")
+		t.Errorf("decompressed file contained different results than source. Expected: %v, Got: %v", expectedFileMap, fileMap)
 	}
 }
 
@@ -156,7 +157,11 @@ func getFileMap(reader io.Reader) (map[string]string, error) {
 			return fileMap, err
 		}
 
-		fileMap[hdr.Name] = string(data)
+		// running tar on OSX can sometimes add ./ to paths, so we trim it to improve compatibility
+		trimmedName := strings.TrimPrefix(hdr.Name, "./")
+		if trimmedName != "" {
+			fileMap[trimmedName] = string(data)
+		}
 	}
 
 	return fileMap, nil
