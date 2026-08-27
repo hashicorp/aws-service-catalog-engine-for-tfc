@@ -5,11 +5,16 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "5.12.0"
+      version = "6.61.0"
     }
     tfe = {
       source  = "hashicorp/tfe"
       version = "0.45.0"
     }
   }
+}
+
+locals {
+  # use this variable to update the runtime of the golang lambda functions
+  lambda_runtime = "provided.al2023"
 }
