@@ -1,3 +1,21 @@
+# v1.0.5 (08/31/2026)
+
+## Improvements
+* Lambda functions now use the newer `provided.al2023` runtime. The `provided.al2` was deprecated.
+
+# v1.0.4 (02/19/2026)
+
+## Improvements
+* Added logic to conditionally provision the AWS OIDC Provider based on a new variable, `provision_oidc_provider`. This variable defaults to `true`. If it is `false`, it will instead attempt to lookup an existing AWS OIDC Provider for `app.terraform.io` and use that in the engine. This change allows users who may already have an existing OIDC provider in AWS to provision this Service Catalog Engine without collisions. By @dominic-retli-hashi in https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/pull/35
+* Region is now extracted from the AWS provider in terraform config files rather than defaulting to overriding the region based on where the engine is deployed. This allows users to provision products in the region of their choosing. By @dominic-retli-hashi in https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/pull/36
+
+
+# v1.0.4 (02/22/2024)
+
+## Improvements
+* Added logic to conditionally provision the AWS OIDC Provider based on a new variable, `provision_oidc_provider`. This variable defaults to `true`. If it is `false`, it will instead attempt to lookup an existing AWS OIDC Provider for `app.terraform.io` and use that in the engine. This change allows users who may already have an existing OIDC provider in AWS to provision this Service Catalog Engine without collisions. By @dominic-retli-hashi in https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/pull/35
+* Region is now extracted from the AWS provider in terraform config files rather than defaulting to overriding the region based on where the engine is deployed. This allows users to provision products in the region of their choosing. By @dominic-retli-hashi in https://github.com/hashicorp/aws-service-catalog-engine-for-tfc/pull/36
+
 # v1.0.3 (02/22/2024)
 
 ## Bug Fixes
